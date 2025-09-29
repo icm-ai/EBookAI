@@ -1,11 +1,12 @@
+import os
+import sys
+from unittest.mock import MagicMock, patch
+
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock
-import sys
-import os
 
 # Add src directory to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from main import app
 
@@ -36,12 +37,8 @@ class TestConversionAPI:
 
     def test_convert_invalid_format(self, client):
         """Test conversion with invalid target format"""
-        test_data = {
-            "target_format": "invalid_format"
-        }
-        files = {
-            "file": ("test.epub", b"dummy content", "application/epub+zip")
-        }
+        test_data = {"target_format": "invalid_format"}
+        files = {"file": ("test.epub", b"dummy content", "application/epub+zip")}
 
         response = client.post("/convert", data=test_data, files=files)
 
@@ -50,34 +47,26 @@ class TestConversionAPI:
 
     def test_convert_empty_file(self, client):
         """Test conversion with empty file"""
-        test_data = {
-            "target_format": "pdf"
-        }
-        files = {
-            "file": ("test.epub", b"", "application/epub+zip")
-        }
+        test_data = {"target_format": "pdf"}
+        files = {"file": ("test.epub", b"", "application/epub+zip")}
 
         response = client.post("/convert", data=test_data, files=files)
 
         assert response.status_code == 400
         assert "Empty file" in response.json()["detail"]
 
-    @patch('api.conversion.conversion_service.convert_file')
+    @patch("api.conversion.conversion_service.convert_file")
     def test_convert_success(self, mock_convert, client):
         """Test successful conversion"""
         mock_convert.return_value = {
             "task_id": "test-task-id",
             "status": "completed",
             "output_file": "test_output.pdf",
-            "message": "Conversion completed successfully"
+            "message": "Conversion completed successfully",
         }
 
-        test_data = {
-            "target_format": "pdf"
-        }
-        files = {
-            "file": ("test.epub", b"dummy epub content", "application/epub+zip")
-        }
+        test_data = {"target_format": "pdf"}
+        files = {"file": ("test.epub", b"dummy epub content", "application/epub+zip")}
 
         response = client.post("/convert", data=test_data, files=files)
 
@@ -110,6 +99,7 @@ class TestConversionAPI:
     def test_status_valid_task_id(self, client):
         """Test status with valid task ID"""
         import uuid
+
         task_id = str(uuid.uuid4())
 
         response = client.get(f"/status/{task_id}")
@@ -147,6 +137,7 @@ class TestConversionAPI:
     def test_cleanup_valid_task_id(self, client):
         """Test cleanup with valid task ID"""
         import uuid
+
         task_id = str(uuid.uuid4())
 
         response = client.delete(f"/cleanup/{task_id}")

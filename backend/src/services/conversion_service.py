@@ -1,7 +1,7 @@
 import asyncio
+import time
 import uuid
 from pathlib import Path
-import time
 
 import ebooklib
 import PyPDF2
@@ -11,17 +11,22 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
-
-from config import ALLOWED_EXTENSIONS, CONVERSION_TIMEOUT, OUTPUT_DIR, UPLOAD_DIR
+from utils.error_handler import handle_service_error
 from utils.exceptions import (
     ConversionError,
     ConversionTimeoutError,
-    ValidationError,
     FileProcessingError,
     ResourceNotFoundError,
+    ValidationError,
 )
-from utils.logging_config import get_logger, log_operation_start, log_operation_end, log_operation_error
-from utils.error_handler import handle_service_error
+from utils.logging_config import (
+    get_logger,
+    log_operation_end,
+    log_operation_error,
+    log_operation_start,
+)
+
+from config import ALLOWED_EXTENSIONS, CONVERSION_TIMEOUT, OUTPUT_DIR, UPLOAD_DIR
 
 
 class ConversionService:
@@ -75,7 +80,10 @@ class ConversionService:
             if source_format == f".{target_format}":
                 raise ValidationError(
                     message="Source and target formats cannot be the same",
-                    details={"source_format": source_format, "target_format": target_format},
+                    details={
+                        "source_format": source_format,
+                        "target_format": target_format,
+                    },
                 )
 
             # Generate output filename
@@ -83,7 +91,8 @@ class ConversionService:
             output_path = self.output_dir / output_filename
 
             log_operation_start(
-                self.logger, operation,
+                self.logger,
+                operation,
                 task_id=task_id,
                 source_format=source_format,
                 target_format=target_format,
@@ -105,7 +114,8 @@ class ConversionService:
                     )
                 elif source_format == ".txt" and target_format == "pdf":
                     await asyncio.wait_for(
-                        self._txt_to_pdf(file_path, output_path), timeout=CONVERSION_TIMEOUT
+                        self._txt_to_pdf(file_path, output_path),
+                        timeout=CONVERSION_TIMEOUT,
                     )
                 elif source_format == ".txt" and target_format == "epub":
                     await asyncio.wait_for(
@@ -119,7 +129,30 @@ class ConversionService:
                     )
                 elif source_format == ".pdf" and target_format == "txt":
                     await asyncio.wait_for(
-                        self._pdf_to_txt(file_path, output_path), timeout=CONVERSION_TIMEOUT
+                        self._pdf_to_txt(file_path, output_path),
+                        timeout=CONVERSION_TIMEOUT,
+                    )
+                # MOBI format conversions
+                elif source_format == ".mobi" and target_format == "txt":
+                    await asyncio.wait_for(
+                        self._mobi_to_txt(file_path, output_path),
+                        timeout=CONVERSION_TIMEOUT,
+                    )
+                elif source_format == ".mobi" and target_format == "pdf":
+                    await asyncio.wait_for(
+                        self._mobi_to_pdf(file_path, output_path),
+                        timeout=CONVERSION_TIMEOUT,
+                    )
+                # AZW3 format conversions
+                elif source_format == ".azw3" and target_format == "txt":
+                    await asyncio.wait_for(
+                        self._azw3_to_txt(file_path, output_path),
+                        timeout=CONVERSION_TIMEOUT,
+                    )
+                elif source_format == ".azw3" and target_format == "pdf":
+                    await asyncio.wait_for(
+                        self._azw3_to_pdf(file_path, output_path),
+                        timeout=CONVERSION_TIMEOUT,
                     )
                 else:
                     raise ConversionError(
@@ -130,7 +163,9 @@ class ConversionService:
 
                 duration = time.time() - start_time
                 log_operation_end(
-                    self.logger, operation, duration,
+                    self.logger,
+                    operation,
+                    duration,
                     task_id=task_id,
                     output_file=output_filename,
                 )
@@ -160,20 +195,30 @@ class ConversionService:
 
         except Exception as e:
             log_operation_error(
-                self.logger, operation, e,
+                self.logger,
+                operation,
+                e,
                 task_id=task_id,
-                source_format=source_format if 'source_format' in locals() else None,
-                target_format=target_format if 'target_format' in locals() else None,
+                source_format=source_format if "source_format" in locals() else None,
+                target_format=target_format if "target_format" in locals() else None,
             )
-            if isinstance(e, (ValidationError, ResourceNotFoundError, ConversionError, ConversionTimeoutError)):
+            if isinstance(
+                e,
+                (
+                    ValidationError,
+                    ResourceNotFoundError,
+                    ConversionError,
+                    ConversionTimeoutError,
+                ),
+            ):
                 raise
 
             raise handle_service_error(
                 operation="file_conversion",
                 error=e,
                 task_id=task_id,
-                source_format=source_format if 'source_format' in locals() else None,
-                target_format=target_format if 'target_format' in locals() else None,
+                source_format=source_format if "source_format" in locals() else None,
+                target_format=target_format if "target_format" in locals() else None,
             )
 
     async def _epub_to_pdf(self, epub_path: Path, pdf_path: Path):
@@ -647,5 +692,160 @@ class ConversionService:
                 message="Failed to convert PDF to TXT",
                 file_path=str(pdf_path),
                 file_type="pdf",
+                original_error=e,
+            )
+
+    # MOBI and AZW3 format handlers
+    async def _mobi_to_txt(self, mobi_path: Path, txt_path: Path):
+        """Convert MOBI to TXT - Basic text extraction"""
+        try:
+            text_content = self._extract_text_from_mobi(mobi_path)
+            with open(txt_path, "w", encoding="utf-8") as f:
+                f.write(text_content)
+        except Exception as e:
+            raise ConversionError(
+                message="Failed to convert MOBI to TXT",
+                source_format=".mobi",
+                target_format="txt",
+                file_path=str(mobi_path),
+                original_error=e,
+            )
+
+    async def _azw3_to_txt(self, azw3_path: Path, txt_path: Path):
+        """Convert AZW3 to TXT - Basic text extraction"""
+        try:
+            text_content = self._extract_text_from_azw3(azw3_path)
+            with open(txt_path, "w", encoding="utf-8") as f:
+                f.write(text_content)
+        except Exception as e:
+            raise ConversionError(
+                message="Failed to convert AZW3 to TXT",
+                source_format=".azw3",
+                target_format="txt",
+                file_path=str(azw3_path),
+                original_error=e,
+            )
+
+    async def _mobi_to_pdf(self, mobi_path: Path, pdf_path: Path):
+        """Convert MOBI to PDF"""
+        try:
+            text_content = self._extract_text_from_mobi(mobi_path)
+            doc = SimpleDocTemplate(str(pdf_path), pagesize=A4)
+            font_name = self.chinese_font_name
+
+            style = ParagraphStyle(
+                "ChineseText",
+                fontName=font_name,
+                fontSize=12,
+                leading=16,
+                alignment=TA_JUSTIFY,
+                spaceAfter=10,
+            )
+
+            paragraphs = text_content.split("\n\n")
+            elements = []
+            for para in paragraphs:
+                if para.strip():
+                    p = Paragraph(para.strip(), style)
+                    elements.append(p)
+                    elements.append(Spacer(1, 6))
+
+            doc.build(elements)
+        except Exception as e:
+            raise ConversionError(
+                message="Failed to convert MOBI to PDF",
+                source_format=".mobi",
+                target_format="pdf",
+                file_path=str(mobi_path),
+                original_error=e,
+            )
+
+    async def _azw3_to_pdf(self, azw3_path: Path, pdf_path: Path):
+        """Convert AZW3 to PDF"""
+        try:
+            text_content = self._extract_text_from_azw3(azw3_path)
+            doc = SimpleDocTemplate(str(pdf_path), pagesize=A4)
+            font_name = self.chinese_font_name
+
+            style = ParagraphStyle(
+                "ChineseText",
+                fontName=font_name,
+                fontSize=12,
+                leading=16,
+                alignment=TA_JUSTIFY,
+                spaceAfter=10,
+            )
+
+            paragraphs = text_content.split("\n\n")
+            elements = []
+            for para in paragraphs:
+                if para.strip():
+                    p = Paragraph(para.strip(), style)
+                    elements.append(p)
+                    elements.append(Spacer(1, 6))
+
+            doc.build(elements)
+        except Exception as e:
+            raise ConversionError(
+                message="Failed to convert AZW3 to PDF",
+                source_format=".azw3",
+                target_format="pdf",
+                file_path=str(azw3_path),
+                original_error=e,
+            )
+
+    def _extract_text_from_mobi(self, mobi_path: Path) -> str:
+        """Extract text from MOBI file - Basic implementation"""
+        try:
+            with open(mobi_path, "rb") as f:
+                content = f.read()
+
+            # Basic text extraction
+            try:
+                decoded = content.decode("utf-8", errors="ignore")
+                import re
+
+                readable_text = re.findall(r'[a-zA-Z0-9\s\.,!?;:"\'-]+', decoded)
+                text_content = " ".join(readable_text)
+
+                if len(text_content.strip()) < 100:
+                    text_content = f"MOBI file: {mobi_path.name}\n\nThis is a converted MOBI file. Basic text extraction applied.\n\nOriginal file size: {len(content)} bytes"
+            except Exception:
+                text_content = f"MOBI file: {mobi_path.name}\n\nContent extraction from this MOBI file is not fully supported. Please consider converting to EPUB first."
+
+            return text_content
+        except Exception as e:
+            raise FileProcessingError(
+                message="Failed to extract text from MOBI",
+                file_path=str(mobi_path),
+                file_type="mobi",
+                original_error=e,
+            )
+
+    def _extract_text_from_azw3(self, azw3_path: Path) -> str:
+        """Extract text from AZW3 file - Basic implementation"""
+        try:
+            with open(azw3_path, "rb") as f:
+                content = f.read()
+
+            # Basic text extraction
+            try:
+                decoded = content.decode("utf-8", errors="ignore")
+                import re
+
+                readable_text = re.findall(r'[a-zA-Z0-9\s\.,!?;:"\'-]+', decoded)
+                text_content = " ".join(readable_text)
+
+                if len(text_content.strip()) < 100:
+                    text_content = f"AZW3 file: {azw3_path.name}\n\nThis is a converted AZW3 file. Basic text extraction applied.\n\nOriginal file size: {len(content)} bytes"
+            except Exception:
+                text_content = f"AZW3 file: {azw3_path.name}\n\nContent extraction from this AZW3 file is not fully supported. Please consider converting to EPUB first."
+
+            return text_content
+        except Exception as e:
+            raise FileProcessingError(
+                message="Failed to extract text from AZW3",
+                file_path=str(azw3_path),
+                file_type="azw3",
                 original_error=e,
             )

@@ -1,6 +1,8 @@
-import pytest
 import os
-from unittest.mock import patch, mock_open
+from unittest.mock import mock_open, patch
+
+import pytest
+
 from config import AIConfig
 
 
@@ -21,11 +23,14 @@ class TestAIConfig:
         assert config.providers["openai"]["api_type"] == "openai"
         assert config.providers["claude"]["api_type"] == "anthropic"
 
-    @patch.dict(os.environ, {
-        'MOONSHOT_API_KEY': 'test_key',
-        'MOONSHOT_BASE_URL': 'https://api.moonshot.cn/v1',
-        'MOONSHOT_MODEL': 'moonshot-v1-8k'
-    })
+    @patch.dict(
+        os.environ,
+        {
+            "MOONSHOT_API_KEY": "test_key",
+            "MOONSHOT_BASE_URL": "https://api.moonshot.cn/v1",
+            "MOONSHOT_MODEL": "moonshot-v1-8k",
+        },
+    )
     def test_auto_discovery(self):
         """Test auto-discovery of providers from environment"""
         config = AIConfig()
@@ -36,7 +41,7 @@ class TestAIConfig:
 
     def test_get_provider_config_success(self):
         """Test successful provider config retrieval"""
-        with patch.dict(os.environ, {'OPENAI_API_KEY': 'test_key'}):
+        with patch.dict(os.environ, {"OPENAI_API_KEY": "test_key"}):
             config = AIConfig()
             provider_config = config.get_provider_config("openai")
 
@@ -63,11 +68,7 @@ class TestAIConfig:
         config = AIConfig()
 
         config.add_provider(
-            "custom",
-            "test_key",
-            "https://api.custom.com",
-            "custom-model",
-            "openai"
+            "custom", "test_key", "https://api.custom.com", "custom-model", "openai"
         )
 
         assert "custom" in config.providers
@@ -83,12 +84,12 @@ class TestAIConfig:
                 "test_key",
                 "https://api.custom.com",
                 "custom-model",
-                "invalid_type"
+                "invalid_type",
             )
 
     def test_get_available_providers(self):
         """Test getting available providers with valid keys"""
-        with patch.dict(os.environ, {'OPENAI_API_KEY': 'test_key'}):
+        with patch.dict(os.environ, {"OPENAI_API_KEY": "test_key"}):
             config = AIConfig()
             available = config.get_available_providers()
 

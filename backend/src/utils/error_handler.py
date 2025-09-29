@@ -16,17 +16,16 @@ from starlette.status import (
     HTTP_500_INTERNAL_SERVER_ERROR,
     HTTP_503_SERVICE_UNAVAILABLE,
 )
-
 from utils.exceptions import (
-    EBookAIException,
-    ValidationError,
-    FileProcessingError,
-    ConversionError,
-    ConversionTimeoutError,
     AIServiceError,
     ConfigurationError,
+    ConversionError,
+    ConversionTimeoutError,
+    EBookAIException,
+    FileProcessingError,
     ResourceNotFoundError,
     SecurityError,
+    ValidationError,
 )
 from utils.logging_config import get_logger
 from utils.user_messages import create_user_friendly_error
@@ -193,13 +192,16 @@ def create_error_response(
     user_friendly_response = create_user_friendly_error(
         error=error,
         request_id=request_id,
-        include_technical=False  # Set to True in development
+        include_technical=False,  # Set to True in development
     )
 
-    return JSONResponse(
-        status_code=status_code,
-        content=user_friendly_response,
-    ), status_code
+    return (
+        JSONResponse(
+            status_code=status_code,
+            content=user_friendly_response,
+        ),
+        status_code,
+    )
 
 
 async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:

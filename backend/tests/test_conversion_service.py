@@ -1,14 +1,15 @@
-import pytest
 import asyncio
 import uuid
 from pathlib import Path
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from services.conversion_service import ConversionService
 from utils.exceptions import (
-    ResourceNotFoundError,
-    ValidationError,
     ConversionError,
     ConversionTimeoutError,
+    ResourceNotFoundError,
+    ValidationError,
 )
 
 
@@ -51,7 +52,9 @@ class TestConversionService:
     @pytest.mark.asyncio
     async def test_convert_file_same_format(self, service, test_file_path):
         """Test conversion with same source and target format"""
-        with pytest.raises(ValidationError, match="Source and target formats cannot be the same"):
+        with pytest.raises(
+            ValidationError, match="Source and target formats cannot be the same"
+        ):
             await service.convert_file(str(test_file_path), "epub")
 
     @pytest.mark.asyncio
@@ -69,8 +72,10 @@ class TestConversionService:
                 test_file.unlink()
 
     @pytest.mark.asyncio
-    @patch('services.conversion_service.ConversionService._epub_to_pdf')
-    async def test_epub_to_pdf_conversion(self, mock_epub_to_pdf, service, test_file_path):
+    @patch("services.conversion_service.ConversionService._epub_to_pdf")
+    async def test_epub_to_pdf_conversion(
+        self, mock_epub_to_pdf, service, test_file_path
+    ):
         """Test successful EPUB to PDF conversion"""
         mock_epub_to_pdf.return_value = None
         task_id = str(uuid.uuid4())
@@ -83,7 +88,7 @@ class TestConversionService:
         mock_epub_to_pdf.assert_called_once()
 
     @pytest.mark.asyncio
-    @patch('services.conversion_service.ConversionService._pdf_to_epub')
+    @patch("services.conversion_service.ConversionService._pdf_to_epub")
     async def test_pdf_to_epub_conversion(self, mock_pdf_to_epub, service, tmp_path):
         """Test successful PDF to EPUB conversion"""
         mock_pdf_to_epub.return_value = None
@@ -102,10 +107,12 @@ class TestConversionService:
     @pytest.mark.asyncio
     async def test_conversion_timeout(self, service, test_file_path):
         """Test conversion timeout handling"""
-        with patch('services.conversion_service.asyncio.wait_for') as mock_wait:
+        with patch("services.conversion_service.asyncio.wait_for") as mock_wait:
             mock_wait.side_effect = asyncio.TimeoutError()
 
-            with pytest.raises(ConversionTimeoutError, match="Conversion timed out after"):
+            with pytest.raises(
+                ConversionTimeoutError, match="Conversion timed out after"
+            ):
                 await service.convert_file(str(test_file_path), "pdf")
 
     def test_cleanup_file(self, service, tmp_path):

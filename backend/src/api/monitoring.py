@@ -1,12 +1,11 @@
 """
 Monitoring and metrics API endpoints.
 """
-from typing import Dict, Any
+from typing import Any, Dict
 
 from fastapi import APIRouter, HTTPException
-
-from utils.monitoring import get_performance_stats
 from utils.logging_config import get_logger
+from utils.monitoring import get_performance_stats
 
 router = APIRouter(tags=["monitoring"])
 logger = get_logger("monitoring_api")

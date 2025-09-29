@@ -1,13 +1,13 @@
 """
 Centralized logging configuration for EBookAI.
 """
+import json
 import logging
 import logging.config
 import sys
-from pathlib import Path
-from typing import Dict, Any
-import json
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict
 
 
 class JSONFormatter(logging.Formatter):
@@ -45,7 +45,9 @@ class JSONFormatter(logging.Formatter):
         return json.dumps(log_data, ensure_ascii=False)
 
 
-def get_logging_config(log_level: str = "INFO", log_dir: str = "logs") -> Dict[str, Any]:
+def get_logging_config(
+    log_level: str = "INFO", log_dir: str = "logs"
+) -> Dict[str, Any]:
     """Get logging configuration dictionary"""
 
     # Ensure log directory exists

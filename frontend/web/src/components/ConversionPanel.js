@@ -27,12 +27,18 @@ function ConversionPanel({ selectedFile, converting, onConvert, result, onDownlo
 
     const fileExt = selectedFile.name.split('.').pop().toLowerCase();
 
-    if (fileExt === 'epub') {
-      return [{ format: 'pdf', label: 'PDF', icon: '📄' }];
-    } else if (fileExt === 'pdf') {
-      return [{ format: 'epub', label: 'EPUB', icon: '📚' }];
-    }
-    return [];
+    // Define all possible formats with their icons
+    const formatOptions = {
+      epub: { format: 'epub', label: 'EPUB', icon: '📚' },
+      pdf: { format: 'pdf', label: 'PDF', icon: '📄' },
+      txt: { format: 'txt', label: 'TXT', icon: '📝' },
+      mobi: { format: 'mobi', label: 'MOBI', icon: '📱' },
+      azw3: { format: 'azw3', label: 'AZW3', icon: '📖' }
+    };
+
+    // Get all formats except the current one
+    const allFormats = Object.values(formatOptions);
+    return allFormats.filter(option => option.format !== fileExt);
   };
 
   const targetFormats = getTargetFormats();

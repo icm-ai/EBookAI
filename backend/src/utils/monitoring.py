@@ -3,13 +3,12 @@ Performance monitoring and metrics collection for EBookAI.
 """
 import time
 import uuid
-from typing import Dict, Any, Optional
-from functools import wraps
 from contextlib import asynccontextmanager
+from functools import wraps
+from typing import Any, Dict, Optional
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
-
 from utils.logging_config import get_logger
 
 
@@ -83,7 +82,9 @@ class PerformanceMetrics:
             },
         )
 
-    def record_error(self, request_id: str, error_type: str, error_message: str) -> None:
+    def record_error(
+        self, request_id: str, error_type: str, error_message: str
+    ) -> None:
         """Record an error occurrence"""
         self.error_count += 1
 
@@ -137,9 +138,7 @@ class PerformanceMiddleware(BaseHTTPMiddleware):
         request.state.request_id = request_id
 
         # Record request start
-        metrics.record_request_start(
-            request_id, request.method, str(request.url.path)
-        )
+        metrics.record_request_start(request_id, request.method, str(request.url.path))
 
         try:
             # Process request
@@ -150,9 +149,7 @@ class PerformanceMiddleware(BaseHTTPMiddleware):
             if response_size:
                 response_size = int(response_size)
 
-            metrics.record_request_end(
-                request_id, response.status_code, response_size
-            )
+            metrics.record_request_end(request_id, response.status_code, response_size)
 
             # Add request ID to response headers for debugging
             response.headers["X-Request-ID"] = request_id
@@ -161,9 +158,7 @@ class PerformanceMiddleware(BaseHTTPMiddleware):
 
         except Exception as e:
             # Record error
-            metrics.record_error(
-                request_id, type(e).__name__, str(e)
-            )
+            metrics.record_error(request_id, type(e).__name__, str(e))
 
             # Re-raise the exception to be handled by global error handler
             raise
@@ -271,6 +266,7 @@ def track_operation(operation_name: str):
 
         # Return appropriate wrapper based on function type
         import inspect
+
         if inspect.iscoroutinefunction(func):
             return async_wrapper
         else:

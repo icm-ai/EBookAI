@@ -182,7 +182,7 @@ ai_config = AIConfig()
 
 # File settings
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
-ALLOWED_EXTENSIONS = {".epub", ".pdf", ".txt"}
+ALLOWED_EXTENSIONS = {".epub", ".pdf", ".txt", ".mobi", ".azw3"}
 
 # Conversion settings
 CONVERSION_TIMEOUT = 300  # 5 minutes

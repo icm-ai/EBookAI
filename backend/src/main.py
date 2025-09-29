@@ -1,12 +1,11 @@
 import os
 from contextlib import asynccontextmanager
 
+from api import ai, conversion, monitoring
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-
-from api import ai, conversion, monitoring
 from utils.error_handler import global_exception_handler, http_exception_handler
-from utils.logging_config import setup_logging, get_logger
+from utils.logging_config import get_logger, setup_logging
 from utils.monitoring import PerformanceMiddleware
 
 

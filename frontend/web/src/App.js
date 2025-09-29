@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import FileUpload from './components/FileUpload';
 import ConversionPanel from './components/ConversionPanel';
+import FeatureIntro from './components/FeatureIntro';
+import ConversionHistory from './components/ConversionHistory';
 import api from './services/api';
 
 function App() {
@@ -24,8 +26,44 @@ function App() {
     try {
       const response = await api.convertFile(selectedFile, targetFormat);
       setResult(response.data);
+
+      // Add to conversion history
+      if (window.addToConversionHistory) {
+        const historyRecord = {
+          originalName: selectedFile.name,
+          fromFormat: selectedFile.name.split('.').pop().toLowerCase(),
+          toFormat: targetFormat,
+          fileSize: selectedFile.size,
+          status: 'success',
+          outputFile: response.data.output_file,
+          timestamp: Date.now()
+        };
+        window.addToConversionHistory(historyRecord);
+      }
     } catch (err) {
-      setError(err.response?.data?.detail || 'Conversion failed');
+      // Enhanced error handling with Chinese messages
+      let errorMessage = 'Conversion failed';
+      if (err.response?.data?.user_message) {
+        errorMessage = err.response.data.user_message;
+      } else if (err.response?.data?.detail) {
+        errorMessage = err.response.data.detail;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      setError(errorMessage);
+
+      // Add failed conversion to history
+      if (window.addToConversionHistory) {
+        const historyRecord = {
+          originalName: selectedFile.name,
+          fromFormat: selectedFile.name.split('.').pop().toLowerCase(),
+          toFormat: targetFormat,
+          fileSize: selectedFile.size,
+          status: 'failed',
+          timestamp: Date.now()
+        };
+        window.addToConversionHistory(historyRecord);
+      }
     } finally {
       setConverting(false);
     }
@@ -46,6 +84,10 @@ function App() {
         <p>AI-enhanced e-book processing platform</p>
       </div>
 
+      {!selectedFile && !result && (
+        <FeatureIntro />
+      )}
+
       <FileUpload
         onFileSelect={handleFileSelect}
         selectedFile={selectedFile}
@@ -64,6 +106,8 @@ function App() {
           {error}
         </div>
       )}
+
+      <ConversionHistory />
     </div>
   );
 }

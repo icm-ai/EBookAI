@@ -12,7 +12,7 @@ function FileUpload({ onFileSelect, selectedFile }) {
       if (rejection.errors[0].code === 'file-too-large') {
         setUploadError('File too large. Maximum size is 50MB.');
       } else if (rejection.errors[0].code === 'file-invalid-type') {
-        setUploadError('Invalid file type. Only EPUB and PDF files are supported.');
+        setUploadError('Invalid file type. Only EPUB, PDF, TXT, MOBI, and AZW3 files are supported.');
       } else {
         setUploadError('File upload failed. Please try again.');
       }
@@ -41,7 +41,10 @@ function FileUpload({ onFileSelect, selectedFile }) {
     onDrop,
     accept: {
       'application/epub+zip': ['.epub'],
-      'application/pdf': ['.pdf']
+      'application/pdf': ['.pdf'],
+      'text/plain': ['.txt'],
+      'application/x-mobipocket-ebook': ['.mobi'],
+      'application/vnd.amazon.ebook': ['.azw3']
     },
     multiple: false,
     maxSize: 50 * 1024 * 1024 // 50MB
@@ -84,7 +87,7 @@ function FileUpload({ onFileSelect, selectedFile }) {
             ) : (
               <div>
                 <p>📁 Drag and drop an e-book file here, or click to select</p>
-                <p className="supported-formats">Supported formats: EPUB, PDF (max 50MB)</p>
+                <p className="supported-formats">Supported formats: EPUB, PDF, TXT, MOBI, AZW3 (max 50MB)</p>
               </div>
             )}
           </div>
