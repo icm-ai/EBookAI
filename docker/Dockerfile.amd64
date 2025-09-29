@@ -1,0 +1,43 @@
+# EBookAI开发环境 (AMD64/x86_64)
+FROM --platform=linux/amd64 node:22-bullseye
+
+# 安装系统依赖
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    python3-venv \
+    python3-dev \
+    git \
+    build-essential \
+    libffi-dev \
+    libssl-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# 创建Python软链接
+RUN ln -sf /usr/bin/python3 /usr/bin/python && \
+    ln -sf /usr/bin/pip3 /usr/bin/pip
+
+WORKDIR /workspace
+
+# 复制依赖文件
+COPY requirements.txt ./
+COPY frontend/web/package*.json ./frontend/web/
+
+# 创建Python虚拟环境并安装Python依赖
+RUN python -m venv venv && \
+    . venv/bin/activate && \
+    pip install --upgrade pip && \
+    pip install -r requirements.txt
+
+# 安装Node.js依赖
+RUN cd frontend/web && npm install
+
+# 创建必要目录
+RUN mkdir -p uploads outputs config
+
+# 暴露端口
+EXPOSE 8000 3000
+
+# 保持容器运行
+CMD ["tail", "-f", "/dev/null"]

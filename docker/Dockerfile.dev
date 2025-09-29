@@ -1,0 +1,42 @@
+# EBookAI开发环境
+FROM node:22-alpine
+
+# 安装Python和开发工具
+RUN apk add --no-cache \
+    python3 \
+    py3-pip \
+    py3-venv \
+    git \
+    bash \
+    build-base \
+    python3-dev \
+    libffi-dev \
+    openssl-dev
+
+# 创建Python软链接
+RUN ln -sf /usr/bin/python3 /usr/bin/python && \
+    ln -sf /usr/bin/pip3 /usr/bin/pip
+
+WORKDIR /workspace
+
+# 复制依赖文件
+COPY requirements.txt ./
+COPY frontend/web/package*.json ./frontend/web/
+
+# 创建Python虚拟环境并安装Python依赖
+RUN python -m venv venv && \
+    . venv/bin/activate && \
+    pip install --upgrade pip && \
+    pip install -r requirements.txt
+
+# 安装Node.js依赖
+RUN cd frontend/web && npm install
+
+# 创建必要目录
+RUN mkdir -p uploads outputs config
+
+# 暴露端口
+EXPOSE 8000 3000
+
+# 保持容器运行
+CMD ["tail", "-f", "/dev/null"]

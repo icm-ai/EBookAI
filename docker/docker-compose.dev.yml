@@ -1,0 +1,64 @@
+services:
+  ebook-ai-dev:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dev
+    container_name: ebook-ai-workspace
+    ports:
+      - "8000:8000"  # 后端API
+      - "3000:3000"  # 前端React
+    volumes:
+      - ..:/workspace
+      - /workspace/frontend/web/node_modules  # 避免node_modules冲突
+    working_dir: /workspace
+    environment:
+      - PYTHONPATH=/workspace/backend/src
+      - NODE_ENV=development
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - CLAUDE_API_KEY=${CLAUDE_API_KEY:-}
+      - MOONSHOT_API_KEY=${MOONSHOT_API_KEY:-}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - TOGETHER_API_KEY=${TOGETHER_API_KEY:-}
+      - DEFAULT_AI_PROVIDER=${DEFAULT_AI_PROVIDER:-deepseek}
+      - HTTP_PROXY=http://host.docker.internal:7878
+      - HTTPS_PROXY=http://host.docker.internal:7878
+      - http_proxy=http://host.docker.internal:7878
+      - https_proxy=http://host.docker.internal:7878
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    stdin_open: true
+    tty: true
+
+  ebook-ai-amd64:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.amd64
+    container_name: ebook-ai-workspace-amd64
+    platform: linux/amd64
+    ports:
+      - "8001:8000"  # 后端API (不同端口避免冲突)
+      - "3001:3000"  # 前端React (不同端口避免冲突)
+    volumes:
+      - ..:/workspace
+      - /workspace/frontend/web/node_modules  # 避免node_modules冲突
+    working_dir: /workspace
+    environment:
+      - PYTHONPATH=/workspace/backend/src
+      - NODE_ENV=development
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - CLAUDE_API_KEY=${CLAUDE_API_KEY:-}
+      - MOONSHOT_API_KEY=${MOONSHOT_API_KEY:-}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - TOGETHER_API_KEY=${TOGETHER_API_KEY:-}
+      - DEFAULT_AI_PROVIDER=${DEFAULT_AI_PROVIDER:-deepseek}
+      - HTTP_PROXY=http://host.docker.internal:7878
+      - HTTPS_PROXY=http://host.docker.internal:7878
+      - http_proxy=http://host.docker.internal:7878
+      - https_proxy=http://host.docker.internal:7878
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    stdin_open: true
+    tty: true
+    profiles: ["amd64"]

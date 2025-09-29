@@ -18,6 +18,7 @@ class FormatConverter:
         """
         raise NotImplementedError("Subclasses must implement convert method")
 
+
 class EPUBConverter(FormatConverter):
     """EPUB format converter"""
 
@@ -26,6 +27,7 @@ class EPUBConverter(FormatConverter):
         # Implementation will be added later
         return True
 
+
 class PDFConverter(FormatConverter):
     """PDF format converter"""
 
@@ -33,6 +35,7 @@ class PDFConverter(FormatConverter):
         """Convert PDF to another format"""
         # Implementation will be added later
         return True
+
 
 class MOBIConverter(FormatConverter):
     """MOBI format converter"""

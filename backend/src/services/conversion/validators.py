@@ -16,6 +16,7 @@ class FormatValidator:
         """
         raise NotImplementedError("Subclasses must implement validate method")
 
+
 class EPUBValidator(FormatValidator):
     """EPUB format validator"""
 
@@ -24,6 +25,7 @@ class EPUBValidator(FormatValidator):
         # Implementation will be added later
         return True
 
+
 class PDFValidator(FormatValidator):
     """PDF format validator"""
 
@@ -31,6 +33,7 @@ class PDFValidator(FormatValidator):
         """Validate PDF file"""
         # Implementation will be added later
         return True
+
 
 class MOBIValidator(FormatValidator):
     """MOBI format validator"""

@@ -1,0 +1,29 @@
+{
+  "providers": {
+    "moonshot": {
+      "api_key": "your_moonshot_api_key_here",
+      "base_url": "https://api.moonshot.cn/v1",
+      "model": "moonshot-v1-8k",
+      "api_type": "openai"
+    },
+    "groq": {
+      "api_key": "your_groq_api_key_here",
+      "base_url": "https://api.groq.com/openai/v1",
+      "model": "llama3-8b-8192",
+      "api_type": "openai"
+    },
+    "together": {
+      "api_key": "your_together_api_key_here",
+      "base_url": "https://api.together.xyz/v1",
+      "model": "meta-llama/Llama-3-8b-chat-hf",
+      "api_type": "openai"
+    },
+    "custom_claude": {
+      "api_key": "your_custom_claude_api_key_here",
+      "base_url": "https://your-claude-proxy.com",
+      "model": "claude-3-sonnet-20240229",
+      "api_type": "anthropic"
+    }
+  },
+  "default_provider": "moonshot"
+}

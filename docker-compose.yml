@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  ebook-ai:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      # Persist uploads and outputs
+      - ./uploads:/workspace/uploads
+      - ./outputs:/workspace/outputs
+      - ./config:/workspace/config
+    environment:
+      # AI Provider configurations (override as needed)
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-3.5-turbo}
+      - CLAUDE_API_KEY=${CLAUDE_API_KEY:-}
+      - MOONSHOT_API_KEY=${MOONSHOT_API_KEY:-}
+      - MOONSHOT_BASE_URL=${MOONSHOT_BASE_URL:-https://api.moonshot.cn/v1}
+      - MOONSHOT_MODEL=${MOONSHOT_MODEL:-moonshot-v1-8k}
+      # Application settings
+      - PYTHONPATH=/workspace/backend/src
+      - PYTHONUNBUFFERED=1
+      - MAX_FILE_SIZE=${MAX_FILE_SIZE:-52428800}  # 50MB default
+      - CONVERSION_TIMEOUT=${CONVERSION_TIMEOUT:-300}  # 5 minutes default
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # Optional: Add Redis for better task management (future enhancement)
+  # redis:
+  #   image: redis:7-alpine
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis_data:/data
+  #   restart: unless-stopped
+
+# volumes:
+#   redis_data:

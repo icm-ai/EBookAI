@@ -16,6 +16,7 @@ class DocumentParser:
         """
         raise NotImplementedError("Subclasses must implement parse method")
 
+
 class EPUBParser(DocumentParser):
     """EPUB document parser"""
 
@@ -24,6 +25,7 @@ class EPUBParser(DocumentParser):
         # Implementation will be added later
         return {}
 
+
 class PDFParser(DocumentParser):
     """PDF document parser"""
 
@@ -31,6 +33,7 @@ class PDFParser(DocumentParser):
         """Parse PDF file"""
         # Implementation will be added later
         return {}
+
 
 class MOBIParser(DocumentParser):
     """MOBI document parser"""

@@ -12,7 +12,7 @@ The project is currently in the early planning stages with a focus on building a
 
 Based on the simplified project outline, the intended architecture is:
 
-```
+```plaintext
 Frontend (Web)
     ↓
 API Gateway (FastAPI)
@@ -41,7 +41,7 @@ Infrastructure Layer
 
 ## Planned Directory Structure
 
-```
+```plaintext
 ebook-ai-platform/
 ├── README.md
 ├── LICENSE
@@ -108,6 +108,7 @@ At this early stage, the repository contains primarily documentation outlining t
 Once the project structure is implemented, the following commands will be commonly used:
 
 ### Backend Development
+
 - `uvicorn src.main:app --reload` - Run the FastAPI development server
 - `pytest` - Run all tests
 - `pytest tests/test_module.py::test_function` - Run a specific test
@@ -115,17 +116,20 @@ Once the project structure is implemented, the following commands will be common
 - `pylint src/` - Run pylint for code analysis
 
 ### Frontend Development
+
 - `npm start` - Run the React development server
 - `npm test` - Run frontend tests
 - `npm run build` - Build the production frontend
 
 ### Docker
+
 - `docker-compose up -d` - Start all services in detached mode
 - `docker-compose down` - Stop all services
 
 ## Next Steps
 
 The project is in early planning stages. Implementation should begin with:
+
 1. Setting up the basic project structure
 2. Implementing the backend API structure
 3. Creating the core format conversion services
