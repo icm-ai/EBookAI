@@ -1,0 +1,5 @@
+MOBI file: test_mobi_content.mobi
+
+This is a converted MOBI file. Basic text extraction applied.
+
+Original file size: 52 bytes
