@@ -25,6 +25,7 @@ from utils.logging_config import (
     log_operation_error,
     log_operation_start,
 )
+from utils.progress_tracker import progress_tracker
 
 from config import ALLOWED_EXTENSIONS, CONVERSION_TIMEOUT, OUTPUT_DIR, UPLOAD_DIR
 
@@ -62,6 +63,15 @@ class ConversionService:
             source_format = file_path.suffix.lower()
             target_format = target_format.lower()
 
+            # Initialize progress tracking
+            progress_tracker.start_task(
+                task_id=task_id,
+                file_name=file_path.name,
+                source_format=source_format,
+                target_format=target_format,
+                total_steps=5,
+            )
+
             # Validation
             if source_format not in ALLOWED_EXTENSIONS:
                 raise ValidationError(
@@ -86,9 +96,21 @@ class ConversionService:
                     },
                 )
 
+            # Update progress: Validation completed
+            progress_tracker.update_progress(
+                task_id, 1, "Validation completed, preparing conversion..."
+            )
+
             # Generate output filename
             output_filename = f"{file_path.stem}_{task_id}.{target_format}"
             output_path = self.output_dir / output_filename
+
+            # Update progress: File preparation
+            progress_tracker.update_progress(
+                task_id,
+                2,
+                f"Preparing {source_format} to {target_format} conversion...",
+            )
 
             log_operation_start(
                 self.logger,
@@ -98,6 +120,11 @@ class ConversionService:
                 target_format=target_format,
                 input_file=str(file_path),
                 output_file=output_filename,
+            )
+
+            # Update progress: Starting conversion
+            progress_tracker.update_progress(
+                task_id, 3, f"Converting from {source_format} to {target_format}...", 60
             )
 
             # Run conversion with timeout
@@ -161,6 +188,11 @@ class ConversionService:
                         target_format=target_format,
                     )
 
+                # Update progress: Finalizing
+                progress_tracker.update_progress(
+                    task_id, 4, "Finalizing conversion...", 90
+                )
+
                 duration = time.time() - start_time
                 log_operation_end(
                     self.logger,
@@ -170,6 +202,9 @@ class ConversionService:
                     output_file=output_filename,
                 )
 
+                # Complete progress tracking
+                progress_tracker.complete_task(task_id, output_filename)
+
                 return {
                     "task_id": task_id,
                     "status": "completed",
@@ -178,12 +213,16 @@ class ConversionService:
                 }
 
             except asyncio.TimeoutError:
+                progress_tracker.fail_task(
+                    task_id, "Conversion timeout - operation took too long"
+                )
                 raise ConversionTimeoutError(
                     timeout_seconds=CONVERSION_TIMEOUT,
                     source_format=source_format,
                     target_format=target_format,
                 )
             except Exception as e:
+                progress_tracker.fail_task(task_id, f"Conversion failed: {str(e)}")
                 if isinstance(e, (ConversionError, ConversionTimeoutError)):
                     raise
                 raise ConversionError(
@@ -194,6 +233,10 @@ class ConversionService:
                 )
 
         except Exception as e:
+            # Update progress on any error
+            if task_id:
+                progress_tracker.fail_task(task_id, str(e))
+
             log_operation_error(
                 self.logger,
                 operation,

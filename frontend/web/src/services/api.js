@@ -66,6 +66,26 @@ const apiService = {
       max_length: maxLength,
     });
   },
+
+  // Batch operations
+  async batchConvertFiles(files, targetFormat) {
+    const formData = new FormData();
+    formData.append('target_format', targetFormat);
+
+    files.forEach(file => {
+      formData.append('files', file);
+    });
+
+    return await api.post('/batch/convert', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+
+  async getBatchStatus(batchId) {
+    return await api.get(`/batch/status/${batchId}`);
+  },
 };
 
 export default apiService;

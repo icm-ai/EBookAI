@@ -194,3 +194,16 @@ class SecurityError(EBookAIException):
         super().__init__(
             message=message, error_code="SECURITY_ERROR", details=error_details
         )
+
+
+class BatchConversionError(EBookAIException):
+    """Batch conversion related errors"""
+
+    def __init__(
+        self,
+        message: str = "Batch conversion failed",
+        batch_id: Optional[str] = None,
+        **kwargs,
+    ):
+        super().__init__(message, "BATCH_CONVERSION_ERROR", **kwargs)
+        self.batch_id = batch_id

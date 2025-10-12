@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 
-function ConversionPanel({ selectedFile, converting, onConvert, result, onDownload }) {
+function ConversionPanel({ selectedFile, converting, onConvert, result, onDownload, progressData }) {
   const [progress, setProgress] = useState(0);
 
-  // Simulate progress during conversion
+  // Use real progress data instead of simulation
   useEffect(() => {
-    if (converting) {
+    if (progressData) {
+      setProgress(progressData.progress_percent);
+    } else if (converting && !progressData) {
+      // Fallback simulation if WebSocket isn't connected
       setProgress(0);
       const interval = setInterval(() => {
         setProgress(prev => {
@@ -15,12 +18,10 @@ function ConversionPanel({ selectedFile, converting, onConvert, result, onDownlo
       }, 500);
 
       return () => clearInterval(interval);
-    } else {
-      if (result) {
-        setProgress(100);
-      }
+    } else if (result) {
+      setProgress(100);
     }
-  }, [converting, result]);
+  }, [progressData, converting, result]);
 
   const getTargetFormats = () => {
     if (!selectedFile) return [];
@@ -97,7 +98,27 @@ function ConversionPanel({ selectedFile, converting, onConvert, result, onDownlo
               style={{ width: `${progress}%` }}
             ></div>
           </div>
-          <p className="progress-text">{Math.round(progress)}% complete</p>
+          <div className="progress-details">
+            <p className="progress-text">{Math.round(progress)}% complete</p>
+            {progressData && (
+              <div className="progress-info">
+                <p className="current-step">{progressData.current_step}</p>
+                {progressData.elapsed_time && (
+                  <p className="elapsed-time">
+                    Elapsed: {Math.round(progressData.elapsed_time)}s
+                  </p>
+                )}
+                {progressData.estimated_remaining > 0 && (
+                  <p className="remaining-time">
+                    Estimated remaining: {Math.round(progressData.estimated_remaining)}s
+                  </p>
+                )}
+                <p className="step-progress">
+                  Step {progressData.current_step_index} of {progressData.total_steps}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

@@ -1,0 +1,113 @@
+{
+  "name": "ebookai-desktop",
+  "version": "1.0.0",
+  "description": "EBookAI - AI-enhanced e-book processing platform for macOS",
+  "main": "src/main.js",
+  "homepage": "./",
+  "scripts": {
+    "start": "electron src/main.js",
+    "dev": "concurrently \"npm run start-backend\" \"npm run start-frontend\" \"wait-on http://localhost:3000 http://localhost:8000 && electron src/main.js\"",
+    "start-backend": "cd ../backend && python -m venv venv && source venv/bin/activate && pip install -r requirements.txt && python src/main.py",
+    "start-frontend": "cd ../frontend/web && npm start",
+    "build": "npm run build-frontend && npm run build-backend && electron-builder",
+    "build-frontend": "cd ../frontend/web && npm run build",
+    "build-backend": "cd ../backend && python -m PyInstaller --onefile --distpath ../desktop-app/build/backend src/main.py",
+    "package": "electron-builder --mac --arm64",
+    "package-universal": "electron-builder --mac --universal",
+    "dist": "npm run build && npm run package",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "build": {
+    "appId": "com.ebookai.desktop",
+    "productName": "EBookAI",
+    "directories": {
+      "output": "dist",
+      "buildResources": "assets"
+    },
+    "files": [
+      "src/**/*",
+      "build/**/*",
+      "assets/**/*",
+      "!**/*.ts",
+      "!**.map"
+    ],
+    "extraResources": [
+      {
+        "from": "build/backend",
+        "to": "backend",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "../frontend/web/build",
+        "to": "frontend",
+        "filter": ["**/*"]
+      }
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["arm64", "x64"]
+        },
+        {
+          "target": "zip",
+          "arch": ["arm64", "x64"]
+        }
+      ],
+      "category": "public.app-category.productivity",
+      "icon": "assets/icon.icns",
+      "entitlements": "assets/entitlements.mac.plist",
+      "entitlementsInherit": "assets/entitlements.mac.plist",
+      "gatekeeperAssess": false,
+      "hardenedRuntime": true,
+      "darkModeSupport": true
+    },
+    "dmg": {
+      "title": "EBookAI Installer",
+      "icon": "assets/icon.icns",
+      "iconSize": 100,
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "background": "assets/dmg-background.png",
+      "window": {
+        "width": 540,
+        "height": 380
+      }
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "devDependencies": {
+    "electron": "^27.0.0",
+    "electron-builder": "^24.6.4",
+    "concurrently": "^8.2.2",
+    "wait-on": "^7.0.1"
+  },
+  "dependencies": {
+    "electron-updater": "^6.1.4",
+    "electron-log": "^4.4.8",
+    "node-fetch": "^3.3.2",
+    "child_process": "^1.0.2"
+  },
+  "author": {
+    "name": "EBookAI Team",
+    "email": "info@ebookai.com"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/EBookAI"
+  }
+}

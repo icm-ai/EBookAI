@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- 允许应用使用网络 -->
+    <key>com.apple.security.network.client</key>
+    <true/>
+
+    <!-- 允许应用创建网络服务器 -->
+    <key>com.apple.security.network.server</key>
+    <true/>
+
+    <!-- 允许访问文件系统 -->
+    <key>com.apple.security.files.user-selected.read-write</key>
+    <true/>
+
+    <!-- 允许访问下载文件夹 -->
+    <key>com.apple.security.files.downloads.read-write</key>
+    <true/>
+
+    <!-- 允许JIT编译（用于某些Python包）-->
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
+
+    <!-- 允许加载未签名的动态库 -->
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
+
+    <!-- 允许执行子进程 -->
+    <key>com.apple.security.cs.allow-dyld-environment-variables</key>
+    <true/>
+
+    <!-- 禁用库验证（为了兼容性）-->
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
+
+    <!-- 运行时异常处理 -->
+    <key>com.apple.security.cs.disable-executable-page-protection</key>
+    <true/>
+
+    <!-- 音频和视频权限（如果需要）-->
+    <key>com.apple.security.device.audio-input</key>
+    <false/>
+
+    <key>com.apple.security.device.camera</key>
+    <false/>
+
+    <!-- 打印权限 -->
+    <key>com.apple.security.print</key>
+    <true/>
+
+    <!-- 应用沙盒 -->
+    <key>com.apple.security.app-sandbox</key>
+    <true/>
+
+    <!-- 继承权限 -->
+    <key>com.apple.security.inherit</key>
+    <true/>
+</dict>
+</plist>
