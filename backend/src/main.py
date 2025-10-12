@@ -1,7 +1,7 @@
 import os
 from contextlib import asynccontextmanager
 
-from api import ai, batch, conversion, health, monitoring, progress, websocket
+from api import ai, batch, cleanup, conversion, health, monitoring, progress, websocket
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from utils.error_handler import global_exception_handler, http_exception_handler
@@ -19,8 +19,17 @@ async def lifespan(app: FastAPI):
     logger = get_logger("main")
     logger.info("EBookAI API starting up", extra={"version": "1.0.0"})
 
+    # Start file cleanup manager
+    from utils.file_cleanup import get_cleanup_manager
+
+    cleanup_manager = get_cleanup_manager()
+    cleanup_manager.start()
+    logger.info("File cleanup manager started")
+
     yield
 
+    # Stop file cleanup manager
+    await cleanup_manager.stop()
     logger.info("EBookAI API shutting down")
 
 
@@ -51,6 +60,7 @@ app.add_exception_handler(HTTPException, http_exception_handler)
 app.include_router(conversion.router, prefix="/api")
 app.include_router(batch.router, prefix="/api")
 app.include_router(ai.router, prefix="/api")
+app.include_router(cleanup.router, prefix="/api")
 app.include_router(health.router, prefix="/api")
 app.include_router(monitoring.router, prefix="/api")
 app.include_router(progress.router, prefix="/api")
