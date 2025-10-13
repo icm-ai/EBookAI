@@ -1,0 +1,162 @@
+/* Error boundary styles */
+
+.error-boundary {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.error-content {
+  max-width: 600px;
+  background: white;
+  border-radius: 16px;
+  padding: 40px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  text-align: center;
+}
+
+.error-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+}
+
+.error-content h1 {
+  font-size: 28px;
+  margin-bottom: 16px;
+  color: #333;
+}
+
+.error-message {
+  font-size: 16px;
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 30px;
+}
+
+.error-details {
+  margin: 20px 0;
+  text-align: left;
+  background: #f5f5f5;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.error-details summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #333;
+  padding: 8px;
+}
+
+.error-details summary:hover {
+  color: #667eea;
+}
+
+.error-stack {
+  margin-top: 12px;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  overflow-x: auto;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #d63031;
+}
+
+.error-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 30px;
+}
+
+.error-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.error-btn.primary {
+  background: #667eea;
+  color: white;
+}
+
+.error-btn.primary:hover {
+  background: #5568d3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.error-btn.secondary {
+  background: #f5f5f5;
+  color: #333;
+}
+
+.error-btn.secondary:hover {
+  background: #e0e0e0;
+}
+
+.error-help {
+  text-align: left;
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.error-help p {
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #333;
+}
+
+.error-help ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.error-help li {
+  padding: 6px 0;
+  color: #666;
+}
+
+.error-help li:before {
+  content: "•";
+  color: #667eea;
+  font-weight: bold;
+  display: inline-block;
+  width: 1em;
+  margin-left: -1em;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .error-content {
+    padding: 30px 20px;
+  }
+
+  .error-content h1 {
+    font-size: 24px;
+  }
+
+  .error-message {
+    font-size: 14px;
+  }
+
+  .error-actions {
+    flex-direction: column;
+  }
+
+  .error-btn {
+    width: 100%;
+  }
+}
