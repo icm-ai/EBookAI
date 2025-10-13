@@ -208,3 +208,12 @@ __marimo__/
 
 # macos
 .DS_Store
+
+# Project-specific
+# Temporary data directories
+uploads/
+outputs/
+logs/
+
+# Archive directory (can be committed if needed)
+# archive/

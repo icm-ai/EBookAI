@@ -144,7 +144,7 @@ npm start
 |-------|------|----------|
 | 🧠 **Claude** | 长文本处理强 | `CLAUDE_API_KEY` |
 
-系统支持自动发现任何符合 `{PROVIDER}_API_KEY` 格式的环境变量。详细配置方法请参考 [AI API配置指南](docs/ai-configuration.md)。
+系统支持自动发现任何符合 `{PROVIDER}_API_KEY` 格式的环境变量。详细配置方法请参考 [AI API配置指南](docs/guides/ai-configuration.md)。
 
 **注意**：AI 功能是可选的，不配置 API 密钥也可以使用格式转换功能。
 
@@ -250,7 +250,7 @@ docker-compose build --no-cache
 
 - 查看 [详细文档](docs/)
 - 提交 [Issue](https://github.com/YOUR_USERNAME/EBookAI/issues)
-- 查看 [常见问题](docs/faq.md)
+- 查看 [常见问题](docs/guides/faq.md)
 
 ## 贡献指南
 
