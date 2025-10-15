@@ -7,10 +7,6 @@
 [![React 18](https://img.shields.io/badge/react-18-blue.svg)](https://reactjs.org/)
 [![GitHub stars](https://img.shields.io/github/stars/icm-ai/EBookAI?style=social)](https://github.com/icm-ai/EBookAI/stargazers)
 
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=icm-ai/EBookAI&type=Date)](https://star-history.com/#icm-ai/EBookAI&Date)
-
 ## 特性
 
 ### 核心功能
@@ -314,3 +310,7 @@ docker-compose build --no-cache
 ---
 
 如果这个项目对您有帮助，欢迎 Star ⭐
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=icm-ai/EBookAI&type=Date)](https://star-history.com/#icm-ai/EBookAI&Date)
