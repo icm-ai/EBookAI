@@ -57,6 +57,7 @@ docker-compose logs -f
 ```
 
 服务启动后访问：
+
 - **Web 界面**: http://localhost:8000
 - **API 文档**: http://localhost:8000/docs
 - **健康检查**: http://localhost:8000/health
@@ -118,6 +119,7 @@ npm start
 ```
 
 访问地址：
+
 - **前端**: http://localhost:3000
 - **后端**: http://localhost:8000
 - **API 文档**: http://localhost:8000/docs
@@ -187,6 +189,7 @@ npm start
 | TXT | EPUB, PDF | 纯文本 |
 
 **转换质量说明**：
+
 - EPUB → PDF：高质量，保留排版
 - PDF → EPUB：质量取决于源 PDF 类型（扫描版效果较差）
 - MOBI/AZW3 → 其他格式：高质量
@@ -219,6 +222,7 @@ EBookAI/
 ### 常见问题
 
 **1. Docker 启动失败**
+
 ```bash
 # 检查 Docker 服务状态
 docker ps
@@ -231,18 +235,21 @@ docker-compose build --no-cache
 ```
 
 **2. 转换失败**
+
 - 检查文件格式是否受支持
 - 查看后端日志：`docker-compose logs -f`
 - 确认 Calibre 是否正常安装
 - 检查磁盘空间是否充足
 
 **3. AI 功能不可用**
+
 - 确认已配置 API 密钥
 - 检查 API 密钥是否有效
 - 查看网络连接（部分地区可能需要代理）
 - 检查 API 配额是否用完
 
 **4. 前端无法访问**
+
 - 确认端口 8000 未被占用
 - 检查防火墙设置
 - 使用 `curl http://localhost:8000/health` 测试后端
@@ -283,17 +290,20 @@ docker-compose build --no-cache
 ## 技术栈
 
 ### 后端
+
 - Python 3.11+
 - FastAPI - 现代 Web 框架
 - Calibre - 电子书转换引擎
 - OpenAI/Anthropic API - AI 集成
 
 ### 前端
+
 - React 18
 - WebSocket - 实时通信
 - Axios - HTTP 客户端
 
 ### 基础设施
+
 - Docker & Docker Compose
 - Debian 12 Slim - 基础镜像
 
@@ -313,4 +323,10 @@ docker-compose build --no-cache
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=icm-ai/EBookAI&type=Date)](https://star-history.com/#icm-ai/EBookAI&Date)
+<a href="https://star-history.com/#icm-ai/EBookAI&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=icm-ai/EBookAI&type=Date&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=icm-ai/EBookAI&type=Date" />
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=icm-ai/EBookAI&type=Date" />
+  </picture>
+</a>
