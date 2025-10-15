@@ -5,6 +5,11 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![React 18](https://img.shields.io/badge/react-18-blue.svg)](https://reactjs.org/)
+[![GitHub stars](https://img.shields.io/github/stars/icm-ai/EBookAI?style=social)](https://github.com/icm-ai/EBookAI/stargazers)
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=icm-ai/EBookAI&type=Date)](https://star-history.com/#icm-ai/EBookAI&Date)
 
 ## 特性
 
