@@ -45,7 +45,7 @@ SwiftUI 应用实验
 
 桌面应用功能已列入长期计划（v1.0.0+），具体技术方案待定。
 
-查看完整路线图：[../PROJECT_STATUS.md](../PROJECT_STATUS.md)
+查看完整路线图：[../project-docs/PROJECT_STATUS.md](../project-docs/PROJECT_STATUS.md)
 
 ---
 

@@ -25,7 +25,7 @@
 
 项目已超越 MVP 阶段，进入稳定开发期。
 
-当前进展和未来计划请查看：[PROJECT_STATUS.md](../../PROJECT_STATUS.md)
+当前进展和未来计划请查看：[PROJECT_STATUS.md](../../project-docs/PROJECT_STATUS.md)
 
 ## 历史价值
 
@@ -39,4 +39,4 @@
 ---
 
 **归档日期**: 2024-10-13
-**原因**: 规划文档已基本完成使命，实际开发以 PROJECT_STATUS.md 为准
+**原因**: 规划文档已基本完成使命，实际开发以 [PROJECT_STATUS.md](../../project-docs/PROJECT_STATUS.md) 为准
