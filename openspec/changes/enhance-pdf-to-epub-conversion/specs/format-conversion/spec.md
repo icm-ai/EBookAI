@@ -120,6 +120,34 @@ The system SHALL provide detailed progress information during conversion with es
 - **WHEN** conversion encounters quality issues (low OCR confidence, unclear structure)
 - **THEN** the system includes warning messages in progress updates, specifies affected pages or sections, provides confidence scores for detected structure, suggests review areas, and includes warnings in final EPUB metadata for user awareness
 
+### Requirement: Calibre Fallback Mechanism
+
+The system SHALL provide Calibre ebook-convert as a fallback conversion engine when the custom pipeline fails or produces low-quality output, ensuring robust conversion capability.
+
+#### Scenario: Fallback triggered by unrecoverable error
+- **WHEN** the custom PDF-to-EPUB pipeline encounters an unrecoverable error during any stage (parsing, extraction, structure recognition, generation)
+- **THEN** the system automatically switches to Calibre ebook-convert, attempts conversion using Calibre, logs the error and fallback reason, includes fallback metadata in the result, and returns Calibre-generated EPUB if successful
+
+#### Scenario: Fallback triggered by low quality score
+- **WHEN** the custom pipeline completes but produces output with quality score below threshold (default 60%)
+- **THEN** the system triggers Calibre fallback, performs conversion using Calibre ebook-convert, compares quality indicators between custom and Calibre output, returns the higher-quality result, and logs quality metrics for both methods
+
+#### Scenario: User explicitly requests Calibre mode
+- **WHEN** user specifies conversion mode parameter as "calibre" or "fallback"
+- **THEN** the system bypasses custom pipeline entirely, uses Calibre ebook-convert directly, applies standard Calibre conversion options, completes conversion in Calibre's typical timeframe, and returns result with metadata indicating Calibre was used
+
+#### Scenario: Complex PDF exceeding custom pipeline capabilities
+- **WHEN** PDF analysis detects features beyond custom pipeline support (complex DRM, encrypted content, unsupported compression)
+- **THEN** the system automatically triggers Calibre fallback before attempting custom conversion, logs complexity indicators, uses Calibre for conversion, and notifies user that fallback was used due to PDF complexity
+
+#### Scenario: Calibre not available in system
+- **WHEN** fallback is triggered but Calibre is not installed or ebook-convert command not found
+- **THEN** the system logs warning about missing Calibre, continues with custom pipeline result if available (even if low quality), includes warning in conversion metadata, and suggests Calibre installation in error message if custom pipeline also failed
+
+#### Scenario: Fallback comparison for quality improvement
+- **WHEN** high-quality conversion mode is selected and custom pipeline succeeds
+- **THEN** the system optionally runs Calibre conversion in parallel for comparison, analyzes quality metrics of both outputs (structure, metadata completeness, file size), returns the higher-quality result, and logs comparison data for pipeline optimization
+
 ## REMOVED Requirements
 
 None - This change is purely additive and enhancing existing functionality.

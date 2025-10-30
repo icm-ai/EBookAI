@@ -24,6 +24,7 @@ Target: Achieve human-level conversion quality with zero perceivable difference 
 - Layout analysis for multi-column text, tables, and complex structures
 - AI-powered content optimization (chapter naming, metadata generation, quality enhancement)
 - Professional EPUB generation with proper styling and navigation
+- Calibre fallback mechanism for difficult PDFs or error recovery
 
 **Technical Improvements:**
 - Replace PyPDF2 with PyMuPDF for superior PDF parsing
@@ -31,6 +32,7 @@ Target: Achieve human-level conversion quality with zero perceivable difference 
 - Integrate Tesseract OCR for scanned documents
 - Leverage existing AI services for content analysis and enhancement
 - Implement multi-stage conversion pipeline with quality checks
+- Integrate Calibre ebook-convert as fallback conversion engine for edge cases
 
 ## Impact
 
@@ -46,7 +48,7 @@ Target: Achieve human-level conversion quality with zero perceivable difference 
 - `docker/Dockerfile` - Add Tesseract OCR installation
 
 **Affected infrastructure:**
-- Docker image size increase (~200MB for Tesseract and language data)
+- Docker image size increase (~500MB for Tesseract, Calibre, and language data)
 - Conversion time increase (3-5x longer for high-quality processing)
 - Memory usage increase for large PDFs with many images
 
@@ -59,4 +61,5 @@ Target: Achieve human-level conversion quality with zero perceivable difference 
 - pytesseract >= 0.3.10
 - Tesseract OCR >= 5.0
 - Pillow >= 10.0.0
+- Calibre >= 6.0 (ebook-convert command-line tool)
 - Chinese language support for OCR (chi_sim, chi_tra)

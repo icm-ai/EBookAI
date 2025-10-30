@@ -323,7 +323,7 @@
 
 ## 11. Testing and Quality Assurance
 
-- [ ] 11.1 Create test fixture PDFs
+- [ ] 10.1 Create test fixture PDFs
   - Text-based PDF with bookmarks (English)
   - Text-based PDF with bookmarks (Chinese)
   - Scanned PDF (clean, high quality)
@@ -332,113 +332,91 @@
   - Complex layout PDF (multi-column, tables)
   - Large PDF (>500 pages)
   - PDF with many images
-  - Problematic PDF that triggers Calibre fallback
-- [ ] 11.2 Write end-to-end tests
+- [ ] 10.2 Write end-to-end tests
   - Test each fixture through complete pipeline
   - Validate EPUB structure and content
   - Check metadata accuracy
   - Verify image extraction
   - Validate chapter detection
-  - Test Calibre fallback with problematic PDFs
-  - Compare quality between custom and Calibre output
-- [ ] 11.3 Performance testing
+- [ ] 10.3 Performance testing
   - Measure conversion time for each quality preset
   - Monitor memory usage during conversion
   - Test with large files (100MB+)
   - Verify timeout handling
-  - Measure Calibre fallback overhead
-- [ ] 11.4 Quality validation
+- [ ] 10.4 Quality validation
   - Compare output with professional EPUBs
   - Validate readability on multiple EPUB readers
   - Check Chinese character rendering
   - Test image display and positioning
-  - Validate Calibre-generated EPUBs meet quality standards
-- [ ] 11.5 Add regression tests
+- [ ] 10.5 Add regression tests
   - Ensure old PDF-to-EPUB still works with flag off
   - Test backward compatibility
   - Verify no breaking changes to API
-  - Test Calibre fallback disabled mode
 
-## 12. Documentation and Configuration
+## 11. Documentation and Configuration
 
-- [ ] 12.1 Update API documentation
+- [ ] 11.1 Update API documentation
   - Document new quality preset parameter
   - Describe conversion stages
   - List supported features and limitations
   - Add examples for different PDF types
-  - Explain Calibre fallback mechanism
-  - Document when fallback is triggered
-- [ ] 12.2 Add environment variables documentation
+- [ ] 11.2 Add environment variables documentation
   - ENHANCED_PDF_CONVERSION flag
   - CONVERSION_QUALITY_LEVEL
   - OCR_CONFIDENCE_THRESHOLD
   - IMAGE_MAX_WIDTH_FAST/STANDARD/HIGH
   - TESSERACT_DATA_PATH
-  - ENABLE_CALIBRE_FALLBACK flag
-  - CALIBRE_QUALITY_THRESHOLD
-  - CALIBRE_TIMEOUT
-- [ ] 12.3 Create troubleshooting guide
+- [ ] 11.3 Create troubleshooting guide
   - OCR language model installation
   - Memory issues with large PDFs
   - Low OCR confidence handling
   - Chapter detection tuning
-  - Calibre installation verification
-  - Fallback trigger troubleshooting
-- [ ] 12.4 Update README
+- [ ] 11.4 Update README
   - List new features
   - Show example usage
   - Describe quality presets
   - Add performance benchmarks
-  - Explain fallback mechanism benefits
 
-## 13. Deployment and Rollout
+## 12. Deployment and Rollout
 
-- [ ] 13.1 Build and test Docker image
+- [ ] 12.1 Build and test Docker image
   - Verify Tesseract installation
-  - Verify Calibre installation
   - Test Chinese language models
   - Check image size (<2GB)
   - Validate all dependencies
-  - Test ebook-convert CLI availability
-- [ ] 13.2 Deploy with feature flag disabled
+- [ ] 12.2 Deploy with feature flag disabled
   - Deploy to staging environment
   - Verify backward compatibility
   - Test with production-like data
-- [ ] 13.3 Enable feature flag for testing
+- [ ] 12.3 Enable feature flag for testing
   - Enable for internal testing
   - Monitor performance metrics
   - Collect quality feedback
   - Compare with old implementation
-  - Monitor Calibre fallback usage rate
-- [ ] 13.4 Gradual rollout to users
+- [ ] 12.4 Gradual rollout to users
   - Enable for 10% of conversions
   - Monitor error rates and completion times
   - Gather user feedback
   - Increase to 50%, then 100%
-  - Track fallback trigger rate
-- [ ] 13.5 Monitor and optimize
+- [ ] 12.5 Monitor and optimize
   - Track conversion success rate
   - Monitor average conversion time
   - Analyze quality scores
-  - Analyze Calibre fallback effectiveness
   - Optimize based on real usage patterns
 
-## 14. Post-Implementation
+## 13. Post-Implementation
 
-- [ ] 14.1 Archive old implementation
+- [ ] 13.1 Archive old implementation
   - Move old _pdf_to_epub to deprecated module
   - Keep for reference and emergency rollback
   - Schedule removal for future version
-- [ ] 14.2 Update CHANGELOG
+- [ ] 13.2 Update CHANGELOG
   - Document major enhancement
   - List key features
   - Note breaking changes (none expected)
   - Include migration guide if needed
-  - Highlight Calibre fallback mechanism
-- [ ] 14.3 Create user guide
+- [ ] 13.3 Create user guide
   - How to choose quality preset
   - Tips for best results
   - Handling low-quality scans
   - When to use OCR enhancement
-  - Understanding fallback mechanism
-  - Interpreting conversion quality reports

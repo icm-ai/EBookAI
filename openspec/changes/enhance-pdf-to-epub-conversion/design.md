@@ -131,26 +131,61 @@ Current PDF-to-EPUB conversion uses PyPDF2 with basic text extraction, producing
 - AI fallback ensures reasonable output even without structure
 - Configurable sensitivity for user control
 
+### 7. Calibre Fallback Mechanism
+
+**Decision:** Integrate Calibre ebook-convert as fallback conversion engine when custom pipeline fails or produces low-quality output.
+
+**Fallback Triggers:**
+1. Custom pipeline throws unrecoverable error
+2. Conversion quality score below threshold (< 60%)
+3. User explicitly requests Calibre mode
+4. PDF has complex features not handled by custom pipeline
+
+**Implementation approach:**
+- Detect need for fallback during pipeline execution
+- Call Calibre ebook-convert via subprocess
+- Parse Calibre output and warnings
+- Return Calibre-generated EPUB with metadata about fallback usage
+- Log comparison metrics when both methods are available
+
+**Rationale:**
+- Calibre is mature and handles many edge cases well
+- Provides robustness for difficult PDFs
+- Increases overall success rate of conversions
+- Allows quality comparison between custom and Calibre approaches
+- Maintains flexibility without full dependency on Calibre
+
+**Trade-offs:**
+- Increases Docker image size (~300MB for Calibre)
+- Fallback conversion loses AI enhancement benefits
+- Less control over Calibre conversion process
+- Acceptable: Primary path remains custom pipeline with full control
+
+**Alternatives considered:**
+- Calibre as primary engine: Rejected due to lack of customization and AI integration
+- No fallback: Rejected due to need for robustness and edge case handling
+- Multiple fallback engines: Rejected as overly complex for MVP
+
 ## Architecture
 
 ### Component Diagram
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                  ConversionService                      │
-│                  (Orchestrator)                         │
-└────────────┬────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                  ConversionService                          │
+│                  (Orchestrator)                             │
+└────────────┬────────────────────────────────────────────────┘
              │
-    ┌────────┼────────┬──────────┬────────────┐
-    │        │        │          │            │
-    ▼        ▼        ▼          ▼            ▼
-┌────────┐ ┌─────────┐ ┌──────────┐ ┌─────────┐ ┌──────────┐
-│  PDF   │ │ Layout  │ │   OCR    │ │   AI    │ │  EPUB    │
-│ Parser │ │Analyzer │ │ Service  │ │ Service │ │Generator │
-└────────┘ └─────────┘ └──────────┘ └─────────┘ └──────────┘
-    │            │           │            │           │
-    │            │           │            │           │
-    └────────────┴───────────┴────────────┴───────────┘
+    ┌────────┼────────┬──────────┬────────────┬─────────────┐
+    │        │        │          │            │             │
+    ▼        ▼        ▼          ▼            ▼             ▼
+┌────────┐ ┌─────────┐ ┌──────────┐ ┌─────────┐ ┌──────────┐ ┌──────────┐
+│  PDF   │ │ Layout  │ │   OCR    │ │   AI    │ │  EPUB    │ │ Calibre  │
+│ Parser │ │Analyzer │ │ Service  │ │ Service │ │Generator │ │ Fallback │
+└────────┘ └─────────┘ └──────────┘ └─────────┘ └──────────┘ └──────────┘
+    │            │           │            │           │             │
+    │            │           │            │           │             │
+    └────────────┴───────────┴────────────┴───────────┴─────────────┘
                          │
                     ┌────▼─────┐
                     │ Progress │
@@ -168,6 +203,7 @@ backend/src/services/conversion/
 ├── chapter_detector.py    # Intelligent chapter detection
 ├── image_processor.py     # Image extraction and optimization
 ├── epub_generator.py      # Professional EPUB creation
+├── calibre_fallback.py    # Calibre ebook-convert wrapper
 └── conversion_pipeline.py # Pipeline orchestration
 ```
 
