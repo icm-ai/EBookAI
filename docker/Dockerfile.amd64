@@ -12,6 +12,14 @@ RUN apt-get update && apt-get install -y \
     libffi-dev \
     libssl-dev \
     curl \
+    tesseract-ocr \
+    tesseract-ocr-chi-sim \
+    tesseract-ocr-chi-tra \
+    tesseract-ocr-eng \
+    tesseract-ocr-chi-tra-vert \
+    poppler-utils \
+    libreoffice \
+    calibre \
     && rm -rf /var/lib/apt/lists/*
 
 # 创建Python软链接

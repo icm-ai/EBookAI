@@ -27,19 +27,36 @@ from utils.logging_config import (
 )
 from utils.progress_tracker import progress_tracker
 
-from config import ALLOWED_EXTENSIONS, CONVERSION_TIMEOUT, OUTPUT_DIR, UPLOAD_DIR
+from config import (
+    ALLOWED_EXTENSIONS,
+    CONVERSION_TIMEOUT,
+    OUTPUT_DIR,
+    UPLOAD_DIR,
+    ENHANCED_PDF_CONVERSION
+)
 
 
 class ConversionService:
     """Handle ebook format conversion"""
 
-    def __init__(self):
+    def __init__(self, ai_service=None):
         self.logger = get_logger("conversion")
         self.upload_dir = Path(UPLOAD_DIR)
         self.output_dir = Path(OUTPUT_DIR)
         self.upload_dir.mkdir(exist_ok=True)
         self.output_dir.mkdir(exist_ok=True)
         self.chinese_font_name = self._register_chinese_fonts()
+
+        # Initialize enhanced pipeline if enabled
+        self.enhanced_pipeline = None
+        if ENHANCED_PDF_CONVERSION:
+            try:
+                from conversion.conversion_pipeline import ConversionPipeline
+                self.enhanced_pipeline = ConversionPipeline(ai_service)
+                self.logger.info("Enhanced PDF to EPUB conversion pipeline initialized")
+            except Exception as e:
+                self.logger.warning(f"Failed to initialize enhanced pipeline: {str(e)}")
+                self.enhanced_pipeline = None
 
     async def convert_file(
         self, file_path: str, target_format: str, task_id: str = None
@@ -135,10 +152,18 @@ class ConversionService:
                         timeout=CONVERSION_TIMEOUT,
                     )
                 elif source_format == ".pdf" and target_format == "epub":
-                    await asyncio.wait_for(
-                        self._pdf_to_epub(file_path, output_path),
-                        timeout=CONVERSION_TIMEOUT,
-                    )
+                    if self.enhanced_pipeline:
+                        # Use enhanced pipeline
+                        await asyncio.wait_for(
+                            self._pdf_to_epub_enhanced(file_path, output_path, task_id),
+                            timeout=CONVERSION_TIMEOUT,
+                        )
+                    else:
+                        # Use legacy implementation
+                        await asyncio.wait_for(
+                            self._pdf_to_epub(file_path, output_path),
+                            timeout=CONVERSION_TIMEOUT,
+                        )
                 elif source_format == ".txt" and target_format == "pdf":
                     await asyncio.wait_for(
                         self._txt_to_pdf(file_path, output_path),
@@ -890,5 +915,41 @@ class ConversionService:
                 message="Failed to extract text from AZW3",
                 file_path=str(azw3_path),
                 file_type="azw3",
+                original_error=e,
+            )
+
+    async def _pdf_to_epub_enhanced(self, pdf_path: Path, epub_path: Path, task_id: str):
+        """
+        Enhanced PDF to EPUB conversion using the new pipeline
+
+        Args:
+            pdf_path: Path to input PDF
+            epub_path: Path for output EPUB
+            task_id: Task ID for progress tracking
+        """
+        try:
+            self.logger.info(f"Starting enhanced PDF to EPUB conversion: {pdf_path.name}")
+
+            # Use enhanced pipeline
+            result = self.enhanced_pipeline.convert_pdf_to_epub(pdf_path, epub_path)
+
+            if result.success:
+                self.logger.info(f"Enhanced conversion successful: {result.method_used}, "
+                               f"quality: {result.quality_score:.1f}%, "
+                               f"time: {result.total_duration:.2f}s")
+            else:
+                raise FileProcessingError(
+                    message="Enhanced PDF to EPUB conversion failed",
+                    file_path=str(pdf_path),
+                    file_type="pdf",
+                    original_error=result.error_message
+                )
+
+        except Exception as e:
+            self.logger.error(f"Enhanced PDF to EPUB conversion failed: {str(e)}")
+            raise FileProcessingError(
+                message="Failed to convert PDF to EPUB using enhanced pipeline",
+                file_path=str(pdf_path),
+                file_type="pdf",
                 original_error=e,
             )
