@@ -1,0 +1,76 @@
+# EBookAI 增强转换 - 实用版本
+# 使用本地已有镜像，避免网络下载
+FROM node:22-alpine
+
+# 设置环境变量
+ENV PYTHONUNBUFFERED=1 \
+    ENHANCED_PDF_CONVERSION=true \
+    CONVERSION_QUALITY_LEVEL=standard
+
+# 安装系统依赖（不需要编译的包）
+RUN apk add --no-cache \
+    python3 \
+    py3-pip \
+    bash \
+    git \
+    curl \
+    tesseract-ocr \
+    tesseract-ocr-data-chi_sim \
+    tesseract-ocr-data-chi_tra \
+    tesseract-ocr-data-eng \
+    poppler-utils && \
+    ln -sf /usr/bin/python3 /usr/bin/python
+
+WORKDIR /workspace
+
+# 复制项目文件
+COPY requirements.txt ./
+COPY backend/requirements.txt ./backend/
+COPY frontend/web/package*.json ./frontend/web/
+
+# 安装Python依赖（避开需要编译的PyMuPDF）
+# 使用 --break-system-packages 因为Alpine使用系统Python
+RUN pip install --break-system-packages --no-cache-dir \
+    fastapi \
+    uvicorn \
+    sqlalchemy \
+    redis \
+    celery \
+    pdfplumber==0.10.0 \
+    pytesseract==0.3.10 \
+    Pillow==10.0.0 \
+    ebooklib \
+    python-multipart \
+    aiofiles \
+    httpx \
+    websockets \
+    structlog \
+    PyPDF2 \
+    reportlab \
+    lxml
+
+# 如果backend有单独的requirements，也安装
+RUN if [ -f backend/requirements.txt ]; then \
+        pip install --break-system-packages --no-cache-dir -r backend/requirements.txt || true; \
+    fi
+
+# 安装前端依赖（如果需要）
+RUN if [ -f frontend/web/package.json ]; then \
+        cd frontend/web && npm install --quiet || true; \
+    fi
+
+# 复制应用代码
+COPY . .
+
+# 创建必要目录
+RUN mkdir -p uploads outputs logs config
+
+# 暴露端口
+EXPOSE 8000 3000
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8000/api/health || exit 1
+
+# 启动命令
+CMD ["sh", "-c", "cd backend/src && uvicorn main:app --host 0.0.0.0 --port 8000"]
