@@ -2,18 +2,18 @@
 
 ## 1. Foundation Setup
 
-- [ ] 1.1 Add dependencies to `backend/requirements.txt`
+- [x] 1.1 Add dependencies to `backend/requirements.txt`
   - PyMuPDF (fitz) >= 1.23.0
   - pdfplumber >= 0.10.0
   - pytesseract >= 0.3.10
   - Pillow >= 10.0.0
-- [ ] 1.2 Update Docker configuration
+- [x] 1.2 Update Docker configuration
   - Add Tesseract OCR installation to Dockerfile
   - Add Chinese language data (chi_sim, chi_tra)
   - Add Calibre installation (ebook-convert tool)
   - Optimize multi-stage build for size
   - Verify Calibre CLI is accessible in container
-- [ ] 1.3 Create new module structure
+- [x] 1.3 Create new module structure
   - `backend/src/services/conversion/pdf_parser.py`
   - `backend/src/services/conversion/layout_analyzer.py`
   - `backend/src/services/conversion/ocr_service.py`
@@ -22,7 +22,7 @@
   - `backend/src/services/conversion/epub_generator.py`
   - `backend/src/services/conversion/calibre_fallback.py`
   - `backend/src/services/conversion/conversion_pipeline.py`
-- [ ] 1.4 Add configuration options to `config.py`
+- [x] 1.4 Add configuration options to `config.py`
   - ENHANCED_PDF_CONVERSION feature flag
   - CONVERSION_QUALITY_LEVEL (fast/standard/high)
   - OCR_CONFIDENCE_THRESHOLD
@@ -34,21 +34,21 @@
 
 ## 2. PDF Parser Implementation
 
-- [ ] 2.1 Create PDFParser class with PyMuPDF
+- [x] 2.1 Create PDFParser class with PyMuPDF
   - Extract text with position information
   - Get font information (size, family, weight)
   - Extract page dimensions and layout
   - Detect text blocks and reading order
-- [ ] 2.2 Implement metadata extraction
+- [x] 2.2 Implement metadata extraction
   - Extract title, author, subject from PDF metadata
   - Get page count and PDF version
   - Detect encryption and permissions
   - Extract bookmark/outline structure
-- [ ] 2.3 Add scan detection logic
+- [x] 2.3 Add scan detection logic
   - Calculate text-to-page ratio
   - Detect image-only pages
   - Return scan probability score
-- [ ] 2.4 Write unit tests for PDFParser
+- [x] 2.4 Write unit tests for PDFParser
   - Test with text-based PDF
   - Test with scanned PDF
   - Test with mixed PDF
@@ -56,20 +56,20 @@
 
 ## 3. Layout Analyzer Implementation
 
-- [ ] 3.1 Create LayoutAnalyzer class with pdfplumber
+- [x] 3.1 Create LayoutAnalyzer class with pdfplumber
   - Detect multi-column layouts
   - Identify table structures
   - Find text blocks and their positions
   - Determine reading order for complex layouts
-- [ ] 3.2 Implement column detection algorithm
+- [x] 3.2 Implement column detection algorithm
   - Analyze text block positions
   - Calculate column boundaries
   - Order content by reading flow
-- [ ] 3.3 Add table detection
+- [x] 3.3 Add table detection
   - Identify table structures
   - Extract table content as HTML
   - Handle nested tables
-- [ ] 3.4 Write unit tests for LayoutAnalyzer
+- [x] 3.4 Write unit tests for LayoutAnalyzer
   - Test single-column layout
   - Test two-column layout
   - Test complex multi-column layout
@@ -77,25 +77,25 @@
 
 ## 4. OCR Service Implementation
 
-- [ ] 4.1 Create OCRService class with Tesseract
+- [x] 4.1 Create OCRService class with Tesseract
   - Render PDF page to image using PyMuPDF
   - Apply image preprocessing (deskew, denoise, contrast)
   - Perform OCR with language detection
   - Return text with confidence scores
-- [ ] 4.2 Implement preprocessing pipeline
+- [x] 4.2 Implement preprocessing pipeline
   - Deskew tilted pages
   - Enhance contrast for low-quality scans
   - Denoise for cleaner text
   - Binarization for better OCR accuracy
-- [ ] 4.3 Add language detection
+- [x] 4.3 Add language detection
   - Auto-detect Chinese (simplified/traditional)
   - Support English and mixed content
   - Use appropriate Tesseract language models
-- [ ] 4.4 Implement confidence scoring
+- [x] 4.4 Implement confidence scoring
   - Per-character confidence from Tesseract
   - Per-line and per-page confidence aggregation
   - Warning generation for low confidence sections
-- [ ] 4.5 Write unit tests for OCRService
+- [x] 4.5 Write unit tests for OCRService
   - Test with clean Chinese scan
   - Test with low-quality scan
   - Test with mixed language content
@@ -103,31 +103,31 @@
 
 ## 5. Chapter Detector Implementation
 
-- [ ] 5.1 Create ChapterDetector class
+- [x] 5.1 Create ChapterDetector class
   - Implement multi-method detection strategy
   - Calculate confidence scores per method
   - Merge results from different methods
   - Generate hierarchical chapter structure
-- [ ] 5.2 Implement bookmark-based detection
+- [x] 5.2 Implement bookmark-based detection
   - Extract PDF bookmark structure
   - Map bookmarks to page numbers
   - Build hierarchy from bookmark levels
   - Achieve 95%+ accuracy for PDFs with bookmarks
-- [ ] 5.3 Implement font-based detection
+- [x] 5.3 Implement font-based detection
   - Analyze font sizes across pages
   - Detect heading patterns (larger/bold text)
   - Calculate heading confidence scores
   - Group pages into chapters based on headings
-- [ ] 5.4 Implement page-break detection
+- [x] 5.4 Implement page-break detection
   - Identify natural chapter breaks
   - Analyze content similarity between pages
   - Detect pattern changes (blank pages, page numbering)
-- [ ] 5.5 Add AI-based detection fallback
+- [x] 5.5 Add AI-based detection fallback
   - Send page content to AI service
   - Request chapter boundary suggestions
   - Parse AI response for chapter divisions
   - Use when other methods have low confidence
-- [ ] 5.6 Write unit tests for ChapterDetector
+- [x] 5.6 Write unit tests for ChapterDetector
   - Test with bookmark-enabled PDF
   - Test with clear heading structure
   - Test with minimal structure
@@ -135,27 +135,27 @@
 
 ## 6. Image Processor Implementation
 
-- [ ] 6.1 Create ImageProcessor class
+- [x] 6.1 Create ImageProcessor class
   - Extract images from PDF pages with PyMuPDF
   - Associate images with text positions
   - Optimize image size and format
   - Generate image metadata
-- [ ] 6.2 Implement image extraction
+- [x] 6.2 Implement image extraction
   - Get all images from PDF pages
   - Extract image format, dimensions, DPI
   - Determine optimal extraction method per image
   - Handle inline images and full-page images
-- [ ] 6.3 Add image optimization
+- [x] 6.3 Add image optimization
   - Resize images based on quality preset
   - Convert formats (preserve PNG for diagrams, JPEG for photos)
   - Compress images (target <500KB per image)
   - Maintain aspect ratios
-- [ ] 6.4 Implement image-text association
+- [x] 6.4 Implement image-text association
   - Calculate image positions relative to text
   - Find nearest text blocks
   - Generate alt text from surrounding content
   - Preserve reading order with images
-- [ ] 6.5 Write unit tests for ImageProcessor
+- [x] 6.5 Write unit tests for ImageProcessor
   - Test image extraction from various PDFs
   - Test resizing and optimization
   - Test format conversion
@@ -163,32 +163,32 @@
 
 ## 7. EPUB Generator Implementation
 
-- [ ] 7.1 Create EPUBGenerator class
+- [x] 7.1 Create EPUBGenerator class
   - Build EPUB structure from extracted content
   - Generate proper HTML chapters
   - Create navigation and table of contents
   - Add metadata and styling
-- [ ] 7.2 Implement chapter HTML generation
+- [x] 7.2 Implement chapter HTML generation
   - Convert text blocks to HTML paragraphs
   - Embed images with proper positioning
   - Apply CSS styling for readability
   - Handle special characters and encoding
-- [ ] 7.3 Create table of contents
+- [x] 7.3 Create table of contents
   - Build EPUB NCX navigation
   - Generate HTML table of contents
   - Map chapters to file structure
   - Support multi-level hierarchies
-- [ ] 7.4 Add metadata generation
+- [x] 7.4 Add metadata generation
   - Populate Dublin Core metadata
   - Add language and encoding information
   - Include generation timestamp and source info
   - Embed confidence scores for quality reference
-- [ ] 7.5 Implement CSS styling
+- [x] 7.5 Implement CSS styling
   - Create professional stylesheet for Chinese/English
   - Set proper line height and spacing
   - Define heading styles (h1-h6)
   - Add image styling (centered, max-width)
-- [ ] 7.6 Write unit tests for EPUBGenerator
+- [x] 7.6 Write unit tests for EPUBGenerator
   - Test EPUB structure validation
   - Test HTML generation
   - Test TOC creation
@@ -196,42 +196,42 @@
 
 ## 8. Calibre Fallback Implementation
 
-- [ ] 8.1 Create CalibreFallback class
+- [x] 8.1 Create CalibreFallback class
   - Wrap Calibre ebook-convert command
   - Parse command output and errors
   - Return standardized result format
   - Handle timeout and failures gracefully
-- [ ] 8.2 Implement Calibre detection and validation
+- [x] 8.2 Implement Calibre detection and validation
   - Check if Calibre is installed in system
   - Verify ebook-convert command availability
   - Get Calibre version information
   - Log warning if Calibre not found
-- [ ] 8.3 Build ebook-convert command
+- [x] 8.3 Build ebook-convert command
   - Construct command with input PDF path
   - Set output EPUB path
   - Add conversion options (chapter detection, metadata)
   - Set timeout and process limits
-- [ ] 8.4 Execute and monitor Calibre conversion
+- [x] 8.4 Execute and monitor Calibre conversion
   - Run ebook-convert as subprocess
   - Capture stdout and stderr
   - Monitor conversion progress if available
   - Handle process timeout
-- [ ] 8.5 Parse Calibre output
+- [x] 8.5 Parse Calibre output
   - Extract conversion statistics
   - Parse warning and error messages
   - Calculate quality indicators
   - Generate conversion report
-- [ ] 8.6 Implement fallback trigger logic
+- [x] 8.6 Implement fallback trigger logic
   - Quality score calculation for custom pipeline
   - Error detection (unrecoverable errors)
   - User preference check (explicit Calibre mode)
   - Complex PDF detection (trigger conditions)
-- [ ] 8.7 Add comparison and logging
+- [x] 8.7 Add comparison and logging
   - Log when fallback is triggered
   - Record trigger reason
   - Compare custom vs Calibre output (when both available)
   - Store metrics for analysis
-- [ ] 8.8 Write unit tests for CalibreFallback
+- [x] 8.8 Write unit tests for CalibreFallback
   - Test Calibre detection
   - Test command construction
   - Test subprocess execution
@@ -241,52 +241,52 @@
 
 ## 9. Conversion Pipeline Implementation
 
-- [ ] 9.1 Create ConversionPipeline orchestrator
+- [x] 9.1 Create ConversionPipeline orchestrator
   - Implement 5-stage pipeline
   - Coordinate component interactions
   - Handle errors at each stage
   - Track progress and update status
   - Integrate Calibre fallback trigger logic
-- [ ] 9.2 Implement Stage 1: PDF Analysis
+- [x] 9.2 Implement Stage 1: PDF Analysis
   - Parse PDF metadata
   - Detect scan nature
   - Analyze page structure
   - Estimate processing complexity
   - Calculate complexity score for fallback decision
-- [ ] 9.3 Implement Stage 2: Content Extraction
+- [x] 9.3 Implement Stage 2: Content Extraction
   - Extract text using PDFParser
   - Extract images using ImageProcessor
   - Apply OCR if needed for scanned pages
   - Combine text and image content
   - Catch extraction errors for fallback trigger
-- [ ] 9.4 Implement Stage 3: Structure Recognition
+- [x] 9.4 Implement Stage 3: Structure Recognition
   - Detect chapters using ChapterDetector
   - Analyze layout using LayoutAnalyzer
   - Build document hierarchy
   - Associate content with structure
   - Calculate structure quality score
-- [ ] 9.5 Implement Stage 4: AI Enhancement
+- [x] 9.5 Implement Stage 4: AI Enhancement
   - Generate metadata if missing
   - Refine chapter titles
   - Optimize content quality for low OCR confidence
   - Calculate overall quality score
-- [ ] 9.6 Implement Stage 5: EPUB Generation with fallback
+- [x] 9.6 Implement Stage 5: EPUB Generation with fallback
   - Try EPUBGenerator for custom EPUB creation
   - Calculate conversion quality score
   - Trigger CalibreFallback if quality below threshold or error occurs
   - Use Calibre-generated EPUB if fallback triggered
   - Add quality report and conversion method to metadata
-- [ ] 9.7 Add progress tracking integration
+- [x] 9.7 Add progress tracking integration
   - Update progress_tracker at each stage
   - Calculate time estimates
   - Broadcast WebSocket updates
   - Handle cancellation requests
   - Report fallback usage to user
-- [ ] 9.8 Implement quality presets
+- [x] 9.8 Implement quality presets
   - Fast mode: skip OCR, basic detection, aggressive image compression, no Calibre fallback
   - Standard mode: OCR when needed, multi-method detection, normal optimization, Calibre fallback enabled
   - High-quality mode: full OCR, all methods, AI enhancement, detailed analysis, quality comparison
-- [ ] 9.9 Write integration tests for pipeline
+- [x] 9.9 Write integration tests for pipeline
   - Test complete flow with text-based PDF
   - Test with scanned PDF
   - Test with complex layout PDF
@@ -297,24 +297,24 @@
 
 ## 10. Service Integration
 
-- [ ] 10.1 Update ConversionService
+- [x] 10.1 Update ConversionService
   - Add feature flag check for enhanced conversion
   - Route to new pipeline when enabled
   - Keep old implementation as fallback
   - Add logging for comparison
   - Integrate Calibre fallback status reporting
-- [ ] 10.2 Extend AI service integration
+- [x] 10.2 Extend AI service integration
   - Add metadata inference endpoint usage
   - Add chapter title generation
   - Add content optimization for OCR results
   - Handle AI service timeouts gracefully
-- [ ] 10.3 Update progress tracking
+- [x] 10.3 Update progress tracking
   - Add new stage names and descriptions
   - Calculate stage-specific progress percentages
   - Update WebSocket message format
   - Add quality warnings in progress updates
   - Report Calibre fallback when triggered
-- [ ] 10.4 Write integration tests
+- [x] 10.4 Write integration tests
   - Test with feature flag enabled/disabled
   - Test AI service integration
   - Test progress updates
@@ -323,7 +323,7 @@
 
 ## 11. Testing and Quality Assurance
 
-- [ ] 10.1 Create test fixture PDFs
+- [x] 11.1 Create test fixture PDFs
   - Text-based PDF with bookmarks (English)
   - Text-based PDF with bookmarks (Chinese)
   - Scanned PDF (clean, high quality)
@@ -332,91 +332,113 @@
   - Complex layout PDF (multi-column, tables)
   - Large PDF (>500 pages)
   - PDF with many images
-- [ ] 10.2 Write end-to-end tests
+  - Problematic PDF that triggers Calibre fallback
+- [x] 11.2 Write end-to-end tests
   - Test each fixture through complete pipeline
   - Validate EPUB structure and content
   - Check metadata accuracy
   - Verify image extraction
   - Validate chapter detection
-- [ ] 10.3 Performance testing
+  - Test Calibre fallback with problematic PDFs
+  - Compare quality between custom and Calibre output
+- [x] 11.3 Performance testing
   - Measure conversion time for each quality preset
   - Monitor memory usage during conversion
   - Test with large files (100MB+)
   - Verify timeout handling
-- [ ] 10.4 Quality validation
+  - Measure Calibre fallback overhead
+- [x] 11.4 Quality validation
   - Compare output with professional EPUBs
   - Validate readability on multiple EPUB readers
   - Check Chinese character rendering
   - Test image display and positioning
-- [ ] 10.5 Add regression tests
+  - Validate Calibre-generated EPUBs meet quality standards
+- [x] 11.5 Add regression tests
   - Ensure old PDF-to-EPUB still works with flag off
   - Test backward compatibility
   - Verify no breaking changes to API
+  - Test Calibre fallback disabled mode
 
-## 11. Documentation and Configuration
+## 12. Documentation and Configuration
 
-- [ ] 11.1 Update API documentation
+- [x] 12.1 Update API documentation
   - Document new quality preset parameter
   - Describe conversion stages
   - List supported features and limitations
   - Add examples for different PDF types
-- [ ] 11.2 Add environment variables documentation
+  - Explain Calibre fallback mechanism
+  - Document when fallback is triggered
+- [x] 12.2 Add environment variables documentation
   - ENHANCED_PDF_CONVERSION flag
   - CONVERSION_QUALITY_LEVEL
   - OCR_CONFIDENCE_THRESHOLD
   - IMAGE_MAX_WIDTH_FAST/STANDARD/HIGH
   - TESSERACT_DATA_PATH
-- [ ] 11.3 Create troubleshooting guide
+  - ENABLE_CALIBRE_FALLBACK flag
+  - CALIBRE_QUALITY_THRESHOLD
+  - CALIBRE_TIMEOUT
+- [x] 12.3 Create troubleshooting guide
   - OCR language model installation
   - Memory issues with large PDFs
   - Low OCR confidence handling
   - Chapter detection tuning
-- [ ] 11.4 Update README
+  - Calibre installation verification
+  - Fallback trigger troubleshooting
+- [x] 12.4 Update README
   - List new features
   - Show example usage
   - Describe quality presets
   - Add performance benchmarks
+  - Explain fallback mechanism benefits
 
-## 12. Deployment and Rollout
+## 13. Deployment and Rollout
 
-- [ ] 12.1 Build and test Docker image
+- [ ] 13.1 Build and test Docker image
   - Verify Tesseract installation
+  - Verify Calibre installation
   - Test Chinese language models
   - Check image size (<2GB)
   - Validate all dependencies
-- [ ] 12.2 Deploy with feature flag disabled
+  - Test ebook-convert CLI availability
+- [ ] 13.2 Deploy with feature flag disabled
   - Deploy to staging environment
   - Verify backward compatibility
   - Test with production-like data
-- [ ] 12.3 Enable feature flag for testing
+- [ ] 13.3 Enable feature flag for testing
   - Enable for internal testing
   - Monitor performance metrics
   - Collect quality feedback
   - Compare with old implementation
-- [ ] 12.4 Gradual rollout to users
+  - Monitor Calibre fallback usage rate
+- [ ] 13.4 Gradual rollout to users
   - Enable for 10% of conversions
   - Monitor error rates and completion times
   - Gather user feedback
   - Increase to 50%, then 100%
-- [ ] 12.5 Monitor and optimize
+  - Track fallback trigger rate
+- [ ] 13.5 Monitor and optimize
   - Track conversion success rate
   - Monitor average conversion time
   - Analyze quality scores
+  - Analyze Calibre fallback effectiveness
   - Optimize based on real usage patterns
 
-## 13. Post-Implementation
+## 14. Post-Implementation
 
-- [ ] 13.1 Archive old implementation
+- [ ] 14.1 Archive old implementation
   - Move old _pdf_to_epub to deprecated module
   - Keep for reference and emergency rollback
   - Schedule removal for future version
-- [ ] 13.2 Update CHANGELOG
+- [ ] 14.2 Update CHANGELOG
   - Document major enhancement
   - List key features
   - Note breaking changes (none expected)
   - Include migration guide if needed
-- [ ] 13.3 Create user guide
+  - Highlight Calibre fallback mechanism
+- [ ] 14.3 Create user guide
   - How to choose quality preset
   - Tips for best results
   - Handling low-quality scans
   - When to use OCR enhancement
+  - Understanding fallback mechanism
+  - Interpreting conversion quality reports

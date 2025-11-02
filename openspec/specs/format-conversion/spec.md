@@ -1,7 +1,8 @@
-# Format Conversion Specification Delta
+# format-conversion Specification
 
-## MODIFIED Requirements
-
+## Purpose
+TBD - created by archiving change enhance-pdf-to-epub-conversion. Update Purpose after archive.
+## Requirements
 ### Requirement: PDF to EPUB Conversion
 
 The system SHALL convert PDF files to EPUB format with professional-grade quality suitable for immediate reading, preserving document structure, images, and formatting.
@@ -25,8 +26,6 @@ The system SHALL convert PDF files to EPUB format with professional-grade qualit
 #### Scenario: Large PDF exceeding memory limits
 - **WHEN** a PDF file with more than 500 pages or file size exceeding 100MB is uploaded
 - **THEN** the system processes the file in streaming mode (page-by-page), manages memory usage below 500MB threshold, provides progress updates via WebSocket, and completes conversion within configurable timeout (default 5 minutes)
-
-## ADDED Requirements
 
 ### Requirement: Intelligent Chapter Detection
 
@@ -148,6 +147,3 @@ The system SHALL provide Calibre ebook-convert as a fallback conversion engine w
 - **WHEN** high-quality conversion mode is selected and custom pipeline succeeds
 - **THEN** the system optionally runs Calibre conversion in parallel for comparison, analyzes quality metrics of both outputs (structure, metadata completeness, file size), returns the higher-quality result, and logs comparison data for pipeline optimization
 
-## REMOVED Requirements
-
-None - This change is purely additive and enhancing existing functionality.
