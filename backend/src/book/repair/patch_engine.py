@@ -147,9 +147,7 @@ class PatchValidator:
                 if not part:
                     raise PatchValidationError("split_node parts must not be empty")
                 continue
-            if not isinstance(part, dict) or not isinstance(
-                part.get("content"), str
-            ):
+            if not isinstance(part, dict) or not isinstance(part.get("content"), str):
                 raise PatchValidationError(
                     "split_node parts must be strings or content dictionaries"
                 )
@@ -292,9 +290,7 @@ class PatchEngine:
         target.source = _dedupe_sources(
             source for node in nodes for source in node.source
         )
-        target.children = [
-            child for node in nodes for child in node.children
-        ]
+        target.children = [child for node in nodes for child in node.children]
         target.attrs["merged_from"] = [
             node_id
             for node in nodes
