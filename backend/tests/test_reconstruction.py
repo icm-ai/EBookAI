@@ -219,9 +219,7 @@ def test_footnote_association_marks_definition_and_reference():
         size=8,
     )
 
-    result = FootnoteAssociationPass().apply(
-        _book([body, footnote], page_count=1)
-    )
+    result = FootnoteAssociationPass().apply(_book([body, footnote], page_count=1))
 
     assert result.nodes[1].type == NodeType.FOOTNOTE
     assert result.nodes[1].attrs["marker"] == "[1]"
@@ -252,9 +250,7 @@ def test_default_pipeline_preserves_source_provenance():
         size=11,
     )
 
-    result = ReconstructionPipeline().run(
-        _book([heading, first, second], page_count=2)
-    )
+    result = ReconstructionPipeline().run(_book([heading, first, second], page_count=2))
 
     assert result.nodes[0].type == NodeType.HEADING
     assert result.nodes[1].type == NodeType.PARAGRAPH
