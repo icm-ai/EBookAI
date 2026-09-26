@@ -100,7 +100,7 @@ jobs:
     - name: Install focused dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install PyMuPDF==1.23.8 pytest==7.4.3 black==23.10.1
+        pip install PyMuPDF==1.23.8 pytest==7.4.3 black==23.10.1 isort==5.12.0
 
     - name: Compile BookIR package
       env:
@@ -108,9 +108,15 @@ jobs:
       run: |
         python -m compileall -q backend/src/book
 
-    - name: Show BookIR formatting diff
+    - name: Check BookIR formatting
       run: |
-        black --diff \
+        black --check \
+          backend/src/book \
+          backend/tests/test_book_ir.py \
+          backend/tests/test_pymupdf_book_adapter.py \
+          backend/tests/test_epub_compiler.py \
+          backend/tests/test_reconstruction.py
+        isort --check-only \
           backend/src/book \
           backend/tests/test_book_ir.py \
           backend/tests/test_pymupdf_book_adapter.py \
