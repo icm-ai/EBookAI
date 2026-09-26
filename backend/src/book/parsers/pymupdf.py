@@ -22,6 +22,7 @@ from book.domain.models import (
     SourceRef,
 )
 from book.parsers.base import BookParserAdapter
+from book.parsers.capabilities import ParserCapabilities
 
 
 class PyMuPDFAdapter(BookParserAdapter):
@@ -29,6 +30,12 @@ class PyMuPDFAdapter(BookParserAdapter):
 
     name = "pymupdf"
     supported_extensions = frozenset({".pdf"})
+    capabilities = ParserCapabilities(
+        native_text=True,
+        reading_order=True,
+        bbox=True,
+        quality_modes=("native",),
+    )
 
     def parse(self, path: Path) -> Book:
         path = Path(path)
@@ -111,6 +118,7 @@ class PyMuPDFAdapter(BookParserAdapter):
             extra={
                 "page_count": len(document),
                 "parser": self.name,
+                "parser_profile": self.profile(),
                 "pdf_metadata": {
                     key: value for key, value in raw.items() if value not in (None, "")
                 },

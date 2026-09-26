@@ -163,9 +163,64 @@ Merge operations require contiguous siblings and preserve the union of all
 source provenance. Move operations reject cycles. Insert operations reject id
 collisions. Applied patch ids cannot be replayed accidentally.
 
-### Milestone 4 — Additional parser adapters
+### Milestone 4 — Parser backend adapters
 
-Add MinerU and Marker first, then optionally Docling/PaddleOCR. Each backend must pass BookIR conformance tests.
+- [x] Explicit parser capability model.
+- [x] Parser profiles expose format support, optional-runtime availability, and semantic capabilities.
+- [x] Capability-aware parser registry without automatic routing policy.
+- [x] MinerU 4.x adapter using the public Python SDK lazily.
+- [x] MinerU Structured Content -> BookIR normalization.
+- [x] Marker adapter using the public Python converter surface lazily.
+- [x] Marker JSON Page/Block tree -> BookIR normalization.
+- [x] Deterministic EBookAI node identities independent of backend block ids.
+- [x] Preserve backend block type/id/HTML or structured metadata as attributes.
+- [x] Preserve page and bbox provenance for MinerU and Marker.
+- [x] Conformance tests shared across optional parser backends.
+- [x] Optional parser packages remain outside EBookAI's base requirements.
+
+#### Capability contract
+
+Each adapter declares `ParserCapabilities` rather than relying on hard-coded
+backend names. Current capability dimensions include native text, OCR, layout,
+reading order, headings, footnotes, tables, formulas, images, bbox,
+multi-column support, semantic output, and named quality modes.
+
+`ParserRegistry.candidates(...)` can filter by file extension and required
+features, but Milestone 4 intentionally does **not** choose a winner. Routing
+policy belongs above the adapter layer so later quality-aware scheduling can
+consider cost, hardware, prior quality reports, and fallback state.
+
+#### MinerU contract
+
+`MinerUAdapter.parse()` lazily imports the MinerU 4.x public SDK and calls the
+document parser, then consumes `ParseResult.structured_content()`. The adapter
+does not depend on temporary CLI artifact naming or backend-specific model
+output. Structured Content page/block semantics are mapped into BookIR while
+preserving source page/bbox and relevant attributes such as heading level,
+anchor, image source, captions, and footnotes.
+
+#### Marker contract
+
+`MarkerAdapter.parse()` lazily imports Marker and requests JSON renderer
+output through its public converter/configuration surface. Page and semantic
+block trees are normalized into BookIR. Marker polygons are converted to
+BookIR bounding boxes; Marker block ids are retained only as backend metadata,
+while EBookAI generates deterministic canonical node ids.
+
+MinerU and Marker are optional integrations. EBookAI does not install their
+model stacks or weights as base dependencies. This keeps the core lightweight
+and avoids coupling BookIR to backend-specific runtime/licensing constraints.
+
+#### Conformance invariant
+
+For any parser adapter output used by EBookAI:
+
+- BookIR schema must be valid.
+- canonical node ids must be unique and deterministic for stable input.
+- content-bearing semantic nodes must retain at least one `SourceRef`.
+- every source reference identifies the parser and source document.
+- backend-specific ids and payload details may be retained in `attrs`, but
+  downstream reconstruction/quality/compiler layers must not require them.
 
 ### Milestone 5 — Human review UI
 
