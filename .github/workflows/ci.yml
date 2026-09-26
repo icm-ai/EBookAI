@@ -86,7 +86,7 @@ jobs:
 
 
   test-book-ir:
-    name: BookIR Reconstruction Tests
+    name: BookIR Core Tests
     runs-on: ubuntu-latest
 
     steps:
