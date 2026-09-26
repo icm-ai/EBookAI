@@ -39,9 +39,7 @@ def test_parser_capabilities_distinguish_native_and_semantic_backends():
 
 
 def test_registry_filters_by_format_and_required_capabilities():
-    registry = ParserRegistry(
-        [PyMuPDFAdapter(), MinerUAdapter(), MarkerAdapter()]
-    )
+    registry = ParserRegistry([PyMuPDFAdapter(), MinerUAdapter(), MarkerAdapter()])
 
     candidates = registry.candidates(
         Path("book.pdf"),
@@ -117,9 +115,7 @@ def test_mineru_structured_content_normalizes_to_semantic_bookir():
     assert first.nodes[0].attrs["level"] == 1
     assert first.nodes[2].children[0].type == NodeType.CAPTION
     assert first.nodes[2].source[0].bbox == (0.1, 0.4, 0.9, 0.6)
-    assert [node.id for node in first.walk()] == [
-        node.id for node in second.walk()
-    ]
+    assert [node.id for node in first.walk()] == [node.id for node in second.walk()]
 
 
 def test_marker_json_normalizes_page_block_tree_to_bookir():
