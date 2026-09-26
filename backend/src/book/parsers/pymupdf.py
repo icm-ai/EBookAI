@@ -113,9 +113,7 @@ class PyMuPDFAdapter(BookParserAdapter):
                 "page_count": len(document),
                 "parser": self.name,
                 "pdf_metadata": {
-                    key: value
-                    for key, value in raw.items()
-                    if value not in (None, "")
+                    key: value for key, value in raw.items() if value not in (None, "")
                 },
             },
         )
