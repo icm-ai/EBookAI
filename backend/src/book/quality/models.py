@@ -108,9 +108,7 @@ class QualityReport:
             engine_version=str(value.get("engine_version", "0.1")),
             score=float(value["score"]),
             node_count=int(value["node_count"]),
-            issues=[
-                QualityIssue.from_dict(item) for item in value.get("issues", [])
-            ],
+            issues=[QualityIssue.from_dict(item) for item in value.get("issues", [])],
         )
 
     @classmethod
