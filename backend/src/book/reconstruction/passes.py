@@ -20,9 +20,7 @@ _CHAPTER_RE = re.compile(
     re.IGNORECASE,
 )
 _FOOTNOTE_RE = re.compile(
-    r"^\s*(?P<marker>"
-    r"\[\d{1,3}\]|\(\d{1,3}\)|\d{1,3}[.)、]|[*†‡]|[①-⑳]"
-    r")\s*"
+    r"^\s*(?P<marker>" r"\[\d{1,3}\]|\(\d{1,3}\)|\d{1,3}[.)、]|[*†‡]|[①-⑳]" r")\s*"
 )
 
 
@@ -150,9 +148,7 @@ class HeaderFooterRemovalPass(ReconstructionPass):
         suppressed = [
             node.to_dict() for node in result.nodes if node.id in suppressed_ids
         ]
-        result.nodes = [
-            node for node in result.nodes if node.id not in suppressed_ids
-        ]
+        result.nodes = [node for node in result.nodes if node.id not in suppressed_ids]
         metadata = _reconstruction_meta(result)
         metadata.setdefault("suppressed_nodes", []).extend(suppressed)
         metadata.setdefault("passes", []).append(
@@ -180,11 +176,7 @@ class HeaderFooterRemovalPass(ReconstructionPass):
         value = book.metadata.extra.get("page_count")
         if isinstance(value, int) and value > 0:
             return value
-        pages = [
-            ref.page_index
-            for node in book.walk()
-            for ref in node.source
-        ]
+        pages = [ref.page_index for node in book.walk() for ref in node.source]
         return max(pages) + 1 if pages else 0
 
 
@@ -233,11 +225,7 @@ class HeadingInferencePass(ReconstructionPass):
             return result
 
         ranked_sizes = sorted(
-            {
-                round(_font_size(node), 2)
-                for node in candidates
-                if _font_size(node) > 0
-            },
+            {round(_font_size(node), 2) for node in candidates if _font_size(node) > 0},
             reverse=True,
         )
 
