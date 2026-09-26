@@ -68,7 +68,46 @@ The existing services/conversion/ pipeline remains intact during migration.
 
 ### Milestone 2 — Structural reconstruction
 
-Implement deterministic passes for cross-page paragraph joining, repeated header/footer removal, heading hierarchy reconstruction, and footnote association.
+- [x] Repeated header/footer removal using normalized text + margin geometry + page coverage.
+- [x] Cross-page paragraph joining using page geometry, punctuation, font consistency, and language-aware joining.
+- [x] Heading hierarchy inference using typography plus strong chapter/part patterns.
+- [x] Footnote definition detection and same-page reference association.
+- [x] Preserve provenance across merged paragraphs.
+- [x] Preserve suppressed header/footer nodes as an audit trail in BookIR metadata.
+
+The default deterministic pass order is:
+
+    HeaderFooterRemovalPass
+      -> HeadingInferencePass
+      -> FootnoteAssociationPass
+      -> ParagraphMergePass
+
+This ordering intentionally classifies headings and footnotes before paragraph
+merging so semantic blocks cannot be accidentally merged into body paragraphs.
+
+#### Reconstruction rules
+
+**Header/footer removal** only considers blocks inside configurable top/bottom
+page margins. Repeated text is normalized with Unicode NFKC, whitespace
+collapse, case folding, and digit normalization so changing page numbers can
+still be recognized as one repeated footer pattern. Removed nodes are retained
+under `metadata.extra.reconstruction.suppressed_nodes` with their original
+source references.
+
+**Paragraph merging** currently targets high-confidence adjacent-page
+continuations. It requires a previous block near the bottom of page N, a next
+block near the top of page N+1, compatible font sizes, and no terminal sentence
+punctuation. Latin end-of-line hyphenation is repaired, while CJK boundaries
+are concatenated without inserting an artificial space. A merged paragraph
+retains all contributing `SourceRef` entries and records `merged_from`.
+
+**Heading inference** uses strong chapter/part patterns and relative typography.
+It annotates inferred headings with a semantic level and raises structure
+confidence without altering source provenance.
+
+**Footnote association** identifies marker-prefixed, small-font blocks in the
+lower page region and records same-page body nodes containing the marker as
+references. The text itself is not rewritten in this milestone.
 
 ### Milestone 3 — Quality and patch engine
 
