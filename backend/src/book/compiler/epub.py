@@ -8,7 +8,6 @@ conversion stack to coexist during migration.
 from __future__ import annotations
 
 import html
-import re
 import uuid
 import zipfile
 from pathlib import Path
