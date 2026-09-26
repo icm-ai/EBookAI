@@ -1,12 +1,7 @@
 from pathlib import Path
 
 from book.domain.models import NodeType
-from book.parsers import (
-    MarkerAdapter,
-    MinerUAdapter,
-    ParserRegistry,
-    PyMuPDFAdapter,
-)
+from book.parsers import MarkerAdapter, MinerUAdapter, ParserRegistry, PyMuPDFAdapter
 
 
 def _assert_conformant(book, parser_name):
