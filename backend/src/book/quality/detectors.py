@@ -118,9 +118,7 @@ class LowConfidenceDetector(QualityDetector):
                 continue
 
             minimum = min(item["value"] for item in low_axes.values())
-            severity = (
-                IssueSeverity.ERROR if minimum < 0.35 else IssueSeverity.REVIEW
-            )
+            severity = IssueSeverity.ERROR if minimum < 0.35 else IssueSeverity.REVIEW
             evidence = {
                 "low_axes": low_axes,
                 "pages": _page_indexes(node),
