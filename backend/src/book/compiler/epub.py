@@ -163,9 +163,7 @@ class EpubCompiler:
                 f"{content}</aside>"
             )
         elif node.type == NodeType.PAGE_BREAK:
-            rendered = (
-                '<span epub:type="pagebreak" xmlns:epub="http://www.idpf.org/2007/ops"/>'
-            )
+            rendered = '<span epub:type="pagebreak" xmlns:epub="http://www.idpf.org/2007/ops"/>'
         elif node.type in {NodeType.LIST, NodeType.LIST_ITEM}:
             tag = "li" if node.type == NodeType.LIST_ITEM else "div"
             rendered = f"<{tag}>{content}</{tag}>"
@@ -231,9 +229,7 @@ class EpubCompiler:
         safe_language = html.escape(language)
         manifest = "\n    ".join(manifest_items)
         spine = "\n    ".join(spine_items)
-        creator = (
-            f"<dc:creator>{safe_author}</dc:creator>" if safe_author else ""
-        )
+        creator = f"<dc:creator>{safe_author}</dc:creator>" if safe_author else ""
         return f"""<?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="book-id">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
