@@ -111,7 +111,57 @@ references. The text itself is not rewritten in this milestone.
 
 ### Milestone 3 — Quality and patch engine
 
-Add node-level issue detectors, confidence recalculation, patch schema validation, deterministic patch application, and a quality report.
+- [x] Deterministic node-level quality detectors.
+- [x] Evidence-backed `QualityIssue` and serializable `QualityReport`.
+- [x] Review-priority severities and heuristic book quality score.
+- [x] Explicit suggested patches for safe, deterministic repairs.
+- [x] Confidence recalculation as a separate opt-in BookIR transformation.
+- [x] Operation-specific patch validation.
+- [x] Deterministic patch application with before-state audit data.
+- [x] Apply/replace proposed patches in `Book.patches` without silent mutation.
+- [x] Support replace-content, set-attribute, insert, delete, move, merge, and split.
+- [x] Focused CI coverage for Quality Engine + Patch Engine.
+
+#### Quality Engine contract
+
+`QualityEngine.analyze(book)` is pure: it returns a report and never mutates the
+book. The default detectors currently cover missing provenance, low confidence,
+raw text blocks that remain after reconstruction, empty semantic nodes, orphan
+footnotes, and heading hierarchy errors.
+
+Every issue carries a deterministic id, code, severity, affected node ids,
+confidence, evidence, and optionally a fully serialized suggested `Patch`.
+The quality score is intentionally heuristic and review-oriented; it is not a
+claim about semantic truth or publication correctness.
+
+Confidence recalculation is explicitly separate:
+
+    book, report = QualityEngine().recalculate_confidence(book)
+
+It only lowers confidence according to documented issue-specific caps. It
+never raises confidence and stores the report under
+`metadata.extra.quality.report`.
+
+#### Patch Engine contract
+
+`PatchEngine.apply(book, patch)` validates the patch against the current
+BookIR, clones the book, applies the operation, and records an applied patch
+with `payload._audit` containing enough before-state for inspection and later
+undo support. The input book is never mutated.
+
+Supported operations in v0.1:
+
+- `replace_content`
+- `set_attribute`
+- `insert_node`
+- `delete_node`
+- `move_node`
+- `merge_nodes`
+- `split_node`
+
+Merge operations require contiguous siblings and preserve the union of all
+source provenance. Move operations reject cycles. Insert operations reject id
+collisions. Applied patch ids cannot be replayed accidentally.
 
 ### Milestone 4 — Additional parser adapters
 

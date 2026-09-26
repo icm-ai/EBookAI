@@ -1,5 +1,13 @@
-"""Auditable BookIR repair and patch application.
+"""Auditable BookIR repair and patch application."""
 
-Model-assisted repair must produce explicit patches instead of silently
-rewriting canonical content.
-"""
+from book.repair.patch_engine import (
+    PatchEngine,
+    PatchValidationError,
+    PatchValidator,
+)
+
+__all__ = [
+    "PatchEngine",
+    "PatchValidationError",
+    "PatchValidator",
+]
