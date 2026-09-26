@@ -390,7 +390,9 @@ class ConversionService:
                         title=f"Chapter {i+1}", file_name=f"chap_{i+1}.xhtml", lang="en"
                     )
 
-                    # Format text as HTML
+                    # Format text as HTML. Keep the replacement outside the
+                    # f-string expression for Python 3.11 compatibility.
+                    paragraph_html = text.replace("\n", "</p><p>")
                     html_content = f"""
                     <html>
                     <head>
@@ -398,7 +400,7 @@ class ConversionService:
                     </head>
                     <body>
                         <h1>Chapter {i+1}</h1>
-                        <p>{text.replace('\n', '</p><p>')}</p>
+                        <p>{paragraph_html}</p>
                     </body>
                     </html>
                     """
