@@ -42,10 +42,12 @@ RUN apt-get update && apt-get install -y \
 RUN useradd -m -u 1000 ebook && mkdir -p /workspace
 WORKDIR /workspace
 
-# Copy Python requirements and install
+# Install Python dependencies in an isolated virtual environment.
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 COPY backend/requirements.txt ./
-RUN python3 -m pip install --no-cache-dir --upgrade pip \
-    && python3 -m pip install --no-cache-dir -r requirements.txt
+RUN python -m pip install --no-cache-dir --upgrade pip \
+    && python -m pip install --no-cache-dir -r requirements.txt
 
 # Copy backend code
 COPY backend/ backend/
