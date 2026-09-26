@@ -196,9 +196,7 @@ class MinerUAdapter(BookParserAdapter):
                     title = node.content.strip()
 
         backend_metadata = {
-            key: value
-            for key, value in payload.items()
-            if key != "pages"
+            key: value for key, value in payload.items() if key != "pages"
         }
         return Book(
             metadata=BookMetadata(
@@ -266,9 +264,7 @@ class MinerUAdapter(BookParserAdapter):
                     continue
                 child_content = self._content(child.get("content"))
                 child_bbox = coerce_bbox(child.get("bbox"))
-                child_path = (
-                    f"{logical_path}/{collection_name}:{child_index}"
-                )
+                child_path = f"{logical_path}/{collection_name}:{child_index}"
                 children.append(
                     BookNode(
                         id=stable_node_id(
