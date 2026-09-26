@@ -199,9 +199,7 @@ def test_marker_json_normalizes_page_block_tree_to_bookir():
     assert first.nodes[1].content == "Hello BookIR ."
     assert first.nodes[2].children[0].type == NodeType.CAPTION
     assert first.nodes[2].source[0].bbox == (50.0, 250.0, 500.0, 400.0)
-    assert [node.id for node in first.walk()] == [
-        node.id for node in second.walk()
-    ]
+    assert [node.id for node in first.walk()] == [node.id for node in second.walk()]
 
 
 def test_parser_profiles_do_not_require_optional_backend_imports():
