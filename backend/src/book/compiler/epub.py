@@ -50,7 +50,10 @@ class EpubCompiler:
             )
 
             manifest_items: List[str] = [
-                '<item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>',
+                (
+                    '<item id="nav" href="nav.xhtml" '
+                    'media-type="application/xhtml+xml" properties="nav"/>'
+                ),
                 '<item id="css" href="styles/book.css" media-type="text/css"/>',
             ]
             spine_items: List[str] = []
@@ -128,7 +131,9 @@ class EpubCompiler:
         body = "\n".join(self._render_node(node) for node in nodes)
         return f"""<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="{html.escape(language)}" lang="{html.escape(language)}">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xml:lang="{html.escape(language)}"
+      lang="{html.escape(language)}">
 <head>
   <meta charset="utf-8"/>
   <title>{html.escape(title)}</title>
@@ -186,7 +191,10 @@ class EpubCompiler:
         )
         return f"""<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="{html.escape(language)}" lang="{html.escape(language)}">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:epub="http://www.idpf.org/2007/ops"
+      xml:lang="{html.escape(language)}"
+      lang="{html.escape(language)}">
 <head><meta charset="utf-8"/><title>{html.escape(title)}</title></head>
 <body>
   <nav epub:type="toc" id="toc">
