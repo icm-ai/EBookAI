@@ -47,7 +47,4 @@ class ParserRegistry:
         ]
 
     def profiles(self) -> List[dict]:
-        return [
-            self._adapters[name].profile()
-            for name in sorted(self._adapters)
-        ]
+        return [self._adapters[name].profile() for name in sorted(self._adapters)]
