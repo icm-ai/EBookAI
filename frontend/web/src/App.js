@@ -4,6 +4,7 @@ import ConversionPanel from './components/ConversionPanel';
 import FeatureIntro from './components/FeatureIntro';
 import ConversionHistory from './components/ConversionHistory';
 import BatchUpload from './components/BatchUpload';
+import ReviewWorkspace from './components/ReviewWorkspace';
 import api from './services/api';
 import websocketService from './services/websocket';
 
@@ -13,7 +14,7 @@ function App() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [progressData, setProgressData] = useState(null);
-  const [activeTab, setActiveTab] = useState('single'); // 'single' or 'batch'
+  const [activeTab, setActiveTab] = useState('single');
 
   useEffect(() => {
     // Initialize WebSocket connection
@@ -169,7 +170,7 @@ function App() {
   };
 
   return (
-    <div className="container">
+    <div className={`container ${activeTab === 'review' ? 'review-mode' : ''}`}>
       <div className="header">
         <h1>EBookAI</h1>
         <p>AI-enhanced e-book processing platform</p>
@@ -192,6 +193,12 @@ function App() {
         >
           📚 Batch Conversion
         </button>
+        <button
+          className={`tab-button ${activeTab === 'review' ? 'active' : ''}`}
+          onClick={() => setActiveTab('review')}
+        >
+          Human Review
+        </button>
       </div>
 
       {activeTab === 'single' ? (
@@ -210,10 +217,12 @@ function App() {
             progressData={progressData}
           />
         </>
-      ) : (
+      ) : activeTab === 'batch' ? (
         <BatchUpload
           onBatchConvert={handleBatchConvert}
         />
+      ) : (
+        <ReviewWorkspace />
       )}
 
       {error && (
@@ -222,7 +231,7 @@ function App() {
         </div>
       )}
 
-      <ConversionHistory />
+      {activeTab !== 'review' && <ConversionHistory />}
     </div>
   );
 }
