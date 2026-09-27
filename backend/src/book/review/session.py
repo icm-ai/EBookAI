@@ -407,6 +407,35 @@ class ReviewSessionStore:
             self._write(session)
             return session
 
+    def undo_patch(self, session_id: str, patch_id: str) -> ReviewSession:
+        with self._lock:
+            session = self.get(session_id)
+            session.book = self.patch_engine.undo(session.book, patch_id)
+            session.quality_report = self.quality_engine.analyze(session.book)
+
+            for proposal_id, proposal in list(session.ai_proposals.items()):
+                if proposal.patch.id == patch_id and proposal.status == "accepted":
+                    session.ai_proposals[proposal_id] = proposal.with_status("undone")
+
+            session.publication_report = None
+            session.updated_at = _utc_now()
+            self._attach_review_metadata(session)
+            self._write(session)
+            return session
+
+    def save_publication_report(
+        self,
+        session_id: str,
+        report: PublicationReport,
+    ) -> ReviewSession:
+        with self._lock:
+            session = self.get(session_id)
+            session.publication_report = report
+            session.updated_at = _utc_now()
+            self._attach_review_metadata(session)
+            self._write(session)
+            return session
+
     def get_issue(self, session_id: str, issue_id: str) -> QualityIssue:
         return self._find_issue(self.get(session_id), issue_id)
 
@@ -457,6 +486,12 @@ class ReviewSessionStore:
                 session.ai_proposals[key].to_dict()
                 for key in sorted(session.ai_proposals)
             ],
+            "issue_resolutions": session.issue_resolutions(),
+            "publication_report": (
+                session.publication_report.to_dict()
+                if session.publication_report is not None
+                else None
+            ),
         }
         session.book.metadata.extra.setdefault("quality", {})[
             "report"
