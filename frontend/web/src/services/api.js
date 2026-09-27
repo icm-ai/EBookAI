@@ -68,6 +68,10 @@ const apiService = {
   },
 
   // Human review operations
+  async getReviewAIProviders() {
+    return await api.get('/api/review/ai-providers');
+  },
+
   async createReviewSession(file) {
     const formData = new FormData();
     formData.append('file', file);
