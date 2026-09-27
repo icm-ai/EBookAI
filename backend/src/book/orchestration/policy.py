@@ -5,9 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Sequence, Set, Tuple
 
+from book.orchestration.models import GateDecision
 from book.parsers.base import BookParserAdapter
 from book.quality.models import IssueSeverity, QualityReport
-from book.orchestration.models import GateDecision
 
 
 @dataclass(frozen=True)
