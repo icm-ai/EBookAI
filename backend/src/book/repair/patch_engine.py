@@ -248,11 +248,7 @@ class PatchEngine:
         return {
             "patch": patch.to_dict(),
             "status": (
-                "undone"
-                if patch.undone
-                else "applied"
-                if patch.applied
-                else "proposed"
+                "undone" if patch.undone else "applied" if patch.applied else "proposed"
             ),
             "reversible": (
                 patch.applied
@@ -379,11 +375,7 @@ class PatchEngine:
 
     @staticmethod
     def _active_patches(book: Book) -> List[Patch]:
-        return [
-            patch
-            for patch in book.patches
-            if patch.applied and not patch.undone
-        ]
+        return [patch for patch in book.patches if patch.applied and not patch.undone]
 
     @staticmethod
     def _require_patch(book: Book, patch_id: str) -> Patch:
