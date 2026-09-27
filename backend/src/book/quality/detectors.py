@@ -48,6 +48,26 @@ class QualityDetector(ABC):
         raise NotImplementedError
 
 
+class EmptyDocumentDetector(QualityDetector):
+    """Reject parser outputs that contain no BookIR nodes."""
+
+    code = "empty_document"
+
+    def detect(self, book: Book) -> List[QualityIssue]:
+        if next(book.walk(), None) is not None:
+            return []
+        evidence = {"node_count": 0}
+        return [
+            QualityIssue(
+                id=_issue_id(self.code, [], evidence),
+                code=self.code,
+                severity=IssueSeverity.ERROR,
+                message="Parser produced no BookIR content nodes.",
+                evidence=evidence,
+            )
+        ]
+
+
 class MissingProvenanceDetector(QualityDetector):
     code = "missing_provenance"
 
