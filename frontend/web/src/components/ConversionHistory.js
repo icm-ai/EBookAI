@@ -16,12 +16,6 @@ function ConversionHistory({ onSelectFromHistory }) {
     }
   }, []);
 
-  const addToHistory = (record) => {
-    const newHistory = [record, ...history.slice(0, 9)]; // Keep last 10 records
-    setHistory(newHistory);
-    localStorage.setItem('ebookAI-history', JSON.stringify(newHistory));
-  };
-
   const clearHistory = () => {
     setHistory([]);
     localStorage.removeItem('ebookAI-history');
@@ -35,10 +29,23 @@ function ConversionHistory({ onSelectFromHistory }) {
     return (bytes / 1024 / 1024).toFixed(2) + ' MB';
   };
 
-  // Expose addToHistory function to parent component
+  // Expose a stable history writer without capturing stale state.
   React.useEffect(() => {
+    const addToHistory = (record) => {
+      setHistory((current) => {
+        const newHistory = [record, ...current.slice(0, 9)];
+        localStorage.setItem('ebookAI-history', JSON.stringify(newHistory));
+        return newHistory;
+      });
+    };
+
     window.addToConversionHistory = addToHistory;
-  }, [history]);
+    return () => {
+      if (window.addToConversionHistory === addToHistory) {
+        delete window.addToConversionHistory;
+      }
+    };
+  }, []);
 
   if (history.length === 0) {
     return null;
