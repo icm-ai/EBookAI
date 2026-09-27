@@ -7,7 +7,11 @@ from pathlib import Path
 from typing import Optional
 
 from book.compiler import EpubCompiler
-from book.repair import AIRepairProposalError, AIRepairProposalGenerator
+from book.repair import (
+    AIRepairProposalError,
+    AIRepairProposalGenerator,
+    SourceEvidenceRenderer,
+)
 from book.review import ReviewSessionStore
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse, Response
@@ -24,6 +28,7 @@ REVIEW_DIR.mkdir(parents=True, exist_ok=True)
 review_store = ReviewSessionStore(REVIEW_DIR)
 epub_compiler = EpubCompiler()
 ai_repair_generator = AIRepairProposalGenerator()
+source_evidence_renderer = SourceEvidenceRenderer()
 
 
 class RejectIssueRequest(BaseModel):
@@ -33,6 +38,7 @@ class RejectIssueRequest(BaseModel):
 class AIProposalRequest(BaseModel):
     provider: Optional[str] = None
     max_tokens: int = 1200
+    include_source_images: bool = False
 
 
 @router.post("/sessions", status_code=201)
@@ -167,6 +173,22 @@ async def generate_ai_repair_proposal(
             issue_id,
         )
         prompt = ai_repair_generator.build_prompt(session.book, issue)
+        source_images = []
+        if request.include_source_images:
+            source_path = await run_in_threadpool(
+                review_store.source_path,
+                session_id,
+            )
+            source_images = await run_in_threadpool(
+                source_evidence_renderer.render_issue,
+                source_path,
+                session.book,
+                issue,
+            )
+            if not source_images:
+                raise AIRepairProposalError(
+                    "No renderable source bbox is available for vision grounding"
+                )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except KeyError as exc:
@@ -182,6 +204,7 @@ async def generate_ai_repair_proposal(
             prompt,
             max_tokens=request.max_tokens,
             provider=request.provider,
+            images=[item.to_model_image() for item in source_images] or None,
         )
     except Exception as exc:
         raise HTTPException(
@@ -196,6 +219,8 @@ async def generate_ai_repair_proposal(
             result.content,
             provider=result.provider,
             model=result.model,
+            input_mode=("vision" if source_images else "text"),
+            source_image_refs=tuple(item.ref_key for item in source_images),
         )
         updated = await run_in_threadpool(
             review_store.add_ai_proposal,
