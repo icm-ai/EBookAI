@@ -7,6 +7,7 @@ from typing import Dict, Iterable, List, Optional, Tuple
 from book.domain.models import Book, Confidence
 from book.quality.detectors import (
     EmptyContentDetector,
+    EmptyDocumentDetector,
     HeadingHierarchyDetector,
     LowConfidenceDetector,
     MissingProvenanceDetector,
@@ -42,6 +43,7 @@ class QualityEngine:
             detectors
             if detectors is not None
             else (
+                EmptyDocumentDetector(),
                 MissingProvenanceDetector(),
                 LowConfidenceDetector(),
                 UnclassifiedTextBlockDetector(),
