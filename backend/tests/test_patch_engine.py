@@ -9,7 +9,7 @@ from book.domain.models import (
     PatchOperation,
     SourceRef,
 )
-from book.repair import PatchEngine, PatchValidationError
+from book.repair import PatchEngine, PatchUndoError, PatchValidationError
 
 
 def _source(page):
@@ -240,3 +240,155 @@ def test_applied_patch_cannot_be_reapplied():
 
     with pytest.raises(PatchValidationError, match="already applied"):
         PatchEngine().apply(once, patch)
+
+
+
+def test_undo_replace_content_restores_before_state_and_marks_patch():
+    engine = PatchEngine()
+    patch = Patch(
+        id="undo-replace",
+        operation=PatchOperation.REPLACE_CONTENT,
+        target_node_id="a",
+        payload={"content": "Changed"},
+    )
+
+    applied = engine.apply(_book(), patch)
+    undone = engine.undo(applied, patch.id)
+
+    assert undone.find_node("a").content == "Alpha"
+    assert undone.patches[-1].undone is True
+    assert undone.patches[-1].payload["_undo"]["restored_from_audit"] is True
+
+
+def test_undo_set_attribute_removes_attribute_that_did_not_exist():
+    engine = PatchEngine()
+    patch = Patch(
+        id="undo-attribute",
+        operation=PatchOperation.SET_ATTRIBUTE,
+        target_node_id="a",
+        payload={"key": "level", "value": 2},
+    )
+
+    applied = engine.apply(_book(), patch)
+    undone = engine.undo(applied, patch.id)
+
+    assert "level" not in undone.find_node("a").attrs
+
+
+def test_undo_insert_and_delete_restore_exact_tree_position():
+    engine = PatchEngine()
+    inserted = BookNode(
+        id="inserted",
+        type=NodeType.PARAGRAPH,
+        content="Inserted",
+        source=[_source(3)],
+    )
+    insert_patch = Patch(
+        id="undo-insert",
+        operation=PatchOperation.INSERT_NODE,
+        target_node_id="parent",
+        payload={"position": "child", "index": 0, "node": inserted.to_dict()},
+    )
+    inserted_book = engine.apply(_book(), insert_patch)
+    insert_undone = engine.undo(inserted_book, insert_patch.id)
+
+    assert [node.id for node in insert_undone.find_node("parent").children] == [
+        "child"
+    ]
+
+    delete_patch = Patch(
+        id="undo-delete",
+        operation=PatchOperation.DELETE_NODE,
+        target_node_id="child",
+    )
+    deleted_book = engine.apply(_book(), delete_patch)
+    delete_undone = engine.undo(deleted_book, delete_patch.id)
+
+    assert [node.id for node in delete_undone.find_node("parent").children] == [
+        "child"
+    ]
+    assert delete_undone.find_node("child").content == "Child"
+
+
+def test_undo_move_restores_original_parent_and_index():
+    engine = PatchEngine()
+    patch = Patch(
+        id="undo-move",
+        operation=PatchOperation.MOVE_NODE,
+        target_node_id="child",
+        payload={"parent_id": None, "index": 1},
+    )
+
+    applied = engine.apply(_book(), patch)
+    undone = engine.undo(applied, patch.id)
+
+    assert [node.id for node in undone.nodes] == ["a", "b", "parent"]
+    assert [node.id for node in undone.find_node("parent").children] == ["child"]
+
+
+def test_undo_merge_restores_original_sibling_snapshots():
+    engine = PatchEngine()
+    patch = Patch(
+        id="undo-merge",
+        operation=PatchOperation.MERGE_NODES,
+        target_node_id="a",
+        payload={"node_ids": ["a", "b"], "content": "Alpha Beta"},
+    )
+
+    applied = engine.apply(_book(), patch)
+    undone = engine.undo(applied, patch.id)
+
+    assert [node.id for node in undone.nodes] == ["a", "b", "parent"]
+    assert undone.find_node("a").content == "Alpha"
+    assert undone.find_node("b").content == "Beta"
+    assert undone.find_node("a").attrs == {"kind": "body"}
+
+
+def test_undo_split_restores_original_node_snapshot():
+    engine = PatchEngine()
+    patch = Patch(
+        id="undo-split",
+        operation=PatchOperation.SPLIT_NODE,
+        target_node_id="a",
+        payload={"parts": ["Alpha one", "Alpha two"]},
+    )
+
+    applied = engine.apply(_book(), patch)
+    undone = engine.undo(applied, patch.id)
+
+    assert [node.id for node in undone.nodes] == ["a", "b", "parent"]
+    assert undone.find_node("a").content == "Alpha"
+    assert undone.find_node("a").attrs == {"kind": "body"}
+
+
+def test_undo_is_lifo_and_patch_diff_exposes_before_after():
+    engine = PatchEngine()
+    first = Patch(
+        id="first",
+        operation=PatchOperation.REPLACE_CONTENT,
+        target_node_id="a",
+        payload={"content": "First"},
+    )
+    second = Patch(
+        id="second",
+        operation=PatchOperation.REPLACE_CONTENT,
+        target_node_id="b",
+        payload={"content": "Second"},
+    )
+
+    applied = engine.apply_many(_book(), [first, second])
+    first_diff = engine.describe_patch(applied, "first")
+    second_diff = engine.describe_patch(applied, "second")
+
+    assert first_diff["before"] == "Alpha"
+    assert first_diff["after"] == "First"
+    assert first_diff["reversible"] is False
+    assert second_diff["before"] == "Beta"
+    assert second_diff["after"] == "Second"
+    assert second_diff["reversible"] is True
+
+    with pytest.raises(PatchUndoError, match="latest active patch"):
+        engine.undo(applied, "first")
+
+    after_second = engine.undo(applied, "second")
+    assert engine.describe_patch(after_second, "first")["reversible"] is True
