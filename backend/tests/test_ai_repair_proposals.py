@@ -209,7 +209,6 @@ def test_issue_without_source_grounded_target_cannot_request_ai_repair():
         AIRepairProposalGenerator().build_prompt(_book(), issue)
 
 
-
 def test_source_evidence_renderer_returns_png_crop(tmp_path):
     pdf_path = Path(tmp_path) / "source.pdf"
     document = fitz.open()
@@ -254,17 +253,12 @@ def test_source_evidence_renderer_returns_png_crop(tmp_path):
     assert evidence[0].page_index == 0
     assert "node=vision-target" in evidence[0].ref_key
     assert "source=vision-source" in evidence[0].ref_key
-    assert base64.b64decode(evidence[0].data_base64).startswith(
-        b"\x89PNG\r\n\x1a\n"
-    )
+    assert base64.b64decode(evidence[0].data_base64).startswith(b"\x89PNG\r\n\x1a\n")
 
 
 def test_vision_proposal_requires_and_audits_source_image_refs():
     generator = AIRepairProposalGenerator()
-    source_ref = (
-        "node=target;source=source-1;"
-        "page=3;bbox=10.00,20.00,300.00,400.00"
-    )
+    source_ref = "node=target;source=source-1;" "page=3;bbox=10.00,20.00,300.00,400.00"
 
     proposal = generator.parse_response(
         _book(),
