@@ -6,6 +6,7 @@ from book.repair.ai_proposals import (
     AIRepairProposalGenerator,
 )
 from book.repair.patch_engine import PatchEngine, PatchValidationError, PatchValidator
+from book.repair.source_evidence import SourceEvidenceRenderer, SourceImageEvidence
 
 __all__ = [
     "AIRepairProposal",
@@ -14,4 +15,6 @@ __all__ = [
     "PatchEngine",
     "PatchValidationError",
     "PatchValidator",
+    "SourceEvidenceRenderer",
+    "SourceImageEvidence",
 ]
