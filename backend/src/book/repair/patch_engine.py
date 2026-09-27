@@ -21,6 +21,10 @@ class PatchValidationError(ValueError):
     """Raised when a patch cannot be safely applied to the current BookIR."""
 
 
+class PatchUndoError(PatchValidationError):
+    """Raised when an applied patch cannot be safely reversed."""
+
+
 @dataclass
 class _NodeLocation:
     container: List[BookNode]
@@ -193,6 +197,224 @@ class PatchEngine:
             result = self.apply(result, patch)
         return result
 
+    def describe_patch(self, book: Book, patch_id: str) -> Dict[str, Any]:
+        """Describe one historical patch and whether it is currently undoable."""
+        patch = self._require_patch(book, patch_id)
+        active = self._active_patches(book)
+        latest_active_id = active[-1].id if active else None
+        audit = patch.payload.get("_audit", {})
+        before: Any = None
+        after: Any = None
+
+        if patch.operation == PatchOperation.REPLACE_CONTENT:
+            before = audit.get("before_content")
+            after = patch.payload.get("content")
+        elif patch.operation == PatchOperation.SET_ATTRIBUTE:
+            before = {
+                "key": audit.get("attribute"),
+                "existed": audit.get("attribute_existed", False),
+                "value": audit.get("before_value"),
+            }
+            after = {
+                "key": patch.payload.get("key"),
+                "value": patch.payload.get("value"),
+            }
+        elif patch.operation == PatchOperation.INSERT_NODE:
+            after = patch.payload.get("node")
+        elif patch.operation == PatchOperation.DELETE_NODE:
+            before = audit.get("before_node")
+        elif patch.operation == PatchOperation.MOVE_NODE:
+            before = {
+                "parent_id": audit.get("before_parent_id"),
+                "index": audit.get("before_index"),
+            }
+            after = {
+                "parent_id": audit.get("after_parent_id"),
+                "index": audit.get("after_index"),
+            }
+        elif patch.operation == PatchOperation.MERGE_NODES:
+            before = audit.get("before_nodes")
+            after = {
+                "merged_node_id": audit.get("merged_node_id"),
+                "content": patch.payload.get("content"),
+            }
+        elif patch.operation == PatchOperation.SPLIT_NODE:
+            before = audit.get("before_node")
+            after = {
+                "created_node_ids": audit.get("created_node_ids", []),
+                "parts": patch.payload.get("parts", []),
+            }
+
+        return {
+            "patch": patch.to_dict(),
+            "status": (
+                "undone"
+                if patch.undone
+                else "applied"
+                if patch.applied
+                else "proposed"
+            ),
+            "reversible": (
+                patch.applied
+                and not patch.undone
+                and latest_active_id == patch.id
+                and bool(audit)
+            ),
+            "latest_active_patch_id": latest_active_id,
+            "before": before,
+            "after": after,
+        }
+
+    def undo(self, book: Book, patch_id: str) -> Book:
+        """Undo the latest active patch using its recorded before-state only."""
+        active = self._active_patches(book)
+        if not active:
+            raise PatchUndoError("BookIR has no active applied patch to undo")
+        patch = active[-1]
+        if patch.id != patch_id:
+            raise PatchUndoError(
+                f"Only the latest active patch {patch.id!r} can be undone safely"
+            )
+
+        audit = patch.payload.get("_audit")
+        if not isinstance(audit, dict) or not audit:
+            raise PatchUndoError(f"Patch {patch_id!r} has no before-state audit")
+
+        result = Book.from_dict(book.to_dict())
+        if patch.operation == PatchOperation.REPLACE_CONTENT:
+            node = _require_node(result, patch.target_node_id)
+            node.content = str(audit["before_content"])
+        elif patch.operation == PatchOperation.SET_ATTRIBUTE:
+            node = _require_node(result, patch.target_node_id)
+            key = str(audit["attribute"])
+            if bool(audit.get("attribute_existed")):
+                node.attrs[key] = audit.get("before_value")
+            else:
+                node.attrs.pop(key, None)
+        elif patch.operation == PatchOperation.INSERT_NODE:
+            inserted_id = str(audit["inserted_node_id"])
+            location = _require_location(result, inserted_id)
+            location.container.pop(location.index)
+        elif patch.operation == PatchOperation.DELETE_NODE:
+            self._restore_deleted_node(result, audit)
+        elif patch.operation == PatchOperation.MOVE_NODE:
+            self._restore_moved_node(result, patch.target_node_id, audit)
+        elif patch.operation == PatchOperation.MERGE_NODES:
+            self._restore_merged_nodes(result, audit)
+        elif patch.operation == PatchOperation.SPLIT_NODE:
+            self._restore_split_node(result, audit)
+        else:
+            raise PatchUndoError(
+                f"Unsupported patch operation for undo: {patch.operation}"
+            )
+
+        self._mark_undone(result, patch_id)
+        return result
+
+    @staticmethod
+    def _restore_deleted_node(book: Book, audit: Dict[str, Any]) -> None:
+        before_node = audit.get("before_node")
+        if not isinstance(before_node, dict):
+            raise PatchUndoError("delete_node audit is missing before_node")
+        restored = BookNode.from_dict(before_node)
+        if book.find_node(restored.id) is not None:
+            raise PatchUndoError(
+                f"Cannot restore deleted node {restored.id!r}: id already exists"
+            )
+        parent_id = audit.get("parent_id")
+        index = int(audit.get("index", 0))
+        destination = (
+            book.nodes
+            if parent_id is None
+            else _require_node(book, str(parent_id)).children
+        )
+        destination.insert(min(index, len(destination)), restored)
+
+    @staticmethod
+    def _restore_moved_node(
+        book: Book,
+        node_id: str,
+        audit: Dict[str, Any],
+    ) -> None:
+        location = _require_location(book, node_id)
+        node = location.container.pop(location.index)
+        parent_id = audit.get("before_parent_id")
+        index = int(audit.get("before_index", 0))
+        destination = (
+            book.nodes
+            if parent_id is None
+            else _require_node(book, str(parent_id)).children
+        )
+        destination.insert(min(index, len(destination)), node)
+
+    @staticmethod
+    def _restore_merged_nodes(book: Book, audit: Dict[str, Any]) -> None:
+        raw_nodes = audit.get("before_nodes")
+        merged_node_id = audit.get("merged_node_id")
+        if not isinstance(raw_nodes, list) or not raw_nodes or not merged_node_id:
+            raise PatchUndoError("merge_nodes audit is incomplete")
+        location = _require_location(book, str(merged_node_id))
+        restored = [BookNode.from_dict(item) for item in raw_nodes]
+        location.container[location.index : location.index + 1] = restored
+
+    @staticmethod
+    def _restore_split_node(book: Book, audit: Dict[str, Any]) -> None:
+        raw_before = audit.get("before_node")
+        created_ids = audit.get("created_node_ids")
+        if not isinstance(raw_before, dict) or not isinstance(created_ids, list):
+            raise PatchUndoError("split_node audit is incomplete")
+        if not created_ids:
+            raise PatchUndoError("split_node audit contains no created node ids")
+
+        locations = [_require_location(book, str(node_id)) for node_id in created_ids]
+        container = locations[0].container
+        indexes = [location.index for location in locations]
+        if any(location.container is not container for location in locations):
+            raise PatchUndoError("Split nodes are no longer siblings")
+        if indexes != list(range(indexes[0], indexes[0] + len(indexes))):
+            raise PatchUndoError("Split nodes are no longer contiguous")
+        container[indexes[0] : indexes[0] + len(indexes)] = [
+            BookNode.from_dict(raw_before)
+        ]
+
+    @staticmethod
+    def _active_patches(book: Book) -> List[Patch]:
+        return [
+            patch
+            for patch in book.patches
+            if patch.applied and not patch.undone
+        ]
+
+    @staticmethod
+    def _require_patch(book: Book, patch_id: str) -> Patch:
+        for patch in book.patches:
+            if patch.id == patch_id:
+                return patch
+        raise PatchUndoError(f"Patch {patch_id!r} does not exist")
+
+    @staticmethod
+    def _mark_undone(book: Book, patch_id: str) -> None:
+        for index, patch in enumerate(book.patches):
+            if patch.id != patch_id:
+                continue
+            payload = dict(patch.payload)
+            payload["_undo"] = {
+                "restored_from_audit": True,
+                "mode": "latest-active-only",
+            }
+            book.patches[index] = Patch(
+                id=patch.id,
+                operation=patch.operation,
+                target_node_id=patch.target_node_id,
+                payload=payload,
+                reason=patch.reason,
+                confidence=patch.confidence,
+                applied=patch.applied,
+                undone=True,
+            )
+            return
+        raise PatchUndoError(f"Patch {patch_id!r} does not exist")
+
     @staticmethod
     def _replace_content(book: Book, patch: Patch) -> Dict[str, Any]:
         node = _require_node(book, patch.target_node_id)
@@ -362,6 +584,7 @@ class PatchEngine:
             reason=patch.reason,
             confidence=patch.confidence,
             applied=True,
+            undone=False,
         )
 
         for index, existing in enumerate(book.patches):
