@@ -1,7 +1,17 @@
 import os
 from contextlib import asynccontextmanager
 
-from api import ai, batch, cleanup, conversion, health, monitoring, progress, review, websocket
+from api import (
+    ai,
+    batch,
+    cleanup,
+    conversion,
+    health,
+    monitoring,
+    progress,
+    review,
+    websocket,
+)
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from utils.error_handler import global_exception_handler, http_exception_handler
