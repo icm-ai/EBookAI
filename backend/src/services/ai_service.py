@@ -144,6 +144,50 @@ class AIService:
                 original_error=e
             )
 
+    async def complete_prompt(
+        self,
+        prompt: str,
+        max_tokens: int = 1200,
+        provider: str = None,
+    ) -> AIResult:
+        """Run a provider completion for a caller-supplied structured prompt."""
+        import time
+
+        start_time = time.time()
+        provider = provider or self.provider
+        config = ai_config.get_provider_config(provider)
+
+        try:
+            api_type = config.get("api_type", "openai")
+            if api_type == "openai":
+                content, token_usage = await self._call_openai_compatible_api(
+                    config,
+                    prompt,
+                    max_tokens=max_tokens,
+                )
+            elif api_type == "anthropic":
+                content, token_usage = await self._call_anthropic_api(
+                    config,
+                    prompt,
+                    max_tokens=max_tokens,
+                )
+            else:
+                raise ValueError(f"Unsupported api_type: {api_type}")
+
+            return AIResult(
+                content=content,
+                provider=provider,
+                model=config["model"],
+                processing_time=time.time() - start_time,
+                token_usage=token_usage,
+            )
+        except Exception as e:
+            raise AIServiceError(
+                message=f"AI completion failed: {str(e)}",
+                provider=provider,
+                original_error=e,
+            )
+
     async def batch_process_texts(
         self, texts: List[str], operation: str = "summary", **kwargs
     ) -> List[AIResult]:
