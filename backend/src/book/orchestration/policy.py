@@ -38,17 +38,14 @@ class QualityGate:
 
         error_count = counts[IssueSeverity.ERROR.value]
         if error_count > self.max_error_issues:
-            reasons.append(
-                f"error_issues={error_count} > {self.max_error_issues}"
-            )
+            reasons.append(f"error_issues={error_count} > {self.max_error_issues}")
 
-        review_burden = (
-            counts[IssueSeverity.REVIEW.value] + error_count
-        ) / max(report.node_count, 1)
+        review_burden = (counts[IssueSeverity.REVIEW.value] + error_count) / max(
+            report.node_count, 1
+        )
         if review_burden > self.max_review_ratio:
             reasons.append(
-                "review_ratio="
-                f"{review_burden:.4f} > {self.max_review_ratio:.4f}"
+                "review_ratio=" f"{review_burden:.4f} > {self.max_review_ratio:.4f}"
             )
 
         issue_codes = {issue.code for issue in report.issues}
@@ -133,9 +130,7 @@ class OrchestratorPolicy:
         self,
         adapters: Sequence[BookParserAdapter],
     ) -> List[BookParserAdapter]:
-        priorities = {
-            name: index for index, name in enumerate(self.parser_priority)
-        }
+        priorities = {name: index for index, name in enumerate(self.parser_priority)}
         fallback = len(priorities)
         return sorted(
             adapters,
