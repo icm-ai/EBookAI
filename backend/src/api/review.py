@@ -12,10 +12,10 @@ from book.review import ReviewSessionStore
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel
+from services.ai_service import AIService
 from starlette.concurrency import run_in_threadpool
 
 from config import MAX_FILE_SIZE, OUTPUT_DIR
-from services.ai_service import AIService
 
 router = APIRouter(prefix="/review", tags=["review"])
 
