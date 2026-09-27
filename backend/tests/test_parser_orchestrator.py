@@ -288,3 +288,48 @@ def test_no_capable_parser_returns_explicit_no_candidates_result():
     assert result.selected_parser is None
     assert result.stop_reason == StopReason.NO_CANDIDATES
     assert result.attempts == []
+def test_empty_document_escalates_to_ocr_backend():
+    empty = FakeAdapter(
+        "native",
+        Book(
+            metadata=BookMetadata(
+                title="Scanned",
+                extra={"page_count": 1, "parser": "native"},
+            )
+        ),
+        capabilities=ParserCapabilities(native_text=True, bbox=True),
+    )
+    ocr = FakeAdapter(
+        "ocr",
+        _book("ocr"),
+        capabilities=_semantic_capabilities(),
+    )
+    registry = ParserRegistry([empty, ocr])
+    policy = OrchestratorPolicy(parser_priority=("native", "ocr"))
+
+    result = ParserOrchestrator(registry, policy=policy).run(Path("scan.pdf"))
+
+    assert result.accepted is True
+    assert result.selected_parser == "ocr"
+    assert result.attempts[0].issue_codes == ("empty_document",)
+    assert result.attempts[1].required_features == ("ocr",)
+
+
+def test_all_unavailable_candidates_end_as_exhausted_not_no_candidates():
+    unavailable = FakeAdapter(
+        "optional",
+        _book("optional"),
+        capabilities=ParserCapabilities(native_text=True),
+        available=False,
+    )
+    registry = ParserRegistry([unavailable])
+    policy = OrchestratorPolicy(parser_priority=("optional",))
+
+    result = ParserOrchestrator(registry, policy=policy).run(Path("book.pdf"))
+
+    assert result.accepted is False
+    assert result.book is None
+    assert result.stop_reason == StopReason.EXHAUSTED
+    assert [attempt.status for attempt in result.attempts] == [
+        AttemptStatus.UNAVAILABLE
+    ]
