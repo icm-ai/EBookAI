@@ -125,7 +125,8 @@ jobs:
           backend/tests/test_patch_engine.py \
           backend/tests/test_parser_adapters.py \
           backend/tests/test_parser_orchestrator.py \
-          backend/tests/test_review_session.py
+          backend/tests/test_review_session.py \
+          backend/tests/test_ai_repair_proposals.py
         isort --check-only --diff \
           backend/src/book \
           backend/src/api/review.py \
@@ -138,7 +139,8 @@ jobs:
           backend/tests/test_patch_engine.py \
           backend/tests/test_parser_adapters.py \
           backend/tests/test_parser_orchestrator.py \
-          backend/tests/test_review_session.py
+          backend/tests/test_review_session.py \
+          backend/tests/test_ai_repair_proposals.py
 
     - name: Run BookIR tests
       env:
@@ -153,7 +155,8 @@ jobs:
           backend/tests/test_patch_engine.py \
           backend/tests/test_parser_adapters.py \
           backend/tests/test_parser_orchestrator.py \
-          backend/tests/test_review_session.py
+          backend/tests/test_review_session.py \
+          backend/tests/test_ai_repair_proposals.py
 
   lint-frontend:
     name: Frontend Linting
