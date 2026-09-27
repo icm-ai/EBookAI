@@ -297,9 +297,7 @@ class AIRepairProposalGenerator:
                 "AI proposal confidence must be numeric"
             ) from exc
         if not 0.0 <= confidence <= 1.0:
-            raise AIRepairProposalError(
-                "AI proposal confidence must be in [0, 1]"
-            )
+            raise AIRepairProposalError("AI proposal confidence must be in [0, 1]")
 
         patch_seed = {
             "issue_id": issue.id,
@@ -387,9 +385,7 @@ class AIRepairProposalGenerator:
 
         key = payload.get("key")
         if key not in self.SAFE_ATTRIBUTE_KEYS:
-            raise AIRepairProposalError(
-                f"AI set_attribute key is not allowed: {key!r}"
-            )
+            raise AIRepairProposalError(f"AI set_attribute key is not allowed: {key!r}")
         if set(payload) != {"key", "value"}:
             raise AIRepairProposalError(
                 "set_attribute payload may only contain key and value"
