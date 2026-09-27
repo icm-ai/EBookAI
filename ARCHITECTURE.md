@@ -46,6 +46,7 @@ Model-assisted repair must eventually be represented as an explicit patch rather
     ├── parsers/
     │   ├── base.py
     │   └── pymupdf.py
+    ├── orchestration/
     ├── reconstruction/
     ├── repair/
     ├── quality/
@@ -222,7 +223,73 @@ For any parser adapter output used by EBookAI:
 - backend-specific ids and payload details may be retained in `attrs`, but
   downstream reconstruction/quality/compiler layers must not require them.
 
-### Milestone 5 — Human review UI
+### Milestone 5 — Quality-aware Parser Orchestrator
+
+- [x] Separate quality acceptance from parser selection.
+- [x] Configurable `QualityGate` using score, error count, review burden, and blocking issue codes.
+- [x] Issue-driven `EscalationPolicy` maps quality failures to parser capabilities.
+- [x] Low extraction confidence escalates toward OCR-capable parsers.
+- [x] Low structure confidence escalates toward layout + semantic parsers.
+- [x] Low reading-order confidence escalates toward layout + reading-order capability.
+- [x] Configurable parser priority keeps cost/order policy above adapters.
+- [x] Runtime-unavailable backends are skipped and audited without consuming parse budget.
+- [x] Known backend failures fall through to the next candidate.
+- [x] Explicit user/task-required capabilities filter candidates before the first parse.
+- [x] Every successful parse runs deterministic reconstruction and Quality Engine analysis.
+- [x] Accepted results stop early; rejected results can trigger stronger capability requirements.
+- [x] Exhausted routes return the best available rejected BookIR for human review rather than discarding work.
+- [x] Final BookIR stores the orchestration policy, attempt trail, final quality report, and stop reason.
+- [x] Focused CI covers success, escalation, unavailable runtimes, backend failure, capability filtering, exhaustion, and no-candidate paths.
+
+#### Quality gate
+
+The gate is deliberately independent from backend names. The default acceptance
+contract currently requires:
+
+- quality score >= 0.97;
+- zero error-severity issues;
+- review+error burden <= 5% of BookIR nodes;
+- no `missing_provenance` issue.
+
+These numbers are policy defaults, not claims that the heuristic score is a
+probability of correctness. Applications can provide a different
+`QualityGate` without changing parser code.
+
+#### Issue-driven escalation
+
+Quality issues are translated into **required capabilities**, not concrete
+backend names. Examples:
+
+    low extraction confidence -> ocr
+    low structure confidence  -> layout + semantic_output
+    low reading order         -> layout + reading_order
+    unclassified text block   -> layout + semantic_output
+    orphan footnote           -> footnotes
+    heading hierarchy         -> headings
+
+The registry then filters the remaining untried parsers by those capabilities.
+The default parser priority is `pymupdf -> mineru -> marker`, but this ordering
+is isolated in `OrchestratorPolicy` and can be replaced for different
+hardware, cost, privacy, or deployment constraints.
+
+#### Attempt and fallback semantics
+
+Unavailable optional runtimes are recorded as `unavailable` and skipped.
+A known `ParserBackendError` is recorded as `failed` and allows fallback.
+A parsed result that fails the quality gate is recorded as `rejected` with
+its score, issue counts, issue codes, gate reason, and the capability snapshot
+that led to that attempt.
+
+The orchestrator does not silently discard rejected work. If all candidates are
+exhausted or the maximum parse-attempt budget is reached, it returns the best
+rejected BookIR by the same heuristic report ordering and marks the result
+`accepted=false`. That document can enter a later human-review queue.
+
+The final selected BookIR records the complete attempt trail under
+`metadata.extra.orchestration` and stores the final QualityReport under
+`metadata.extra.quality.report`.
+
+### Milestone 6 — Human review UI
 
 Reuse the existing React/FastAPI shell for source view, reconstructed book view, issue queue, source-aligned selection, patch review/undo, export, and quality reports.
 
