@@ -37,6 +37,8 @@ class AIRepairProposal:
     evidence_source_ids: Tuple[str, ...]
     grounding_hash: str
     confidence: float
+    input_mode: str = "text"
+    source_image_refs: Tuple[str, ...] = ()
     status: str = "pending"
     created_at: str = field(default_factory=_utc_now)
     reviewed_at: Optional[str] = None
@@ -48,6 +50,10 @@ class AIRepairProposal:
             raise ValueError("proposal issue_id must not be empty")
         if self.status not in {"pending", "accepted", "rejected", "superseded"}:
             raise ValueError("invalid AI repair proposal status")
+        if self.input_mode not in {"text", "vision"}:
+            raise ValueError("AI proposal input_mode must be text or vision")
+        if self.input_mode == "vision" and not self.source_image_refs:
+            raise ValueError("vision AI proposal requires source_image_refs")
         if not 0.0 <= self.confidence <= 1.0:
             raise ValueError("proposal confidence must be in [0, 1]")
         if not self.evidence_node_ids:
@@ -71,6 +77,8 @@ class AIRepairProposal:
             "evidence_source_ids": list(self.evidence_source_ids),
             "grounding_hash": self.grounding_hash,
             "confidence": self.confidence,
+            "input_mode": self.input_mode,
+            "source_image_refs": list(self.source_image_refs),
             "status": self.status,
             "created_at": self.created_at,
             "reviewed_at": self.reviewed_at,
@@ -94,6 +102,10 @@ class AIRepairProposal:
             ),
             grounding_hash=str(value.get("grounding_hash", "")),
             confidence=float(value.get("confidence", 1.0)),
+            input_mode=str(value.get("input_mode", "text")),
+            source_image_refs=tuple(
+                str(item) for item in value.get("source_image_refs", [])
+            ),
             status=str(value.get("status", "pending")),
             created_at=str(value.get("created_at") or _utc_now()),
             reviewed_at=(
@@ -212,7 +224,16 @@ class AIRepairProposalGenerator:
         *,
         provider: str,
         model: str,
+        input_mode: str = "text",
+        source_image_refs: Tuple[str, ...] = (),
     ) -> AIRepairProposal:
+        if input_mode not in {"text", "vision"}:
+            raise AIRepairProposalError("input_mode must be text or vision")
+        if input_mode == "vision" and not source_image_refs:
+            raise AIRepairProposalError(
+                "vision proposal requires source image evidence"
+            )
+
         context = self.build_context(book, issue)
         parsed = self._parse_json_object(raw_response)
 
@@ -332,6 +353,8 @@ class AIRepairProposalGenerator:
             "evidence_node_ids": evidence_node_ids,
             "evidence_source_ids": evidence_source_ids,
             "grounding_hash": context["grounding_hash"],
+            "input_mode": input_mode,
+            "source_image_refs": source_image_refs,
         }
         proposal_id = "ai-proposal-" + str(
             uuid.uuid5(
@@ -351,6 +374,8 @@ class AIRepairProposalGenerator:
             evidence_source_ids=evidence_source_ids,
             grounding_hash=str(context["grounding_hash"]),
             confidence=confidence,
+            input_mode=input_mode,
+            source_image_refs=source_image_refs,
         )
 
     def _validate_restricted_payload(
