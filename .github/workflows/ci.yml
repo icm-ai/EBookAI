@@ -106,12 +106,17 @@ jobs:
       env:
         PYTHONPATH: ${{ github.workspace }}/backend/src
       run: |
-        python -m compileall -q backend/src/book
+        python -m compileall -q \
+          backend/src/book \
+          backend/src/api/review.py \
+          backend/src/main.py
 
     - name: Check BookIR formatting
       run: |
         black --diff --check \
           backend/src/book \
+          backend/src/api/review.py \
+          backend/src/main.py \
           backend/tests/test_book_ir.py \
           backend/tests/test_pymupdf_book_adapter.py \
           backend/tests/test_epub_compiler.py \
@@ -123,6 +128,8 @@ jobs:
           backend/tests/test_review_session.py
         isort --check-only --diff \
           backend/src/book \
+          backend/src/api/review.py \
+          backend/src/main.py \
           backend/tests/test_book_ir.py \
           backend/tests/test_pymupdf_book_adapter.py \
           backend/tests/test_epub_compiler.py \
