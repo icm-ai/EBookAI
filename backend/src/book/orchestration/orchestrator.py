@@ -153,7 +153,7 @@ class ParserOrchestrator:
 
         if executed_attempts >= self.policy.max_attempts:
             stop_reason = StopReason.MAX_ATTEMPTS
-        elif best_book is None:
+        elif not attempts:
             stop_reason = StopReason.NO_CANDIDATES
         else:
             stop_reason = StopReason.EXHAUSTED
