@@ -31,6 +31,8 @@ function ReviewWorkspace() {
   const [loading, setLoading] = useState(false);
   const [actionIssueId, setActionIssueId] = useState(null);
   const [aiActionId, setAiActionId] = useState(null);
+  const [patchActionId, setPatchActionId] = useState(null);
+  const [qaLoading, setQaLoading] = useState(false);
   const [aiProviders, setAiProviders] = useState([]);
   const [aiProvider, setAiProvider] = useState('');
   const [includeSourceImages, setIncludeSourceImages] = useState(false);
@@ -51,8 +53,17 @@ function ReviewWorkspace() {
     ]);
     return new Map(entries);
   }, [session]);
+  const resolutions = useMemo(() => {
+    const entries = (session?.issue_resolutions || []).map((resolution) => [
+      resolution.issue_id,
+      resolution,
+    ]);
+    return new Map(entries);
+  }, [session]);
 
   const aiProposals = session?.ai_proposals || [];
+  const patchHistory = session?.patch_history || [];
+  const publicationReport = session?.publication_report || null;
   const selectedAIProposals = aiProposals.filter(
     (proposal) => proposal.issue_id === selectedIssueId
   );
@@ -288,6 +299,40 @@ function ReviewWorkspace() {
     }
   };
 
+  const undoPatch = async (patchId) => {
+    setPatchActionId(patchId);
+    setError(null);
+    try {
+      const response = await api.undoReviewPatch(session.id, patchId);
+      setNextSession(response.data);
+    } catch (err) {
+      setError(
+        err.response?.data?.detail ||
+          err.message ||
+          'Failed to undo the patch.'
+      );
+    } finally {
+      setPatchActionId(null);
+    }
+  };
+
+  const runPublicationQA = async () => {
+    setQaLoading(true);
+    setError(null);
+    try {
+      const response = await api.runReviewPublicationQA(session.id);
+      setNextSession(response.data);
+    } catch (err) {
+      setError(
+        err.response?.data?.detail ||
+          err.message ||
+          'Failed to run publication QA.'
+      );
+    } finally {
+      setQaLoading(false);
+    }
+  };
+
   const counts = session?.quality_report?.counts || {};
   const score = session?.quality_report?.score;
   const orchestration = session?.orchestration || {};
@@ -363,6 +408,29 @@ function ReviewWorkspace() {
               <span className="review-count info">
                 Info {counts.info || 0}
               </span>
+              <span
+                className={[
+                  'review-release-status',
+                  publicationReport
+                    ? publicationReport.release_ready
+                      ? 'ready'
+                      : 'blocked'
+                    : 'pending',
+                ].join(' ')}
+              >
+                {publicationReport
+                  ? publicationReport.release_ready
+                    ? 'Release ready'
+                    : 'Release blocked'
+                  : 'QA not run'}
+              </span>
+              <button
+                className="review-qa-button"
+                onClick={runPublicationQA}
+                disabled={qaLoading}
+              >
+                {qaLoading ? 'Checking…' : 'Run publication QA'}
+              </button>
               <a
                 className="review-export-link"
                 href={api.getReviewExportUrl(session.id, 'bookir')}
@@ -463,6 +531,7 @@ function ReviewWorkspace() {
                 )}
                 {issues.map((issue) => {
                   const decision = decisions.get(issue.id);
+                  const resolution = resolutions.get(issue.id);
                   const busy = actionIssueId === issue.id;
                   return (
                     <article
@@ -481,11 +550,20 @@ function ReviewWorkspace() {
                         </span>
                       </div>
                       <p>{issue.message}</p>
-                      {decision && (
-                        <div className="review-decision-badge">
-                          Human decision: {decision.decision}
-                        </div>
-                      )}
+                      <div className="review-issue-badges">
+                        {resolution && (
+                          <span
+                            className={`review-resolution-badge ${resolution.state}`}
+                          >
+                            {resolution.state}
+                          </span>
+                        )}
+                        {decision && (
+                          <span className="review-decision-badge">
+                            Human decision: {decision.decision}
+                          </span>
+                        )}
+                      </div>
 
                       {selectedIssueId === issue.id && (
                         <div className="review-issue-detail">
@@ -719,6 +797,121 @@ function ReviewWorkspace() {
                   ))}
                 </div>
               )}
+            </div>
+          </section>
+
+          <section className="review-route-panel">
+            <div className="review-panel-header">
+              <div>
+                <h3>Patch History</h3>
+                <span>
+                  {patchHistory.length} applied/reverted patches
+                </span>
+              </div>
+            </div>
+            <div className="review-patch-history">
+              {patchHistory.length === 0 && (
+                <div className="review-empty-state">
+                  No accepted patches yet.
+                </div>
+              )}
+              {patchHistory.map((entry) => (
+                <article
+                  key={entry.patch.id}
+                  className={`review-patch-card ${entry.status}`}
+                >
+                  <div className="review-patch-card-header">
+                    <div>
+                      <strong>{entry.patch.operation}</strong>
+                      <span>{entry.patch.target_node_id}</span>
+                    </div>
+                    <div className="review-patch-card-actions">
+                      <span className="review-patch-status">
+                        {entry.status}
+                      </span>
+                      {entry.reversible && (
+                        <button
+                          className="review-undo-button"
+                          onClick={() => undoPatch(entry.patch.id)}
+                          disabled={patchActionId === entry.patch.id}
+                        >
+                          {patchActionId === entry.patch.id
+                            ? 'Undoing…'
+                            : 'Undo'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="review-patch-reason">
+                    {entry.patch.reason || 'No reason recorded'}
+                  </div>
+                  <div className="review-patch-diff">
+                    <div>
+                      <span>Before</span>
+                      <pre>{JSON.stringify(entry.before, null, 2)}</pre>
+                    </div>
+                    <div>
+                      <span>After</span>
+                      <pre>{JSON.stringify(entry.after, null, 2)}</pre>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="review-route-panel">
+            <div className="review-panel-header">
+              <div>
+                <h3>Publication QA</h3>
+                <span>
+                  {publicationReport
+                    ? publicationReport.release_ready
+                      ? 'Release ready'
+                      : 'Blocking findings remain'
+                    : 'Not run yet'}
+                </span>
+              </div>
+              <button
+                className="review-qa-button"
+                onClick={runPublicationQA}
+                disabled={qaLoading}
+              >
+                {qaLoading ? 'Checking…' : 'Run again'}
+              </button>
+            </div>
+            <div className="review-publication-findings">
+              {!publicationReport && (
+                <div className="review-empty-state">
+                  Run publication QA to validate current review state and the
+                  compiled EPUB package.
+                </div>
+              )}
+              {(publicationReport?.findings || []).length === 0 &&
+                publicationReport && (
+                  <div className="review-release-ready-message">
+                    No publication blockers detected.
+                  </div>
+                )}
+              {(publicationReport?.findings || []).map((finding, index) => (
+                <div
+                  key={`${finding.code}-${index}`}
+                  className={`review-publication-finding ${finding.severity}`}
+                >
+                  <div>
+                    <strong>{finding.code}</strong>
+                    <span>{finding.severity}</span>
+                  </div>
+                  <p>{finding.message}</p>
+                  {finding.evidence &&
+                    Object.keys(finding.evidence).length > 0 && (
+                      <details>
+                        <summary>Evidence</summary>
+                        <pre>{JSON.stringify(finding.evidence, null, 2)}</pre>
+                      </details>
+                    )}
+                </div>
+              ))}
             </div>
           </section>
 
