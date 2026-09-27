@@ -30,6 +30,7 @@ function ReviewWorkspace() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(false);
   const [actionIssueId, setActionIssueId] = useState(null);
+  const [aiActionId, setAiActionId] = useState(null);
   const [error, setError] = useState(null);
   const [selectedIssueId, setSelectedIssueId] = useState(null);
   const [selectedNodeId, setSelectedNodeId] = useState(null);
@@ -48,6 +49,10 @@ function ReviewWorkspace() {
     return new Map(entries);
   }, [session]);
 
+  const aiProposals = session?.ai_proposals || [];
+  const selectedAIProposals = aiProposals.filter(
+    (proposal) => proposal.issue_id === selectedIssueId
+  );
   const selectedIssue = issues.find((issue) => issue.id === selectedIssueId);
   const selectedNode = nodes.find((node) => node.id === selectedNodeId);
   const selectedIssueNode = selectedIssue?.node_ids
@@ -187,6 +192,63 @@ function ReviewWorkspace() {
       );
     } finally {
       setActionIssueId(null);
+    }
+  };
+
+  const generateAIProposal = async (issueId) => {
+    setAiActionId(`generate:${issueId}`);
+    setError(null);
+    try {
+      const response = await api.generateAIRepairProposal(session.id, issueId);
+      setNextSession(response.data);
+    } catch (err) {
+      setError(
+        err.response?.data?.detail ||
+          err.message ||
+          'Failed to generate a grounded AI proposal.'
+      );
+    } finally {
+      setAiActionId(null);
+    }
+  };
+
+  const acceptAIProposal = async (proposalId) => {
+    setAiActionId(`accept:${proposalId}`);
+    setError(null);
+    try {
+      const response = await api.acceptAIRepairProposal(
+        session.id,
+        proposalId
+      );
+      setNextSession(response.data);
+    } catch (err) {
+      setError(
+        err.response?.data?.detail ||
+          err.message ||
+          'Failed to apply the AI proposal.'
+      );
+    } finally {
+      setAiActionId(null);
+    }
+  };
+
+  const rejectAIProposal = async (proposalId) => {
+    setAiActionId(`reject:${proposalId}`);
+    setError(null);
+    try {
+      const response = await api.rejectAIRepairProposal(
+        session.id,
+        proposalId
+      );
+      setNextSession(response.data);
+    } catch (err) {
+      setError(
+        err.response?.data?.detail ||
+          err.message ||
+          'Failed to reject the AI proposal.'
+      );
+    } finally {
+      setAiActionId(null);
     }
   };
 
@@ -404,12 +466,114 @@ function ReviewWorkspace() {
                           )}
                           {issue.suggested_patch && (
                             <details>
-                              <summary>Suggested patch</summary>
+                              <summary>Deterministic suggested patch</summary>
                               <pre>
                                 {JSON.stringify(issue.suggested_patch, null, 2)}
                               </pre>
                             </details>
                           )}
+
+                          <div className="review-ai-repair">
+                            <div className="review-ai-repair-header">
+                              <strong>Source-grounded AI proposals</strong>
+                              <button
+                                className="review-ai-generate-button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  generateAIProposal(issue.id);
+                                }}
+                                disabled={
+                                  !issue.node_ids?.length ||
+                                  aiActionId === `generate:${issue.id}`
+                                }
+                              >
+                                {aiActionId === `generate:${issue.id}`
+                                  ? 'Generating…'
+                                  : 'Generate proposal'}
+                              </button>
+                            </div>
+
+                            {!issue.node_ids?.length && (
+                              <div className="review-ai-policy-note">
+                                AI repair is disabled for book-level issues
+                                without source-grounded target nodes.
+                              </div>
+                            )}
+
+                            {selectedAIProposals.length === 0 &&
+                              issue.node_ids?.length > 0 && (
+                                <div className="review-ai-policy-note">
+                                  No AI proposal yet. Generation is advisory
+                                  only and never mutates BookIR.
+                                </div>
+                              )}
+
+                            {selectedAIProposals.map((proposal) => (
+                              <div
+                                key={proposal.id}
+                                className={`review-ai-proposal ${proposal.status}`}
+                              >
+                                <div className="review-ai-proposal-meta">
+                                  <span>
+                                    {proposal.provider}/{proposal.model}
+                                  </span>
+                                  <span>
+                                    {Math.round(proposal.confidence * 100)}%
+                                  </span>
+                                  <strong>{proposal.status}</strong>
+                                </div>
+                                <p>{proposal.rationale}</p>
+                                <div className="review-ai-evidence">
+                                  Evidence nodes:{' '}
+                                  {proposal.evidence_node_ids.join(', ')}
+                                </div>
+                                <div className="review-ai-evidence">
+                                  Source ids:{' '}
+                                  {proposal.evidence_source_ids.join(', ')}
+                                </div>
+                                <details>
+                                  <summary>AI patch</summary>
+                                  <pre>
+                                    {JSON.stringify(proposal.patch, null, 2)}
+                                  </pre>
+                                </details>
+                                {proposal.status === 'pending' && (
+                                  <div className="review-issue-actions">
+                                    <button
+                                      className="review-accept-button"
+                                      onClick={(event) => {
+                                        event.stopPropagation();
+                                        acceptAIProposal(proposal.id);
+                                      }}
+                                      disabled={
+                                        aiActionId ===
+                                        `accept:${proposal.id}`
+                                      }
+                                    >
+                                      {aiActionId ===
+                                      `accept:${proposal.id}`
+                                        ? 'Applying…'
+                                        : 'Accept AI patch'}
+                                    </button>
+                                    <button
+                                      className="review-reject-button"
+                                      onClick={(event) => {
+                                        event.stopPropagation();
+                                        rejectAIProposal(proposal.id);
+                                      }}
+                                      disabled={
+                                        aiActionId ===
+                                        `reject:${proposal.id}`
+                                      }
+                                    >
+                                      Reject AI proposal
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+
                           <div className="review-issue-actions">
                             <button
                               className="review-accept-button"
@@ -450,6 +614,30 @@ function ReviewWorkspace() {
                       <span>{decision.issue?.code || decision.issue_id}</span>
                       <strong>{decision.decision}</strong>
                     </div>
+                  ))}
+                </div>
+              )}
+
+              {aiProposals.length > 0 && (
+                <div className="review-ai-history">
+                  <h4>AI proposal history</h4>
+                  {aiProposals.map((proposal) => (
+                    <button
+                      key={proposal.id}
+                      className="review-ai-history-row"
+                      onClick={() => {
+                        const issue = issues.find(
+                          (item) => item.id === proposal.issue_id
+                        );
+                        if (issue) {
+                          chooseIssue(issue);
+                        }
+                      }}
+                    >
+                      <span>{proposal.issue?.code || proposal.issue_id}</span>
+                      <span>{proposal.provider}/{proposal.model}</span>
+                      <strong>{proposal.status}</strong>
+                    </button>
                   ))}
                 </div>
               )}
