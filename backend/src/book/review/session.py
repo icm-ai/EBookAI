@@ -1,0 +1,303 @@
+"""Persistent human-review sessions for BookIR."""
+
+from __future__ import annotations
+
+import json
+import shutil
+import threading
+import uuid
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+from book.domain.models import Book
+from book.orchestration import OrchestrationResult, ParserOrchestrator
+from book.parsers import MarkerAdapter, MinerUAdapter, ParserRegistry, PyMuPDFAdapter
+from book.quality import QualityEngine, QualityIssue, QualityReport
+from book.repair import PatchEngine
+
+
+def _utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+@dataclass(frozen=True)
+class ReviewDecision:
+    """Auditable human decision for one quality issue."""
+
+    issue_id: str
+    decision: str
+    issue: Dict[str, Any]
+    patch_id: Optional[str] = None
+    reason: str = ""
+    created_at: str = field(default_factory=_utc_now)
+
+    def __post_init__(self) -> None:
+        if self.decision not in {"accepted", "rejected"}:
+            raise ValueError("review decision must be accepted or rejected")
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "issue_id": self.issue_id,
+            "decision": self.decision,
+            "issue": self.issue,
+            "patch_id": self.patch_id,
+            "reason": self.reason,
+            "created_at": self.created_at,
+        }
+
+    @classmethod
+    def from_dict(cls, value: Dict[str, Any]) -> "ReviewDecision":
+        return cls(
+            issue_id=str(value["issue_id"]),
+            decision=str(value["decision"]),
+            issue=dict(value.get("issue", {})),
+            patch_id=(
+                str(value["patch_id"]) if value.get("patch_id") is not None else None
+            ),
+            reason=str(value.get("reason", "")),
+            created_at=str(value.get("created_at") or _utc_now()),
+        )
+
+
+@dataclass
+class ReviewSession:
+    """Persisted source + BookIR + review state."""
+
+    id: str
+    source_filename: str
+    source_file: str
+    book: Book
+    quality_report: QualityReport
+    created_at: str
+    updated_at: str
+    decisions: Dict[str, ReviewDecision] = field(default_factory=dict)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "source_filename": self.source_filename,
+            "source_file": self.source_file,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+            "book": self.book.to_dict(),
+            "quality_report": self.quality_report.to_dict(),
+            "decisions": [
+                self.decisions[key].to_dict() for key in sorted(self.decisions)
+            ],
+        }
+
+    @classmethod
+    def from_dict(cls, value: Dict[str, Any]) -> "ReviewSession":
+        decisions = {
+            item["issue_id"]: ReviewDecision.from_dict(item)
+            for item in value.get("decisions", [])
+        }
+        return cls(
+            id=str(value["id"]),
+            source_filename=str(value["source_filename"]),
+            source_file=str(value["source_file"]),
+            created_at=str(value["created_at"]),
+            updated_at=str(value["updated_at"]),
+            book=Book.from_dict(value["book"]),
+            quality_report=QualityReport.from_dict(value["quality_report"]),
+            decisions=decisions,
+        )
+
+    def response_dict(self) -> Dict[str, Any]:
+        payload = self.to_dict()
+        payload["orchestration"] = self.book.metadata.extra.get("orchestration", {})
+        return payload
+
+
+def default_review_orchestrator() -> ParserOrchestrator:
+    """Create the default cheap-first parser orchestrator for review uploads."""
+
+    registry = ParserRegistry(
+        [
+            PyMuPDFAdapter(),
+            MinerUAdapter(),
+            MarkerAdapter(),
+        ]
+    )
+    return ParserOrchestrator(registry)
+
+
+class ReviewSessionStore:
+    """Disk-backed review sessions with atomic JSON persistence."""
+
+    SESSION_FILE = "session.json"
+
+    def __init__(
+        self,
+        root_dir: Path,
+        *,
+        orchestrator: Optional[ParserOrchestrator] = None,
+        quality_engine: Optional[QualityEngine] = None,
+        patch_engine: Optional[PatchEngine] = None,
+    ) -> None:
+        self.root_dir = Path(root_dir)
+        self.root_dir.mkdir(parents=True, exist_ok=True)
+        self.orchestrator = orchestrator or default_review_orchestrator()
+        self.quality_engine = quality_engine or QualityEngine()
+        self.patch_engine = patch_engine or PatchEngine()
+        self._lock = threading.RLock()
+
+    def create(self, source_path: Path, source_filename: str) -> ReviewSession:
+        source_path = Path(source_path)
+        if not source_path.is_file():
+            raise FileNotFoundError(source_path)
+
+        session_id = str(uuid.uuid4())
+        session_dir = self._session_dir(session_id)
+        session_dir.mkdir(parents=True, exist_ok=False)
+
+        suffix = source_path.suffix.lower() or ".pdf"
+        stored_source = session_dir / f"source{suffix}"
+        shutil.copy2(source_path, stored_source)
+
+        try:
+            result = self.orchestrator.run(stored_source)
+            if result.book is None or result.quality_report is None:
+                raise ValueError("Parser orchestration produced no reviewable BookIR")
+
+            now = _utc_now()
+            book = Book.from_dict(result.book.to_dict())
+            book.metadata.source_path = source_filename
+            session = ReviewSession(
+                id=session_id,
+                source_filename=source_filename,
+                source_file=stored_source.name,
+                book=book,
+                quality_report=result.quality_report,
+                created_at=now,
+                updated_at=now,
+            )
+            self._attach_review_metadata(session)
+            self._write(session)
+            return session
+        except Exception:
+            shutil.rmtree(session_dir, ignore_errors=True)
+            raise
+
+    def get(self, session_id: str) -> ReviewSession:
+        session_file = self._session_file(session_id)
+        if not session_file.is_file():
+            raise FileNotFoundError(f"Review session not found: {session_id}")
+        with session_file.open("r", encoding="utf-8") as handle:
+            payload = json.load(handle)
+        if not isinstance(payload, dict):
+            raise ValueError("Review session payload must be an object")
+        return ReviewSession.from_dict(payload)
+
+    def source_path(self, session_id: str) -> Path:
+        session = self.get(session_id)
+        path = self._session_dir(session_id) / session.source_file
+        resolved = path.resolve()
+        resolved.relative_to(self._session_dir(session_id).resolve())
+        if not resolved.is_file():
+            raise FileNotFoundError(f"Review source not found: {session_id}")
+        return resolved
+
+    def accept_issue(self, session_id: str, issue_id: str) -> ReviewSession:
+        with self._lock:
+            session = self.get(session_id)
+            issue = self._find_issue(session, issue_id)
+            if issue.suggested_patch is None:
+                raise ValueError(f"Issue {issue_id!r} has no suggested patch")
+
+            session.book = self.patch_engine.apply(
+                session.book,
+                issue.suggested_patch,
+            )
+            session.quality_report = self.quality_engine.analyze(session.book)
+            session.decisions[issue_id] = ReviewDecision(
+                issue_id=issue_id,
+                decision="accepted",
+                issue=issue.to_dict(),
+                patch_id=issue.suggested_patch.id,
+            )
+            session.updated_at = _utc_now()
+            self._attach_review_metadata(session)
+            self._write(session)
+            return session
+
+    def reject_issue(
+        self,
+        session_id: str,
+        issue_id: str,
+        *,
+        reason: str = "",
+    ) -> ReviewSession:
+        with self._lock:
+            session = self.get(session_id)
+            issue = self._find_issue(session, issue_id)
+            session.decisions[issue_id] = ReviewDecision(
+                issue_id=issue_id,
+                decision="rejected",
+                issue=issue.to_dict(),
+                patch_id=(
+                    issue.suggested_patch.id if issue.suggested_patch else None
+                ),
+                reason=reason,
+            )
+            session.updated_at = _utc_now()
+            self._attach_review_metadata(session)
+            self._write(session)
+            return session
+
+    def epub_path(self, session_id: str) -> Path:
+        self._validate_session_id(session_id)
+        return self._session_dir(session_id) / "reviewed.epub"
+
+    def _find_issue(self, session: ReviewSession, issue_id: str) -> QualityIssue:
+        for issue in session.quality_report.issues:
+            if issue.id == issue_id:
+                return issue
+        raise KeyError(f"Quality issue not found: {issue_id}")
+
+    def _write(self, session: ReviewSession) -> None:
+        session_dir = self._session_dir(session.id)
+        session_dir.mkdir(parents=True, exist_ok=True)
+        target = session_dir / self.SESSION_FILE
+        temporary = target.with_suffix(".tmp")
+        with temporary.open("w", encoding="utf-8") as handle:
+            json.dump(
+                session.to_dict(),
+                handle,
+                ensure_ascii=False,
+                indent=2,
+                sort_keys=True,
+            )
+        temporary.replace(target)
+
+    @staticmethod
+    def _attach_review_metadata(session: ReviewSession) -> None:
+        session.book.metadata.extra["review"] = {
+            "session_id": session.id,
+            "updated_at": session.updated_at,
+            "decisions": [
+                session.decisions[key].to_dict()
+                for key in sorted(session.decisions)
+            ],
+        }
+        session.book.metadata.extra.setdefault("quality", {})[
+            "report"
+        ] = session.quality_report.to_dict()
+
+    def _session_file(self, session_id: str) -> Path:
+        return self._session_dir(session_id) / self.SESSION_FILE
+
+    def _session_dir(self, session_id: str) -> Path:
+        self._validate_session_id(session_id)
+        return self.root_dir / session_id
+
+    @staticmethod
+    def _validate_session_id(session_id: str) -> None:
+        try:
+            parsed = uuid.UUID(session_id)
+        except (ValueError, AttributeError) as exc:
+            raise ValueError("Invalid review session id") from exc
+        if str(parsed) != session_id:
+            raise ValueError("Invalid review session id")

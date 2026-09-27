@@ -302,7 +302,49 @@ The final selected BookIR records the complete attempt trail under
 
 ### Milestone 6 — Human review UI
 
-Reuse the existing React/FastAPI shell for source view, reconstructed book view, issue queue, source-aligned selection, patch review/undo, export, and quality reports.
+- [x] Disk-backed review sessions preserve source PDF, BookIR, QualityReport, and decisions.
+- [x] Review upload runs the quality-aware parser orchestrator instead of the legacy converter.
+- [x] Source PDF endpoint supports browser-native page navigation.
+- [x] Review session response exposes BookIR nodes, provenance, quality issues, and orchestration attempts.
+- [x] Accepting a suggested patch uses PatchEngine and immediately re-runs Quality Engine analysis.
+- [x] Rejecting an issue preserves BookIR and records an auditable human decision.
+- [x] Human decisions are embedded under `metadata.extra.review` so BookIR exports remain self-describing.
+- [x] BookIR JSON and EPUB export endpoints publish the current reviewed state.
+- [x] React review workspace provides source, reconstructed BookIR, issue queue, provenance, and orchestration trail.
+- [x] Selecting an issue or BookIR node navigates the source PDF to the relevant page and shows bbox coordinates.
+- [x] Focused tests cover persistent sessions, patch acceptance, quality re-analysis, and rejection audit.
+
+#### Review session contract
+
+A review session is persisted under a UUID-scoped directory and contains the
+source PDF plus an atomically written `session.json`. Browser refreshes do not
+discard decisions. The source filename is retained for display/export while the
+canonical source hash/provenance remains in BookIR.
+
+Patch acceptance is intentionally not a frontend mutation:
+
+    issue.suggested_patch
+      -> PatchEngine.apply()
+      -> new BookIR
+      -> QualityEngine.analyze()
+      -> persist session
+
+Rejection records the complete issue snapshot, optional reason, patch id when
+present, and timestamp without changing BookIR content.
+
+#### Source alignment
+
+The v0.1 review UI uses the browser's native PDF viewer rather than introducing
+a PDF.js dependency. Provenance selection navigates to the 1-based PDF page via
+the viewer fragment and displays the exact BookIR bbox alongside the selected
+node/issue. Pixel-level bbox overlays are deferred to a later UI iteration.
+
+#### Export boundary
+
+The review API can export the current reviewed BookIR JSON directly and compile
+that same BookIR through the dependency-light EPUB compiler. Review decisions
+and applied patch history therefore travel with the auditable JSON artifact,
+while EPUB remains a publication output.
 
 ## Legacy boundary
 
