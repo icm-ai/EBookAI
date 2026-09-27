@@ -12,6 +12,7 @@ from book.domain.models import (
 )
 from book.orchestration import OrchestrationResult, StopReason
 from book.quality import QualityEngine
+from book.publication import PublicationReport
 from book.repair import AIRepairProposalGenerator
 from book.review import ReviewSessionStore
 
@@ -244,3 +245,68 @@ def test_rejected_ai_proposal_never_mutates_book(tmp_path):
     assert rejected.book.find_node("empty").content == ""
     assert rejected.book.patches == []
     assert issue.id not in rejected.decisions
+
+
+
+def test_undo_patch_reopens_issue_and_persists_resolution_state(tmp_path):
+    book = _issue_book()
+    report = QualityEngine().analyze(book)
+    result = OrchestrationResult(
+        book=book,
+        quality_report=report,
+        accepted=False,
+        selected_parser="fixture",
+        stop_reason=StopReason.EXHAUSTED,
+        attempts=[],
+        required_features=(),
+    )
+    source = tmp_path / "fixture.pdf"
+    source.write_bytes(b"%PDF-1.4\n")
+    store = ReviewSessionStore(
+        tmp_path / "sessions",
+        orchestrator=FakeOrchestrator(result),
+    )
+
+    session = store.create(source, "fixture.pdf")
+    issue = next(
+        item for item in session.quality_report.issues if item.code == "empty_content"
+    )
+    accepted = store.accept_issue(session.id, issue.id)
+    patch_id = accepted.decisions[issue.id].patch_id
+
+    undone = store.undo_patch(session.id, patch_id)
+    restored = store.get(session.id)
+    resolution = next(
+        item for item in undone.issue_resolutions() if item["issue_id"] == issue.id
+    )
+
+    assert undone.book.find_node("empty") is not None
+    assert undone.book.patches[-1].undone is True
+    assert any(
+        item.code == "empty_content" for item in undone.quality_report.issues
+    )
+    assert resolution["state"] == "reopened"
+    assert restored.book.patches[-1].undone is True
+
+
+def test_publication_report_persists_and_is_invalidated_by_review_change(tmp_path):
+    source = tmp_path / "fixture.pdf"
+    _write_pdf(source)
+    store = ReviewSessionStore(tmp_path / "sessions")
+
+    session = store.create(source, "fixture.pdf")
+    report = PublicationReport(
+        release_ready=True,
+        findings=[],
+        epub_checked=True,
+    )
+    saved = store.save_publication_report(session.id, report)
+
+    assert saved.publication_report.release_ready is True
+    assert store.get(session.id).publication_report.epub_checked is True
+
+    if saved.quality_report.issues:
+        issue = saved.quality_report.issues[0]
+        if issue.suggested_patch is not None:
+            changed = store.accept_issue(saved.id, issue.id)
+            assert changed.publication_report is None
