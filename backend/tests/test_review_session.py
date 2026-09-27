@@ -102,7 +102,9 @@ def test_accept_issue_applies_patch_reanalyzes_and_persists_decision(tmp_path):
     assert updated.decisions[issue.id].patch_id == issue.suggested_patch.id
     assert [item.code for item in updated.quality_report.issues] == ["empty_document"]
     assert restored.decisions[issue.id].decision == "accepted"
-    assert restored.book.metadata.extra["review"]["decisions"][0]["issue_id"] == issue.id
+    assert (
+        restored.book.metadata.extra["review"]["decisions"][0]["issue_id"] == issue.id
+    )
 
 
 def test_reject_issue_keeps_book_and_records_reason(tmp_path):
