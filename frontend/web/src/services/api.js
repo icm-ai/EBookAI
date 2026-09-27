@@ -67,6 +67,45 @@ const apiService = {
     });
   },
 
+  // Human review operations
+  async createReviewSession(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return await api.post('/api/review/sessions', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+
+  async getReviewSession(sessionId) {
+    return await api.get(
+      `/api/review/sessions/${encodeURIComponent(sessionId)}`
+    );
+  },
+
+  async acceptReviewIssue(sessionId, issueId) {
+    return await api.post(
+      `/api/review/sessions/${encodeURIComponent(sessionId)}/issues/${encodeURIComponent(issueId)}/accept`
+    );
+  },
+
+  async rejectReviewIssue(sessionId, issueId, reason = '') {
+    return await api.post(
+      `/api/review/sessions/${encodeURIComponent(sessionId)}/issues/${encodeURIComponent(issueId)}/reject`,
+      { reason }
+    );
+  },
+
+  getReviewSourceUrl(sessionId) {
+    return `${API_BASE}/api/review/sessions/${encodeURIComponent(sessionId)}/source`;
+  },
+
+  getReviewExportUrl(sessionId, format) {
+    return `${API_BASE}/api/review/sessions/${encodeURIComponent(sessionId)}/export/${format}`;
+  },
+
   // Batch operations
   async batchConvertFiles(files, targetFormat) {
     const formData = new FormData();
