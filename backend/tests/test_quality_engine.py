@@ -132,6 +132,8 @@ def test_confidence_recalculation_returns_copy_and_caps_affected_axis():
     assert recalculated.nodes[0].confidence.extraction == 0.99
     assert recalculated.metadata.extra["quality"]["report"] == report.to_dict()
     assert recalculated.metadata.extra["quality"]["confidence_recalculated"] is True
+
+
 def test_quality_engine_rejects_empty_document():
     book = Book(metadata=BookMetadata(title="Empty"))
 
