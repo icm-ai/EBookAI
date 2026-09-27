@@ -332,21 +332,36 @@ class ParagraphMergePass(ReconstructionPass):
         previous_bottom_ratio: float = 0.72,
         next_top_ratio: float = 0.28,
         font_tolerance: float = 0.18,
+        paragraph_structure_confidence: float = 0.70,
     ) -> None:
+        if not 0.0 <= paragraph_structure_confidence <= 1.0:
+            raise ValueError("paragraph_structure_confidence must be in [0, 1]")
         self.previous_bottom_ratio = previous_bottom_ratio
         self.next_top_ratio = next_top_ratio
         self.font_tolerance = font_tolerance
+        self.paragraph_structure_confidence = paragraph_structure_confidence
 
     def apply(self, book: Book) -> Book:
         result = self.clone(book)
         output: List[BookNode] = []
         index = 0
         merge_count = 0
+        promoted_count = 0
 
         while index < len(result.nodes):
             current = result.nodes[index]
             if current.type == NodeType.TEXT_BLOCK:
                 current.type = NodeType.PARAGRAPH
+                current.attrs["inferred_paragraph"] = True
+                current.confidence = Confidence(
+                    extraction=current.confidence.extraction,
+                    structure=max(
+                        current.confidence.structure,
+                        self.paragraph_structure_confidence,
+                    ),
+                    reading_order=current.confidence.reading_order,
+                )
+                promoted_count += 1
 
             index += 1
             while index < len(result.nodes):
@@ -360,9 +375,13 @@ class ParagraphMergePass(ReconstructionPass):
             output.append(current)
 
         result.nodes = output
-        if merge_count:
+        if merge_count or promoted_count:
             _reconstruction_meta(result).setdefault("passes", []).append(
-                {"name": self.name, "merge_count": merge_count}
+                {
+                    "name": self.name,
+                    "merge_count": merge_count,
+                    "promoted_count": promoted_count,
+                }
             )
         return result
 
