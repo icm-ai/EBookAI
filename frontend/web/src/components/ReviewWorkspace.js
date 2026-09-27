@@ -31,6 +31,8 @@ function ReviewWorkspace() {
   const [loading, setLoading] = useState(false);
   const [actionIssueId, setActionIssueId] = useState(null);
   const [aiActionId, setAiActionId] = useState(null);
+  const [aiProviders, setAiProviders] = useState([]);
+  const [aiProvider, setAiProvider] = useState('');
   const [includeSourceImages, setIncludeSourceImages] = useState(false);
   const [error, setError] = useState(null);
   const [selectedIssueId, setSelectedIssueId] = useState(null);
@@ -61,6 +63,34 @@ function ReviewWorkspace() {
     .find(Boolean);
   const focusedNode = selectedIssueNode || selectedNode;
   const focusedSource = focusedNode?.source?.[0] || null;
+
+  useEffect(() => {
+    let cancelled = false;
+    api.getReviewAIProviders()
+      .then((response) => {
+        if (cancelled) {
+          return;
+        }
+        const providers = response.data?.providers || [];
+        const defaultProvider = response.data?.default || '';
+        setAiProviders(providers);
+        setAiProvider(
+          providers.includes(defaultProvider)
+            ? defaultProvider
+            : providers[0] || ''
+        );
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAiProviders([]);
+          setAiProvider('');
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const sessionId = localStorage.getItem('ebookAI-review-session');
@@ -203,7 +233,7 @@ function ReviewWorkspace() {
       const response = await api.generateAIRepairProposal(
         session.id,
         issueId,
-        null,
+        aiProvider || null,
         includeSourceImages
       );
       setNextSession(response.data);
@@ -482,6 +512,26 @@ function ReviewWorkspace() {
                           <div className="review-ai-repair">
                             <div className="review-ai-repair-header">
                               <strong>Source-grounded AI proposals</strong>
+                              <select
+                                className="review-ai-provider-select"
+                                value={aiProvider}
+                                onChange={(event) => {
+                                  event.stopPropagation();
+                                  setAiProvider(event.target.value);
+                                }}
+                                onClick={(event) => event.stopPropagation()}
+                                disabled={aiProviders.length === 0}
+                              >
+                                {aiProviders.length === 0 ? (
+                                  <option value="">No provider configured</option>
+                                ) : (
+                                  aiProviders.map((provider) => (
+                                    <option key={provider} value={provider}>
+                                      {provider}
+                                    </option>
+                                  ))
+                                )}
+                              </select>
                               <label className="review-ai-vision-toggle">
                                 <input
                                   type="checkbox"
@@ -502,6 +552,7 @@ function ReviewWorkspace() {
                                 }}
                                 disabled={
                                   !issue.node_ids?.length ||
+                                  !aiProvider ||
                                   aiActionId === `generate:${issue.id}`
                                 }
                               >
@@ -522,8 +573,9 @@ function ReviewWorkspace() {
                               issue.node_ids?.length > 0 && (
                                 <div className="review-ai-policy-note">
                                   No AI proposal yet. Generation is advisory
-                                  only and never mutates BookIR. Enable source
-                                  crop only for a vision-capable provider/model.
+                                  only and never mutates BookIR. Select a
+                                  configured provider; enable source crop only
+                                  for a vision-capable model.
                                 </div>
                               )}
 
