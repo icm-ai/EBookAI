@@ -216,9 +216,7 @@ class PublicationQAEngine:
                     "{urn:oasis:names:tc:opendocument:xmlns:container}rootfile"
                 )
                 full_path = (
-                    rootfile.attrib.get("full-path")
-                    if rootfile is not None
-                    else None
+                    rootfile.attrib.get("full-path") if rootfile is not None else None
                 )
                 if not full_path or full_path not in name_set:
                     findings.append(
