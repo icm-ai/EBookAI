@@ -1,5 +1,8 @@
+import base64
 import json
+from pathlib import Path
 
+import fitz
 import pytest
 from book.domain.models import (
     Book,
@@ -11,7 +14,11 @@ from book.domain.models import (
     SourceRef,
 )
 from book.quality import IssueSeverity, QualityIssue
-from book.repair import AIRepairProposalError, AIRepairProposalGenerator
+from book.repair import (
+    AIRepairProposalError,
+    AIRepairProposalGenerator,
+    SourceEvidenceRenderer,
+)
 
 
 def _source(source_id="source-1"):
@@ -200,3 +207,88 @@ def test_issue_without_source_grounded_target_cannot_request_ai_repair():
 
     with pytest.raises(AIRepairProposalError, match="no target nodes"):
         AIRepairProposalGenerator().build_prompt(_book(), issue)
+
+
+
+def test_source_evidence_renderer_returns_png_crop(tmp_path):
+    pdf_path = Path(tmp_path) / "source.pdf"
+    document = fitz.open()
+    page = document.new_page()
+    page.insert_text((72, 100), "Source glyph evidence")
+    document.save(pdf_path)
+    document.close()
+
+    book = Book(
+        metadata=BookMetadata(title="Vision fixture"),
+        nodes=[
+            BookNode(
+                id="vision-target",
+                type=NodeType.PARAGRAPH,
+                content="Source g1yph evidence",
+                source=[
+                    SourceRef(
+                        page_index=0,
+                        bbox=(60.0, 70.0, 260.0, 120.0),
+                        parser="fixture",
+                        source_id="vision-source",
+                    )
+                ],
+                confidence=Confidence(0.5, 0.9, 0.9),
+            )
+        ],
+    )
+    issue = QualityIssue(
+        id="vision-issue",
+        code="low_confidence",
+        severity=IssueSeverity.REVIEW,
+        message="OCR confidence is low.",
+        node_ids=("vision-target",),
+        evidence={"axis": "extraction"},
+    )
+
+    evidence = SourceEvidenceRenderer().render_issue(pdf_path, book, issue)
+
+    assert len(evidence) == 1
+    assert evidence[0].node_id == "vision-target"
+    assert evidence[0].source_id == "vision-source"
+    assert evidence[0].page_index == 0
+    assert "node=vision-target" in evidence[0].ref_key
+    assert "source=vision-source" in evidence[0].ref_key
+    assert base64.b64decode(evidence[0].data_base64).startswith(
+        b"\x89PNG\r\n\x1a\n"
+    )
+
+
+def test_vision_proposal_requires_and_audits_source_image_refs():
+    generator = AIRepairProposalGenerator()
+    source_ref = (
+        "node=target;source=source-1;"
+        "page=3;bbox=10.00,20.00,300.00,400.00"
+    )
+
+    proposal = generator.parse_response(
+        _book(),
+        _issue(),
+        _response(),
+        provider="fixture-provider",
+        model="fixture-vision-model",
+        input_mode="vision",
+        source_image_refs=(source_ref,),
+    )
+
+    assert proposal.input_mode == "vision"
+    assert proposal.source_image_refs == (source_ref,)
+    assert proposal.to_dict()["source_image_refs"] == [source_ref]
+
+    with pytest.raises(
+        AIRepairProposalError,
+        match="vision proposal requires source image evidence",
+    ):
+        generator.parse_response(
+            _book(),
+            _issue(),
+            _response(),
+            provider="fixture-provider",
+            model="fixture-vision-model",
+            input_mode="vision",
+        )
