@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional
 from book.domain.models import Book
 from book.orchestration import OrchestrationResult, ParserOrchestrator
 from book.parsers import MarkerAdapter, MinerUAdapter, ParserRegistry, PyMuPDFAdapter
+from book.publication import PublicationReport
 from book.quality import QualityEngine, QualityIssue, QualityReport
 from book.repair import AIRepairProposal, PatchEngine
 
@@ -74,6 +75,7 @@ class ReviewSession:
     updated_at: str
     decisions: Dict[str, ReviewDecision] = field(default_factory=dict)
     ai_proposals: Dict[str, AIRepairProposal] = field(default_factory=dict)
+    publication_report: Optional[PublicationReport] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -90,6 +92,11 @@ class ReviewSession:
             "ai_proposals": [
                 self.ai_proposals[key].to_dict() for key in sorted(self.ai_proposals)
             ],
+            "publication_report": (
+                self.publication_report.to_dict()
+                if self.publication_report is not None
+                else None
+            ),
         }
 
     @classmethod
@@ -102,6 +109,7 @@ class ReviewSession:
             item["id"]: AIRepairProposal.from_dict(item)
             for item in value.get("ai_proposals", [])
         }
+        publication_report = value.get("publication_report")
         return cls(
             id=str(value["id"]),
             source_filename=str(value["source_filename"]),
@@ -112,11 +120,79 @@ class ReviewSession:
             quality_report=QualityReport.from_dict(value["quality_report"]),
             decisions=decisions,
             ai_proposals=ai_proposals,
+            publication_report=(
+                PublicationReport.from_dict(publication_report)
+                if publication_report
+                else None
+            ),
         )
+
+    def issue_resolutions(self) -> List[Dict[str, Any]]:
+        current = {issue.id: issue for issue in self.quality_report.issues}
+        patches = {patch.id: patch for patch in self.book.patches}
+        records: Dict[str, Dict[str, Any]] = {}
+
+        for issue_id, issue in current.items():
+            decision = self.decisions.get(issue_id)
+            patch = (
+                patches.get(decision.patch_id)
+                if decision is not None and decision.patch_id
+                else None
+            )
+            if decision is None:
+                state = "open"
+            elif decision.decision == "rejected":
+                state = "waived"
+            elif patch is not None and patch.undone:
+                state = "reopened"
+            else:
+                state = "open"
+            records[issue_id] = {
+                "issue_id": issue_id,
+                "state": state,
+                "current": True,
+                "severity": issue.severity.value,
+                "code": issue.code,
+                "decision": decision.to_dict() if decision else None,
+            }
+
+        for issue_id, decision in self.decisions.items():
+            if issue_id in records:
+                continue
+            patch = patches.get(decision.patch_id) if decision.patch_id else None
+            state = (
+                "reopened"
+                if patch is not None and patch.undone
+                else "resolved"
+                if decision.decision == "accepted"
+                else "waived"
+            )
+            records[issue_id] = {
+                "issue_id": issue_id,
+                "state": state,
+                "current": False,
+                "severity": str(decision.issue.get("severity", "")),
+                "code": str(decision.issue.get("code", issue_id)),
+                "decision": decision.to_dict(),
+            }
+
+        return [records[key] for key in sorted(records)]
+
+    def issue_resolution_map(self) -> Dict[str, str]:
+        return {
+            item["issue_id"]: item["state"]
+            for item in self.issue_resolutions()
+        }
 
     def response_dict(self) -> Dict[str, Any]:
         payload = self.to_dict()
         payload["orchestration"] = self.book.metadata.extra.get("orchestration", {})
+        engine = PatchEngine()
+        payload["patch_history"] = [
+            engine.describe_patch(self.book, patch.id)
+            for patch in self.book.patches
+        ]
+        payload["issue_resolutions"] = self.issue_resolutions()
         return payload
 
 
@@ -227,6 +303,7 @@ class ReviewSessionStore:
                 issue=issue.to_dict(),
                 patch_id=issue.suggested_patch.id,
             )
+            session.publication_report = None
             session.updated_at = _utc_now()
             self._attach_review_metadata(session)
             self._write(session)
@@ -249,6 +326,7 @@ class ReviewSessionStore:
                 patch_id=(issue.suggested_patch.id if issue.suggested_patch else None),
                 reason=reason,
             )
+            session.publication_report = None
             session.updated_at = _utc_now()
             self._attach_review_metadata(session)
             self._write(session)
@@ -268,6 +346,7 @@ class ReviewSessionStore:
                 )
             self.patch_engine.validator.validate(session.book, proposal.patch)
             session.ai_proposals[proposal.id] = proposal
+            session.publication_report = None
             session.updated_at = _utc_now()
             self._attach_review_metadata(session)
             self._write(session)
@@ -305,6 +384,7 @@ class ReviewSessionStore:
                     f"from {proposal.provider}/{proposal.model}"
                 ),
             )
+            session.publication_report = None
             session.updated_at = _utc_now()
             self._attach_review_metadata(session)
             self._write(session)
@@ -321,6 +401,7 @@ class ReviewSessionStore:
             if proposal.status != "pending":
                 raise ValueError(f"AI proposal {proposal_id!r} is not pending")
             session.ai_proposals[proposal_id] = proposal.with_status("rejected")
+            session.publication_report = None
             session.updated_at = _utc_now()
             self._attach_review_metadata(session)
             self._write(session)
