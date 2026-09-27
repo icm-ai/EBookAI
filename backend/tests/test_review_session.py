@@ -203,9 +203,7 @@ def test_ai_proposal_is_persisted_and_acceptance_applies_patch(tmp_path):
     assert accepted.book.find_node("empty").content == "Restored text."
     assert accepted.book.patches[-1].id == proposal.patch.id
     assert accepted.decisions[issue.id].patch_id == proposal.patch.id
-    assert all(
-        item.code != "empty_content" for item in accepted.quality_report.issues
-    )
+    assert all(item.code != "empty_content" for item in accepted.quality_report.issues)
 
 
 def test_rejected_ai_proposal_never_mutates_book(tmp_path):
