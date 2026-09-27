@@ -288,6 +288,8 @@ def test_no_capable_parser_returns_explicit_no_candidates_result():
     assert result.selected_parser is None
     assert result.stop_reason == StopReason.NO_CANDIDATES
     assert result.attempts == []
+
+
 def test_empty_document_escalates_to_ocr_backend():
     empty = FakeAdapter(
         "native",
