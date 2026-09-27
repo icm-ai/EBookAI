@@ -74,7 +74,6 @@ class PublicationReport:
             release_ready=bool(value.get("release_ready", False)),
             epub_checked=bool(value.get("epub_checked", False)),
             findings=[
-                PublicationFinding.from_dict(item)
-                for item in value.get("findings", [])
+                PublicationFinding.from_dict(item) for item in value.get("findings", [])
             ],
         )
