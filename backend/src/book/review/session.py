@@ -179,18 +179,14 @@ class ReviewSession:
         return [records[key] for key in sorted(records)]
 
     def issue_resolution_map(self) -> Dict[str, str]:
-        return {
-            item["issue_id"]: item["state"]
-            for item in self.issue_resolutions()
-        }
+        return {item["issue_id"]: item["state"] for item in self.issue_resolutions()}
 
     def response_dict(self) -> Dict[str, Any]:
         payload = self.to_dict()
         payload["orchestration"] = self.book.metadata.extra.get("orchestration", {})
         engine = PatchEngine()
         payload["patch_history"] = [
-            engine.describe_patch(self.book, patch.id)
-            for patch in self.book.patches
+            engine.describe_patch(self.book, patch.id) for patch in self.book.patches
         ]
         payload["issue_resolutions"] = self.issue_resolutions()
         return payload
