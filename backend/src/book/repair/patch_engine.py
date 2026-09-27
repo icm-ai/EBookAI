@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import uuid
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Sequence
@@ -496,7 +497,7 @@ class PatchEngine:
         nodes = [location.node for location in locations]
         target = nodes[0]
 
-        before_nodes = [node.to_dict() for node in nodes]
+        before_nodes = copy.deepcopy([node.to_dict() for node in nodes])
         target.content = patch.payload.get(
             "content",
             " ".join(node.content.strip() for node in nodes if node.content.strip()),
