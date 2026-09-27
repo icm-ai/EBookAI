@@ -98,9 +98,9 @@ class SourceEvidenceRenderer:
                         page_index=source.page_index,
                         bbox=source.bbox,
                         mime_type="image/png",
-                        data_base64=base64.b64encode(
-                            pixmap.tobytes("png")
-                        ).decode("ascii"),
+                        data_base64=base64.b64encode(pixmap.tobytes("png")).decode(
+                            "ascii"
+                        ),
                     )
                 )
         return result
