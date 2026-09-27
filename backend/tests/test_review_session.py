@@ -143,7 +143,6 @@ def test_reject_issue_keeps_book_and_records_reason(tmp_path):
     assert updated.decisions[issue.id].reason == "Keep intentional blank paragraph"
 
 
-
 def _ai_response(issue, content="Restored text."):
     target_node_id = issue.node_ids[0]
     return json.dumps(
