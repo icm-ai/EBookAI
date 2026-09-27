@@ -149,6 +149,7 @@ class AIService:
         prompt: str,
         max_tokens: int = 1200,
         provider: str = None,
+        images: Optional[List[Dict]] = None,
     ) -> AIResult:
         """Run a provider completion for a caller-supplied structured prompt."""
         import time
@@ -164,12 +165,16 @@ class AIService:
                     config,
                     prompt,
                     max_tokens=max_tokens,
+                    images=images,
+                    temperature=0.1,
                 )
             elif api_type == "anthropic":
                 content, token_usage = await self._call_anthropic_api(
                     config,
                     prompt,
                     max_tokens=max_tokens,
+                    images=images,
+                    temperature=0.1,
                 )
             else:
                 raise ValueError(f"Unsupported api_type: {api_type}")
@@ -209,7 +214,13 @@ class AIService:
         )
 
     async def _call_openai_compatible_api(
-        self, config: dict, prompt: str, max_tokens: int = None, max_length: int = None
+        self,
+        config: dict,
+        prompt: str,
+        max_tokens: int = None,
+        max_length: int = None,
+        images: Optional[List[Dict]] = None,
+        temperature: float = 0.3,
     ) -> tuple[str, Optional[Dict]]:
         """Call OpenAI-compatible API (OpenAI, DeepSeek)"""
 
@@ -222,11 +233,30 @@ class AIService:
             "Content-Type": "application/json",
         }
 
+        user_content = prompt
+        if images:
+            user_content = [{"type": "text", "text": prompt}]
+            for image in images:
+                label = str(image.get("label", "source evidence"))
+                mime_type = str(image.get("mime_type", "image/png"))
+                data_base64 = str(image.get("data_base64", ""))
+                user_content.append(
+                    {"type": "text", "text": f"SOURCE_IMAGE {label}"}
+                )
+                user_content.append(
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:{mime_type};base64,{data_base64}"
+                        },
+                    }
+                )
+
         payload = {
             "model": config["model"],
-            "messages": [{"role": "user", "content": prompt}],
+            "messages": [{"role": "user", "content": user_content}],
             "max_tokens": max_tokens,
-            "temperature": 0.3,
+            "temperature": temperature,
         }
 
         try:
@@ -264,7 +294,13 @@ class AIService:
             raise Exception(f"Unexpected API error: {str(e)}")
 
     async def _call_anthropic_api(
-        self, config: dict, prompt: str, max_tokens: int = None, max_length: int = None
+        self,
+        config: dict,
+        prompt: str,
+        max_tokens: int = None,
+        max_length: int = None,
+        images: Optional[List[Dict]] = None,
+        temperature: float = 0.3,
     ) -> tuple[str, Optional[Dict]]:
         """Call Anthropic API (Claude and compatible APIs)"""
 
@@ -278,10 +314,32 @@ class AIService:
             "anthropic-version": "2023-06-01",
         }
 
+        user_content = prompt
+        if images:
+            user_content = [{"type": "text", "text": prompt}]
+            for image in images:
+                label = str(image.get("label", "source evidence"))
+                mime_type = str(image.get("mime_type", "image/png"))
+                data_base64 = str(image.get("data_base64", ""))
+                user_content.append(
+                    {"type": "text", "text": f"SOURCE_IMAGE {label}"}
+                )
+                user_content.append(
+                    {
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": mime_type,
+                            "data": data_base64,
+                        },
+                    }
+                )
+
         payload = {
             "model": config["model"],
             "max_tokens": max_tokens,
-            "messages": [{"role": "user", "content": prompt}],
+            "temperature": temperature,
+            "messages": [{"role": "user", "content": user_content}],
         }
 
         try:
