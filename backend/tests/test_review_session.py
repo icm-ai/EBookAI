@@ -11,8 +11,8 @@ from book.domain.models import (
     SourceRef,
 )
 from book.orchestration import OrchestrationResult, StopReason
-from book.quality import QualityEngine
 from book.publication import PublicationReport
+from book.quality import QualityEngine
 from book.repair import AIRepairProposalGenerator
 from book.review import ReviewSessionStore
 
