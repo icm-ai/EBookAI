@@ -256,6 +256,8 @@ def test_default_pipeline_preserves_source_provenance():
     assert result.nodes[1].type == NodeType.PARAGRAPH
     assert result.nodes[1].content == "A long paragraph continues."
     assert [source.page_index for source in result.nodes[1].source] == [0, 1]
+
+
 def test_paragraph_promotion_raises_structure_confidence_conservatively():
     node = _node(
         "body",
