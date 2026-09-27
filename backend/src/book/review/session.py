@@ -237,9 +237,7 @@ class ReviewSessionStore:
                 issue_id=issue_id,
                 decision="rejected",
                 issue=issue.to_dict(),
-                patch_id=(
-                    issue.suggested_patch.id if issue.suggested_patch else None
-                ),
+                patch_id=(issue.suggested_patch.id if issue.suggested_patch else None),
                 reason=reason,
             )
             session.updated_at = _utc_now()
@@ -278,8 +276,7 @@ class ReviewSessionStore:
             "session_id": session.id,
             "updated_at": session.updated_at,
             "decisions": [
-                session.decisions[key].to_dict()
-                for key in sorted(session.decisions)
+                session.decisions[key].to_dict() for key in sorted(session.decisions)
             ],
         }
         session.book.metadata.extra.setdefault("quality", {})[
