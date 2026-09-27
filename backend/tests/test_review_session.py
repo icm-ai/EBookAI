@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import fitz
@@ -11,6 +12,7 @@ from book.domain.models import (
 )
 from book.orchestration import OrchestrationResult, StopReason
 from book.quality import QualityEngine
+from book.repair import AIRepairProposalGenerator
 from book.review import ReviewSessionStore
 
 
@@ -139,3 +141,109 @@ def test_reject_issue_keeps_book_and_records_reason(tmp_path):
     assert updated.book.patches == []
     assert updated.decisions[issue.id].decision == "rejected"
     assert updated.decisions[issue.id].reason == "Keep intentional blank paragraph"
+
+
+
+def _ai_response(issue, content="Restored text."):
+    target_node_id = issue.node_ids[0]
+    return json.dumps(
+        {
+            "operation": "replace_content",
+            "target_node_id": target_node_id,
+            "payload": {"content": content},
+            "reason": "Repair is grounded in the cited source block.",
+            "confidence": 0.82,
+            "evidence_node_ids": [target_node_id],
+            "evidence_source_ids": ["fixture-source"],
+        }
+    )
+
+
+def test_ai_proposal_is_persisted_and_acceptance_applies_patch(tmp_path):
+    book = _issue_book()
+    report = QualityEngine().analyze(book)
+    result = OrchestrationResult(
+        book=book,
+        quality_report=report,
+        accepted=False,
+        selected_parser="fixture",
+        stop_reason=StopReason.EXHAUSTED,
+        attempts=[],
+        required_features=(),
+    )
+    source = tmp_path / "fixture.pdf"
+    source.write_bytes(b"%PDF-1.4\n")
+    store = ReviewSessionStore(
+        tmp_path / "sessions",
+        orchestrator=FakeOrchestrator(result),
+    )
+    generator = AIRepairProposalGenerator()
+
+    session = store.create(source, "fixture.pdf")
+    issue = next(
+        item for item in session.quality_report.issues if item.code == "empty_content"
+    )
+    proposal = generator.parse_response(
+        session.book,
+        issue,
+        _ai_response(issue),
+        provider="fixture-provider",
+        model="fixture-model",
+    )
+    proposed = store.add_ai_proposal(session.id, proposal)
+    restored = store.get(session.id)
+
+    assert proposed.ai_proposals[proposal.id].status == "pending"
+    assert restored.ai_proposals[proposal.id].grounding_hash == proposal.grounding_hash
+    assert restored.book.find_node("empty").content == ""
+
+    accepted = store.accept_ai_proposal(session.id, proposal.id)
+
+    assert accepted.ai_proposals[proposal.id].status == "accepted"
+    assert accepted.book.find_node("empty").content == "Restored text."
+    assert accepted.book.patches[-1].id == proposal.patch.id
+    assert accepted.decisions[issue.id].patch_id == proposal.patch.id
+    assert all(
+        item.code != "empty_content" for item in accepted.quality_report.issues
+    )
+
+
+def test_rejected_ai_proposal_never_mutates_book(tmp_path):
+    book = _issue_book()
+    report = QualityEngine().analyze(book)
+    result = OrchestrationResult(
+        book=book,
+        quality_report=report,
+        accepted=False,
+        selected_parser="fixture",
+        stop_reason=StopReason.EXHAUSTED,
+        attempts=[],
+        required_features=(),
+    )
+    source = tmp_path / "fixture.pdf"
+    source.write_bytes(b"%PDF-1.4\n")
+    store = ReviewSessionStore(
+        tmp_path / "sessions",
+        orchestrator=FakeOrchestrator(result),
+    )
+    generator = AIRepairProposalGenerator()
+
+    session = store.create(source, "fixture.pdf")
+    issue = next(
+        item for item in session.quality_report.issues if item.code == "empty_content"
+    )
+    proposal = generator.parse_response(
+        session.book,
+        issue,
+        _ai_response(issue),
+        provider="fixture-provider",
+        model="fixture-model",
+    )
+    store.add_ai_proposal(session.id, proposal)
+
+    rejected = store.reject_ai_proposal(session.id, proposal.id)
+
+    assert rejected.ai_proposals[proposal.id].status == "rejected"
+    assert rejected.book.find_node("empty").content == ""
+    assert rejected.book.patches == []
+    assert issue.id not in rejected.decisions
