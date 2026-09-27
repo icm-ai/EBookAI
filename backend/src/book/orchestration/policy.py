@@ -17,7 +17,10 @@ class QualityGate:
     minimum_score: float = 0.97
     max_error_issues: int = 0
     max_review_ratio: float = 0.05
-    blocking_issue_codes: Tuple[str, ...] = ("missing_provenance",)
+    blocking_issue_codes: Tuple[str, ...] = (
+        "empty_document",
+        "missing_provenance",
+    )
 
     def __post_init__(self) -> None:
         if not 0.0 <= self.minimum_score <= 1.0:
@@ -70,6 +73,7 @@ class EscalationPolicy:
 
     issue_feature_map: Dict[str, Tuple[str, ...]] = field(
         default_factory=lambda: {
+            "empty_document": ("ocr",),
             "missing_provenance": ("bbox",),
             "unclassified_text_block": ("layout", "semantic_output"),
             "empty_content": ("ocr",),
