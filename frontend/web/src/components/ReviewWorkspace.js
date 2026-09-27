@@ -31,6 +31,7 @@ function ReviewWorkspace() {
   const [loading, setLoading] = useState(false);
   const [actionIssueId, setActionIssueId] = useState(null);
   const [aiActionId, setAiActionId] = useState(null);
+  const [includeSourceImages, setIncludeSourceImages] = useState(false);
   const [error, setError] = useState(null);
   const [selectedIssueId, setSelectedIssueId] = useState(null);
   const [selectedNodeId, setSelectedNodeId] = useState(null);
@@ -199,7 +200,12 @@ function ReviewWorkspace() {
     setAiActionId(`generate:${issueId}`);
     setError(null);
     try {
-      const response = await api.generateAIRepairProposal(session.id, issueId);
+      const response = await api.generateAIRepairProposal(
+        session.id,
+        issueId,
+        null,
+        includeSourceImages
+      );
       setNextSession(response.data);
     } catch (err) {
       setError(
@@ -476,6 +482,18 @@ function ReviewWorkspace() {
                           <div className="review-ai-repair">
                             <div className="review-ai-repair-header">
                               <strong>Source-grounded AI proposals</strong>
+                              <label className="review-ai-vision-toggle">
+                                <input
+                                  type="checkbox"
+                                  checked={includeSourceImages}
+                                  onChange={(event) => {
+                                    event.stopPropagation();
+                                    setIncludeSourceImages(event.target.checked);
+                                  }}
+                                  onClick={(event) => event.stopPropagation()}
+                                />
+                                Include source crop
+                              </label>
                               <button
                                 className="review-ai-generate-button"
                                 onClick={(event) => {
@@ -504,7 +522,8 @@ function ReviewWorkspace() {
                               issue.node_ids?.length > 0 && (
                                 <div className="review-ai-policy-note">
                                   No AI proposal yet. Generation is advisory
-                                  only and never mutates BookIR.
+                                  only and never mutates BookIR. Enable source
+                                  crop only for a vision-capable provider/model.
                                 </div>
                               )}
 
@@ -517,6 +536,7 @@ function ReviewWorkspace() {
                                   <span>
                                     {proposal.provider}/{proposal.model}
                                   </span>
+                                  <span>{proposal.input_mode || 'text'}</span>
                                   <span>
                                     {Math.round(proposal.confidence * 100)}%
                                   </span>
@@ -531,6 +551,12 @@ function ReviewWorkspace() {
                                   Source ids:{' '}
                                   {proposal.evidence_source_ids.join(', ')}
                                 </div>
+                                {(proposal.source_image_refs || []).length > 0 && (
+                                  <div className="review-ai-evidence">
+                                    Source crops:{' '}
+                                    {proposal.source_image_refs.length}
+                                  </div>
+                                )}
                                 <details>
                                   <summary>AI patch</summary>
                                   <pre>
