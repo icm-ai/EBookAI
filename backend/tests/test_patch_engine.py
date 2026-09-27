@@ -292,9 +292,7 @@ def test_undo_insert_and_delete_restore_exact_tree_position():
     inserted_book = engine.apply(_book(), insert_patch)
     insert_undone = engine.undo(inserted_book, insert_patch.id)
 
-    assert [node.id for node in insert_undone.find_node("parent").children] == [
-        "child"
-    ]
+    assert [node.id for node in insert_undone.find_node("parent").children] == ["child"]
 
     delete_patch = Patch(
         id="undo-delete",
@@ -304,9 +302,7 @@ def test_undo_insert_and_delete_restore_exact_tree_position():
     deleted_book = engine.apply(_book(), delete_patch)
     delete_undone = engine.undo(deleted_book, delete_patch.id)
 
-    assert [node.id for node in delete_undone.find_node("parent").children] == [
-        "child"
-    ]
+    assert [node.id for node in delete_undone.find_node("parent").children] == ["child"]
     assert delete_undone.find_node("child").content == "Child"
 
 
