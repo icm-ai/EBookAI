@@ -1479,3 +1479,13 @@ code {
 .review-ai-vision-toggle input {
   margin: 0;
 }
+
+.review-ai-provider-select {
+  max-width: 130px;
+  border: 1px solid #d0d5dd;
+  border-radius: 6px;
+  background: white;
+  color: #344054;
+  padding: 5px 7px;
+  font-size: 10px;
+}
