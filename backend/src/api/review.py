@@ -19,7 +19,7 @@ from pydantic import BaseModel
 from services.ai_service import AIService
 from starlette.concurrency import run_in_threadpool
 
-from config import MAX_FILE_SIZE, OUTPUT_DIR
+from config import MAX_FILE_SIZE, OUTPUT_DIR, ai_config
 
 router = APIRouter(prefix="/review", tags=["review"])
 
@@ -39,6 +39,14 @@ class AIProposalRequest(BaseModel):
     provider: Optional[str] = None
     max_tokens: int = 1200
     include_source_images: bool = False
+
+
+@router.get("/ai-providers")
+async def get_review_ai_providers():
+    return {
+        "providers": ai_config.get_available_providers(),
+        "default": ai_config.DEFAULT_AI_PROVIDER,
+    }
 
 
 @router.post("/sessions", status_code=201)
