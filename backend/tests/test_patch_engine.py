@@ -242,7 +242,6 @@ def test_applied_patch_cannot_be_reapplied():
         PatchEngine().apply(once, patch)
 
 
-
 def test_undo_replace_content_restores_before_state_and_marks_patch():
     engine = PatchEngine()
     patch = Patch(
