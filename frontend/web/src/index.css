@@ -1466,3 +1466,16 @@ code {
 .review-ai-history-row:hover {
   color: #175cd3;
 }
+
+.review-ai-vision-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #475467;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.review-ai-vision-toggle input {
+  margin: 0;
+}
