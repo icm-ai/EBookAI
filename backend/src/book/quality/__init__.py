@@ -2,6 +2,7 @@
 
 from book.quality.detectors import (
     EmptyContentDetector,
+    EmptyDocumentDetector,
     HeadingHierarchyDetector,
     LowConfidenceDetector,
     MissingProvenanceDetector,
@@ -14,6 +15,7 @@ from book.quality.models import IssueSeverity, QualityIssue, QualityReport
 
 __all__ = [
     "EmptyContentDetector",
+    "EmptyDocumentDetector",
     "HeadingHierarchyDetector",
     "IssueSeverity",
     "LowConfidenceDetector",
