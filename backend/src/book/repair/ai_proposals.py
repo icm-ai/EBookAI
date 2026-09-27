@@ -48,7 +48,13 @@ class AIRepairProposal:
             raise ValueError("proposal id must not be empty")
         if not self.issue_id:
             raise ValueError("proposal issue_id must not be empty")
-        if self.status not in {"pending", "accepted", "rejected", "superseded"}:
+        if self.status not in {
+            "pending",
+            "accepted",
+            "rejected",
+            "superseded",
+            "undone",
+        }:
             raise ValueError("invalid AI repair proposal status")
         if self.input_mode not in {"text", "vision"}:
             raise ValueError("AI proposal input_mode must be text or vision")
