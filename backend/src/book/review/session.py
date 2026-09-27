@@ -263,7 +263,9 @@ class ReviewSessionStore:
             session = self.get(session_id)
             issue = self._find_issue(session, proposal.issue_id)
             if issue.id != proposal.issue_id:
-                raise ValueError("AI proposal issue does not match current quality issue")
+                raise ValueError(
+                    "AI proposal issue does not match current quality issue"
+                )
             self.patch_engine.validator.validate(session.book, proposal.patch)
             session.ai_proposals[proposal.id] = proposal
             session.updated_at = _utc_now()
@@ -280,9 +282,7 @@ class ReviewSessionStore:
             session = self.get(session_id)
             proposal = self._find_ai_proposal(session, proposal_id)
             if proposal.status != "pending":
-                raise ValueError(
-                    f"AI proposal {proposal_id!r} is not pending"
-                )
+                raise ValueError(f"AI proposal {proposal_id!r} is not pending")
 
             session.book = self.patch_engine.apply(session.book, proposal.patch)
             session.quality_report = self.quality_engine.analyze(session.book)
@@ -319,9 +319,7 @@ class ReviewSessionStore:
             session = self.get(session_id)
             proposal = self._find_ai_proposal(session, proposal_id)
             if proposal.status != "pending":
-                raise ValueError(
-                    f"AI proposal {proposal_id!r} is not pending"
-                )
+                raise ValueError(f"AI proposal {proposal_id!r} is not pending")
             session.ai_proposals[proposal_id] = proposal.with_status("rejected")
             session.updated_at = _utc_now()
             self._attach_review_metadata(session)
