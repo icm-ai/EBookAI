@@ -98,10 +98,18 @@ const apiService = {
     );
   },
 
-  async generateAIRepairProposal(sessionId, issueId, provider = null) {
+  async generateAIRepairProposal(
+    sessionId,
+    issueId,
+    provider = null,
+    includeSourceImages = false
+  ) {
     return await api.post(
       `/api/review/sessions/${encodeURIComponent(sessionId)}/issues/${encodeURIComponent(issueId)}/ai-proposals`,
-      { provider }
+      {
+        provider,
+        include_source_images: includeSourceImages,
+      }
     );
   },
 
