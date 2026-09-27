@@ -98,6 +98,25 @@ const apiService = {
     );
   },
 
+  async generateAIRepairProposal(sessionId, issueId, provider = null) {
+    return await api.post(
+      `/api/review/sessions/${encodeURIComponent(sessionId)}/issues/${encodeURIComponent(issueId)}/ai-proposals`,
+      { provider }
+    );
+  },
+
+  async acceptAIRepairProposal(sessionId, proposalId) {
+    return await api.post(
+      `/api/review/sessions/${encodeURIComponent(sessionId)}/ai-proposals/${encodeURIComponent(proposalId)}/accept`
+    );
+  },
+
+  async rejectAIRepairProposal(sessionId, proposalId) {
+    return await api.post(
+      `/api/review/sessions/${encodeURIComponent(sessionId)}/ai-proposals/${encodeURIComponent(proposalId)}/reject`
+    );
+  },
+
   getReviewSourceUrl(sessionId) {
     return `${API_BASE}/api/review/sessions/${encodeURIComponent(sessionId)}/source`;
   },
