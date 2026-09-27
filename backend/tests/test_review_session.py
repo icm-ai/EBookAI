@@ -282,9 +282,7 @@ def test_undo_patch_reopens_issue_and_persists_resolution_state(tmp_path):
 
     assert undone.book.find_node("empty") is not None
     assert undone.book.patches[-1].undone is True
-    assert any(
-        item.code == "empty_content" for item in undone.quality_report.issues
-    )
+    assert any(item.code == "empty_content" for item in undone.quality_report.issues)
     assert resolution["state"] == "reopened"
     assert restored.book.patches[-1].undone is True
 
