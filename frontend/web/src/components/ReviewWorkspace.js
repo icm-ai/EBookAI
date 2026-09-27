@@ -1,0 +1,459 @@
+import React, { useMemo, useState } from 'react';
+import api from '../services/api';
+
+function flattenNodes(nodes, depth = 0) {
+  return nodes.flatMap((node) => [
+    { ...node, depth },
+    ...flattenNodes(node.children || [], depth + 1),
+  ]);
+}
+
+function ReviewWorkspace() {
+  const [file, setFile] = useState(null);
+  const [session, setSession] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [actionIssueId, setActionIssueId] = useState(null);
+  const [error, setError] = useState(null);
+  const [selectedIssueId, setSelectedIssueId] = useState(null);
+  const [selectedNodeId, setSelectedNodeId] = useState(null);
+  const [sourcePage, setSourcePage] = useState(0);
+
+  const issues = session?.quality_report?.issues || [];
+  const nodes = useMemo(
+    () => flattenNodes(session?.book?.nodes || []),
+    [session]
+  );
+  const decisions = useMemo(() => {
+    const entries = (session?.decisions || []).map((decision) => [
+      decision.issue_id,
+      decision,
+    ]);
+    return new Map(entries);
+  }, [session]);
+
+  const selectedIssue = issues.find((issue) => issue.id === selectedIssueId);
+  const selectedNode = nodes.find((node) => node.id === selectedNodeId);
+  const selectedIssueNode = selectedIssue?.node_ids
+    ?.map((nodeId) => nodes.find((node) => node.id === nodeId))
+    .find(Boolean);
+  const focusedNode = selectedIssueNode || selectedNode;
+  const focusedSource = focusedNode?.source?.[0] || null;
+
+  const chooseIssue = (issue) => {
+    setSelectedIssueId(issue.id);
+    const node = issue.node_ids
+      ?.map((nodeId) => nodes.find((item) => item.id === nodeId))
+      .find(Boolean);
+    if (node) {
+      setSelectedNodeId(node.id);
+      const source = node.source?.[0];
+      if (source) {
+        setSourcePage(source.page_index);
+      }
+    }
+  };
+
+  const chooseNode = (node) => {
+    setSelectedNodeId(node.id);
+    const source = node.source?.[0];
+    if (source) {
+      setSourcePage(source.page_index);
+    }
+  };
+
+  const setNextSession = (nextSession) => {
+    setSession(nextSession);
+    const nextIssues = nextSession?.quality_report?.issues || [];
+    const stillExists = nextIssues.some(
+      (issue) => issue.id === selectedIssueId
+    );
+    if (!stillExists) {
+      const first = nextIssues[0] || null;
+      setSelectedIssueId(first?.id || null);
+      const nextNodes = flattenNodes(nextSession?.book?.nodes || []);
+      const node = first?.node_ids
+        ?.map((nodeId) => nextNodes.find((item) => item.id === nodeId))
+        .find(Boolean);
+      setSelectedNodeId(node?.id || null);
+      if (node?.source?.[0]) {
+        setSourcePage(node.source[0].page_index);
+      }
+    }
+  };
+
+  const createSession = async () => {
+    if (!file) {
+      setError('Choose a PDF first.');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await api.createReviewSession(file);
+      const nextSession = response.data;
+      const nextNodes = flattenNodes(nextSession.book?.nodes || []);
+      const firstIssue = nextSession.quality_report?.issues?.[0] || null;
+      const firstNode =
+        firstIssue?.node_ids
+          ?.map((nodeId) => nextNodes.find((node) => node.id === nodeId))
+          .find(Boolean) ||
+        nextNodes[0] ||
+        null;
+
+      setSession(nextSession);
+      setSelectedIssueId(firstIssue?.id || null);
+      setSelectedNodeId(firstNode?.id || null);
+      setSourcePage(firstNode?.source?.[0]?.page_index || 0);
+    } catch (err) {
+      setError(
+        err.response?.data?.detail ||
+          err.message ||
+          'Failed to create review session.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const acceptIssue = async (issueId) => {
+    setActionIssueId(issueId);
+    setError(null);
+    try {
+      const response = await api.acceptReviewIssue(session.id, issueId);
+      setNextSession(response.data);
+    } catch (err) {
+      setError(
+        err.response?.data?.detail ||
+          err.message ||
+          'Failed to apply suggested patch.'
+      );
+    } finally {
+      setActionIssueId(null);
+    }
+  };
+
+  const rejectIssue = async (issueId) => {
+    setActionIssueId(issueId);
+    setError(null);
+    try {
+      const response = await api.rejectReviewIssue(session.id, issueId);
+      setNextSession(response.data);
+    } catch (err) {
+      setError(
+        err.response?.data?.detail ||
+          err.message ||
+          'Failed to reject issue.'
+      );
+    } finally {
+      setActionIssueId(null);
+    }
+  };
+
+  const counts = session?.quality_report?.counts || {};
+  const score = session?.quality_report?.score;
+  const orchestration = session?.orchestration || {};
+  const attempts = orchestration.attempts || [];
+
+  return (
+    <div className="review-workspace">
+      <section className="review-upload-card">
+        <div>
+          <h2>Human Review</h2>
+          <p>
+            Parse a PDF into BookIR, inspect source-grounded quality issues,
+            review deterministic patches, and export the reviewed result.
+          </p>
+        </div>
+        <div className="review-upload-controls">
+          <input
+            type="file"
+            accept="application/pdf,.pdf"
+            onChange={(event) => {
+              setFile(event.target.files?.[0] || null);
+              setError(null);
+            }}
+          />
+          <button
+            className="review-primary-button"
+            onClick={createSession}
+            disabled={!file || loading}
+          >
+            {loading ? 'Analyzing…' : 'Create review session'}
+          </button>
+        </div>
+        {file && <div className="review-file-name">Selected: {file.name}</div>}
+      </section>
+
+      {error && <div className="error-message">{error}</div>}
+
+      {session && (
+        <>
+          <section className="review-summary">
+            <div className="review-summary-main">
+              <div>
+                <span className="review-label">Document</span>
+                <strong>{session.source_filename}</strong>
+              </div>
+              <div>
+                <span className="review-label">Parser</span>
+                <strong>{orchestration.selected_parser || 'unknown'}</strong>
+              </div>
+              <div>
+                <span className="review-label">Quality</span>
+                <strong>
+                  {typeof score === 'number'
+                    ? `${Math.round(score * 100)}%`
+                    : 'n/a'}
+                </strong>
+              </div>
+              <div>
+                <span className="review-label">Route</span>
+                <strong>
+                  {orchestration.accepted ? 'Accepted' : 'Needs review'}
+                </strong>
+              </div>
+            </div>
+
+            <div className="review-summary-actions">
+              <span className="review-count error">
+                Errors {counts.error || 0}
+              </span>
+              <span className="review-count review">
+                Review {counts.review || 0}
+              </span>
+              <span className="review-count info">
+                Info {counts.info || 0}
+              </span>
+              <a
+                className="review-export-link"
+                href={api.getReviewExportUrl(session.id, 'bookir')}
+              >
+                Export BookIR
+              </a>
+              <a
+                className="review-export-link"
+                href={api.getReviewExportUrl(session.id, 'epub')}
+              >
+                Export EPUB
+              </a>
+            </div>
+          </section>
+
+          <section className="review-grid">
+            <div className="review-panel source-panel">
+              <div className="review-panel-header">
+                <div>
+                  <h3>Source PDF</h3>
+                  <span>Page {sourcePage + 1}</span>
+                </div>
+                {focusedSource?.bbox && (
+                  <code className="review-bbox">
+                    bbox [
+                    {focusedSource.bbox
+                      .map((value) => value.toFixed(1))
+                      .join(', ')}
+                    ]
+                  </code>
+                )}
+              </div>
+              <iframe
+                key={`${session.id}-${sourcePage}`}
+                className="review-source-frame"
+                src={`${api.getReviewSourceUrl(session.id)}#page=${sourcePage + 1}`}
+                title="Source PDF"
+              />
+            </div>
+
+            <div className="review-panel">
+              <div className="review-panel-header">
+                <div>
+                  <h3>Reconstructed BookIR</h3>
+                  <span>{nodes.length} nodes</span>
+                </div>
+              </div>
+              <div className="review-node-list">
+                {nodes.length === 0 && (
+                  <div className="review-empty-state">
+                    No BookIR nodes were produced. Check the issue queue for
+                    parser escalation details.
+                  </div>
+                )}
+                {nodes.map((node) => {
+                  const source = node.source?.[0];
+                  const related =
+                    selectedIssue?.node_ids?.includes(node.id) || false;
+                  return (
+                    <button
+                      key={node.id}
+                      className={[
+                        'review-node',
+                        selectedNodeId === node.id ? 'selected' : '',
+                        related ? 'related' : '',
+                      ].join(' ')}
+                      style={{ paddingLeft: `${14 + node.depth * 18}px` }}
+                      onClick={() => chooseNode(node)}
+                    >
+                      <div className="review-node-meta">
+                        <span className="review-node-type">{node.type}</span>
+                        {source && <span>p.{source.page_index + 1}</span>}
+                        <span>
+                          S {Math.round((node.confidence?.structure || 0) * 100)}
+                        </span>
+                      </div>
+                      <div className="review-node-content">
+                        {node.content || '(empty node)'}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="review-panel">
+              <div className="review-panel-header">
+                <div>
+                  <h3>Issue Queue</h3>
+                  <span>{issues.length} current issues</span>
+                </div>
+              </div>
+              <div className="review-issue-list">
+                {issues.length === 0 && (
+                  <div className="review-empty-state">
+                    No current quality issues.
+                  </div>
+                )}
+                {issues.map((issue) => {
+                  const decision = decisions.get(issue.id);
+                  const busy = actionIssueId === issue.id;
+                  return (
+                    <article
+                      key={issue.id}
+                      className={[
+                        'review-issue',
+                        selectedIssueId === issue.id ? 'selected' : '',
+                        `severity-${issue.severity}`,
+                      ].join(' ')}
+                      onClick={() => chooseIssue(issue)}
+                    >
+                      <div className="review-issue-heading">
+                        <span className="review-issue-code">{issue.code}</span>
+                        <span className="review-severity">
+                          {issue.severity}
+                        </span>
+                      </div>
+                      <p>{issue.message}</p>
+                      {decision && (
+                        <div className="review-decision-badge">
+                          Human decision: {decision.decision}
+                        </div>
+                      )}
+
+                      {selectedIssueId === issue.id && (
+                        <div className="review-issue-detail">
+                          <div>
+                            Nodes: {issue.node_ids?.join(', ') || 'book-level'}
+                          </div>
+                          {issue.evidence && (
+                            <details>
+                              <summary>Evidence</summary>
+                              <pre>
+                                {JSON.stringify(issue.evidence, null, 2)}
+                              </pre>
+                            </details>
+                          )}
+                          {issue.suggested_patch && (
+                            <details>
+                              <summary>Suggested patch</summary>
+                              <pre>
+                                {JSON.stringify(issue.suggested_patch, null, 2)}
+                              </pre>
+                            </details>
+                          )}
+                          <div className="review-issue-actions">
+                            <button
+                              className="review-accept-button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                acceptIssue(issue.id);
+                              }}
+                              disabled={!issue.suggested_patch || busy}
+                            >
+                              {busy ? 'Applying…' : 'Accept patch'}
+                            </button>
+                            <button
+                              className="review-reject-button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                rejectIssue(issue.id);
+                              }}
+                              disabled={busy}
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </article>
+                  );
+                })}
+              </div>
+
+              {(session.decisions || []).length > 0 && (
+                <div className="review-decisions">
+                  <h4>Reviewed decisions</h4>
+                  {(session.decisions || []).map((decision) => (
+                    <div
+                      key={decision.issue_id}
+                      className="review-decision-row"
+                    >
+                      <span>{decision.issue?.code || decision.issue_id}</span>
+                      <strong>{decision.decision}</strong>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="review-route-panel">
+            <div className="review-panel-header">
+              <div>
+                <h3>Parser Orchestration Trail</h3>
+                <span>
+                  Stop reason: {orchestration.stop_reason || 'unknown'}
+                </span>
+              </div>
+            </div>
+            <div className="review-attempt-list">
+              {attempts.length === 0 && (
+                <div className="review-empty-state">
+                  No parser attempts recorded.
+                </div>
+              )}
+              {attempts.map((attempt, index) => (
+                <div
+                  key={`${attempt.parser_name}-${index}`}
+                  className="review-attempt"
+                >
+                  <strong>{attempt.parser_name}</strong>
+                  <span className={`attempt-status ${attempt.status}`}>
+                    {attempt.status}
+                  </span>
+                  <span>score {attempt.quality_score ?? 'n/a'}</span>
+                  <span>
+                    requires{' '}
+                    {(attempt.required_features || []).join(', ') || 'none'}
+                  </span>
+                  {attempt.reason && <span>{attempt.reason}</span>}
+                </div>
+              ))}
+            </div>
+          </section>
+        </>
+      )}
+    </div>
+  );
+}
+
+export default ReviewWorkspace;
