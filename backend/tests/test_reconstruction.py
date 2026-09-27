@@ -256,3 +256,19 @@ def test_default_pipeline_preserves_source_provenance():
     assert result.nodes[1].type == NodeType.PARAGRAPH
     assert result.nodes[1].content == "A long paragraph continues."
     assert [source.page_index for source in result.nodes[1].source] == [0, 1]
+def test_paragraph_promotion_raises_structure_confidence_conservatively():
+    node = _node(
+        "body",
+        "A normal body paragraph.",
+        page=0,
+        bbox=(60, 200, 640, 500),
+    )
+
+    result = ParagraphMergePass().apply(_book([node], page_count=1))
+
+    paragraph = result.nodes[0]
+    assert paragraph.type == NodeType.PARAGRAPH
+    assert paragraph.attrs["inferred_paragraph"] is True
+    assert paragraph.confidence.structure == 0.70
+    assert paragraph.confidence.extraction == 1.0
+    assert paragraph.confidence.reading_order == 0.9
