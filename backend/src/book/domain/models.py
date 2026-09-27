@@ -131,6 +131,7 @@ class Patch:
     reason: str = ""
     confidence: float = 1.0
     applied: bool = False
+    undone: bool = False
 
     def __post_init__(self) -> None:
         if not self.id:
@@ -149,6 +150,7 @@ class Patch:
             "reason": self.reason,
             "confidence": self.confidence,
             "applied": self.applied,
+            "undone": self.undone,
         }
 
     @classmethod
@@ -161,6 +163,7 @@ class Patch:
             reason=str(value.get("reason", "")),
             confidence=float(value.get("confidence", 1.0)),
             applied=bool(value.get("applied", False)),
+            undone=bool(value.get("undone", False)),
         )
 
 
