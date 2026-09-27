@@ -431,6 +431,96 @@ This separation preserves the core invariant:
 
     model output != canonical BookIR mutation
 
+### Milestone 8 — Reversible review and publication QA
+
+- [x] Applied patches record an explicit `undone` state without deleting their audit history.
+- [x] PatchEngine derives structured before/after diff views from `payload._audit`.
+- [x] All seven BookIR patch operations are reversible from recorded before-state.
+- [x] Undo is deliberately LIFO-only: only the latest active applied patch can be reversed.
+- [x] Undo never reconstructs prior state heuristically; it restores recorded content,
+  attributes, node snapshots, parent/index positions, merged siblings, or split source nodes.
+- [x] Undo re-runs Quality Engine and persists the resulting review state.
+- [x] Accepted AI proposals whose patch is undone are marked `undone`.
+- [x] Review sessions derive issue resolution states: `open`, `resolved`, `waived`,
+  and `reopened`.
+- [x] Human Review UI exposes patch history, before/after diff, reversible state,
+  and a guarded Undo control.
+- [x] Publication QA combines current QualityReport, human resolution state, and the
+  actually compiled EPUB package.
+- [x] Error-severity quality findings always block release, even when a reviewer
+  rejected/waived the corresponding issue.
+- [x] Review-severity findings block release until resolved or explicitly waived.
+- [x] Publication QA validates EPUB mimetype ordering/compression/value, required
+  files, container rootfile, XML well-formedness, manifest resources, and spine idrefs.
+- [x] Publication reports persist in the review session and are invalidated by any
+  subsequent review mutation.
+- [x] Human Review UI shows release-ready/blocked status and detailed publication findings.
+
+#### Reversible patch contract
+
+Patch history is append-preserving. Undo changes the current BookIR state but does
+not erase the original applied patch or its before-state audit. Instead the patch
+remains historically applied and is marked `undone=true`.
+
+Milestone 8 intentionally supports only stack-safe undo:
+
+    active patch A
+      -> active patch B
+      -> active patch C
+
+    allowed: undo C
+    then:    undo B
+    then:    undo A
+
+Attempting to undo A while B or C is still active is rejected. This prevents an
+older structural rollback from invalidating later patches that may depend on its
+node ids, hierarchy, or content.
+
+Undo restoration uses operation-specific audit data:
+
+    replace_content -> before_content
+    set_attribute   -> before_value + attribute_existed
+    insert_node     -> inserted_node_id
+    delete_node     -> before_node + parent_id + index
+    move_node       -> before_parent_id + before_index
+    merge_nodes     -> before_nodes
+    split_node      -> before_node + created_node_ids
+
+After every undo, Quality Engine runs again. Historical human decisions are not
+deleted; the derived issue-resolution view can therefore show a previously fixed
+issue as `reopened`.
+
+#### Issue resolution contract
+
+Resolution is derived from current QualityReport plus immutable review decisions
+and patch state rather than stored as an independent source of truth.
+
+- `open`: issue currently exists and has not been successfully cleared.
+- `resolved`: an accepted issue no longer exists in the current QualityReport.
+- `waived`: reviewer explicitly rejected the proposed repair while retaining the issue.
+- `reopened`: the accepted patch was undone and the issue is present again.
+
+A waived state is a human review decision, not proof that the underlying document
+is valid.
+
+#### Publication QA contract
+
+Publication QA compiles the current reviewed BookIR through `EpubCompiler` and
+validates that exact artifact. Release readiness is then evaluated using both
+semantic review state and EPUB package structure.
+
+The default release policy is conservative:
+
+    current ERROR issue   -> always blocks
+    current REVIEW issue  -> blocks unless explicitly waived
+    INFO issue            -> informational
+    structural EPUB error -> blocks
+
+The built-in EPUB validator is dependency-light structural QA. It verifies core
+ZIP/XML/package invariants but is not presented as a substitute for the complete
+external EPUBCheck conformance suite. A future release pipeline may run EPUBCheck
+as an additional gate when the Java/runtime dependency is available.
+
 ## Legacy boundary
 
 The current services/conversion/conversion_pipeline.py is a legacy converter pipeline and should not become the foundation of BookIR. It remains operational until the new pipeline reaches functional parity.
