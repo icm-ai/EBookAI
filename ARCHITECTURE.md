@@ -95,7 +95,14 @@ still be recognized as one repeated footer pattern. Removed nodes are retained
 under `metadata.extra.reconstruction.suppressed_nodes` with their original
 source references.
 
-**Paragraph merging** currently targets high-confidence adjacent-page
+**Paragraph merging** also promotes remaining parser-level `TEXT_BLOCK` nodes
+to body paragraphs after headings and footnotes have had a chance to claim
+them. That promotion raises structure confidence conservatively to 0.70 rather
+than leaving native-PDF blocks permanently at parser-level confidence. This
+allows simple digital PDFs to finish on the lightweight path while still
+routing genuinely low-confidence structure to a semantic parser.
+
+Cross-page paragraph merging currently targets high-confidence adjacent-page
 continuations. It requires a previous block near the bottom of page N, a next
 block near the top of page N+1, compatible font sizes, and no terminal sentence
 punctuation. Latin end-of-line hyphenation is repaired, while CJK boundaries
@@ -126,9 +133,9 @@ references. The text itself is not rewritten in this milestone.
 #### Quality Engine contract
 
 `QualityEngine.analyze(book)` is pure: it returns a report and never mutates the
-book. The default detectors currently cover missing provenance, low confidence,
-raw text blocks that remain after reconstruction, empty semantic nodes, orphan
-footnotes, and heading hierarchy errors.
+book. The default detectors currently cover empty parser results, missing
+provenance, low confidence, raw text blocks that remain after reconstruction,
+empty semantic nodes, orphan footnotes, and heading hierarchy errors.
 
 Every issue carries a deterministic id, code, severity, affected node ids,
 confidence, evidence, and optionally a fully serialized suggested `Patch`.
@@ -249,7 +256,7 @@ contract currently requires:
 - quality score >= 0.97;
 - zero error-severity issues;
 - review+error burden <= 5% of BookIR nodes;
-- no `missing_provenance` issue.
+- no `empty_document` or `missing_provenance` issue.
 
 These numbers are policy defaults, not claims that the heuristic score is a
 probability of correctness. Applications can provide a different
@@ -260,12 +267,16 @@ probability of correctness. Applications can provide a different
 Quality issues are translated into **required capabilities**, not concrete
 backend names. Examples:
 
+    empty document            -> ocr
     low extraction confidence -> ocr
     low structure confidence  -> layout + semantic_output
     low reading order         -> layout + reading_order
     unclassified text block   -> layout + semantic_output
     orphan footnote           -> footnotes
     heading hierarchy         -> headings
+
+A zero-node parse is therefore never interpreted as a perfect parse: it emits
+an `empty_document` error and explicitly requests an OCR-capable next hop.
 
 The registry then filters the remaining untried parsers by those capabilities.
 The default parser priority is `pymupdf -> mineru -> marker`, but this ordering
