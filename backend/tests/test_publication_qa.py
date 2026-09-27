@@ -127,10 +127,7 @@ def test_error_issue_remains_blocking_even_if_human_rejected_it(tmp_path):
     )
 
     assert report.release_ready is False
-    assert any(
-        finding.code == "blocking_quality_error"
-        for finding in report.findings
-    )
+    assert any(finding.code == "blocking_quality_error" for finding in report.findings)
 
 
 def test_epub_missing_required_file_fails_structural_qa(tmp_path):
