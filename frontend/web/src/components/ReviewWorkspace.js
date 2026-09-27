@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import api from '../services/api';
 
 function flattenNodes(nodes, depth = 0) {
@@ -6,6 +6,23 @@ function flattenNodes(nodes, depth = 0) {
     { ...node, depth },
     ...flattenNodes(node.children || [], depth + 1),
   ]);
+}
+
+function initialSelection(session) {
+  const nodes = flattenNodes(session?.book?.nodes || []);
+  const issue = session?.quality_report?.issues?.[0] || null;
+  const node =
+    issue?.node_ids
+      ?.map((nodeId) => nodes.find((item) => item.id === nodeId))
+      .find(Boolean) ||
+    nodes[0] ||
+    null;
+
+  return {
+    issueId: issue?.id || null,
+    nodeId: node?.id || null,
+    page: node?.source?.[0]?.page_index || 0,
+  };
 }
 
 function ReviewWorkspace() {
@@ -39,6 +56,34 @@ function ReviewWorkspace() {
   const focusedNode = selectedIssueNode || selectedNode;
   const focusedSource = focusedNode?.source?.[0] || null;
 
+  useEffect(() => {
+    const sessionId = localStorage.getItem('ebookAI-review-session');
+    if (!sessionId) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    api.getReviewSession(sessionId)
+      .then((response) => {
+        if (cancelled) {
+          return;
+        }
+        const restored = response.data;
+        const selection = initialSelection(restored);
+        setSession(restored);
+        setSelectedIssueId(selection.issueId);
+        setSelectedNodeId(selection.nodeId);
+        setSourcePage(selection.page);
+      })
+      .catch(() => {
+        localStorage.removeItem('ebookAI-review-session');
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const chooseIssue = (issue) => {
     setSelectedIssueId(issue.id);
     const node = issue.node_ids
@@ -63,6 +108,7 @@ function ReviewWorkspace() {
 
   const setNextSession = (nextSession) => {
     setSession(nextSession);
+    localStorage.setItem('ebookAI-review-session', nextSession.id);
     const nextIssues = nextSession?.quality_report?.issues || [];
     const stillExists = nextIssues.some(
       (issue) => issue.id === selectedIssueId
@@ -92,19 +138,13 @@ function ReviewWorkspace() {
     try {
       const response = await api.createReviewSession(file);
       const nextSession = response.data;
-      const nextNodes = flattenNodes(nextSession.book?.nodes || []);
-      const firstIssue = nextSession.quality_report?.issues?.[0] || null;
-      const firstNode =
-        firstIssue?.node_ids
-          ?.map((nodeId) => nextNodes.find((node) => node.id === nodeId))
-          .find(Boolean) ||
-        nextNodes[0] ||
-        null;
+      const selection = initialSelection(nextSession);
 
       setSession(nextSession);
-      setSelectedIssueId(firstIssue?.id || null);
-      setSelectedNodeId(firstNode?.id || null);
-      setSourcePage(firstNode?.source?.[0]?.page_index || 0);
+      localStorage.setItem('ebookAI-review-session', nextSession.id);
+      setSelectedIssueId(selection.issueId);
+      setSelectedNodeId(selection.nodeId);
+      setSourcePage(selection.page);
     } catch (err) {
       setError(
         err.response?.data?.detail ||
