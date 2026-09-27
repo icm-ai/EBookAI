@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import uuid
 from pathlib import Path
+from typing import Optional
 
 from book.compiler import EpubCompiler
+from book.repair import AIRepairProposalError, AIRepairProposalGenerator
 from book.review import ReviewSessionStore
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse, Response
@@ -13,6 +15,7 @@ from pydantic import BaseModel
 from starlette.concurrency import run_in_threadpool
 
 from config import MAX_FILE_SIZE, OUTPUT_DIR
+from services.ai_service import AIService
 
 router = APIRouter(prefix="/review", tags=["review"])
 
@@ -20,10 +23,16 @@ REVIEW_DIR = OUTPUT_DIR / "review"
 REVIEW_DIR.mkdir(parents=True, exist_ok=True)
 review_store = ReviewSessionStore(REVIEW_DIR)
 epub_compiler = EpubCompiler()
+ai_repair_generator = AIRepairProposalGenerator()
 
 
 class RejectIssueRequest(BaseModel):
     reason: str = ""
+
+
+class AIProposalRequest(BaseModel):
+    provider: Optional[str] = None
+    max_tokens: int = 1200
 
 
 @router.post("/sessions", status_code=201)
@@ -128,6 +137,105 @@ async def reject_review_issue(
             session_id,
             issue_id,
             reason=request.reason,
+        )
+        return session.response_dict()
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.post("/sessions/{session_id}/issues/{issue_id}/ai-proposals")
+async def generate_ai_repair_proposal(
+    session_id: str,
+    issue_id: str,
+    request: AIProposalRequest,
+):
+    if request.max_tokens < 128 or request.max_tokens > 4096:
+        raise HTTPException(
+            status_code=400,
+            detail="max_tokens must be between 128 and 4096",
+        )
+
+    try:
+        session = await run_in_threadpool(review_store.get, session_id)
+        issue = await run_in_threadpool(
+            review_store.get_issue,
+            session_id,
+            issue_id,
+        )
+        prompt = ai_repair_generator.build_prompt(session.book, issue)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except AIRepairProposalError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    try:
+        ai_service = AIService(provider=request.provider)
+        result = await ai_service.complete_prompt(
+            prompt,
+            max_tokens=request.max_tokens,
+            provider=request.provider,
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"AI repair provider unavailable: {exc}",
+        ) from exc
+
+    try:
+        proposal = ai_repair_generator.parse_response(
+            session.book,
+            issue,
+            result.content,
+            provider=result.provider,
+            model=result.model,
+        )
+        updated = await run_in_threadpool(
+            review_store.add_ai_proposal,
+            session_id,
+            proposal,
+        )
+        return updated.response_dict()
+    except AIRepairProposalError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=f"AI proposal rejected by grounding policy: {exc}",
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/sessions/{session_id}/ai-proposals/{proposal_id}/accept")
+async def accept_ai_repair_proposal(session_id: str, proposal_id: str):
+    try:
+        session = await run_in_threadpool(
+            review_store.accept_ai_proposal,
+            session_id,
+            proposal_id,
+        )
+        return session.response_dict()
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.post("/sessions/{session_id}/ai-proposals/{proposal_id}/reject")
+async def reject_ai_repair_proposal(session_id: str, proposal_id: str):
+    try:
+        session = await run_in_threadpool(
+            review_store.reject_ai_proposal,
+            session_id,
+            proposal_id,
         )
         return session.response_dict()
     except ValueError as exc:
