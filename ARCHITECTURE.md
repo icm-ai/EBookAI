@@ -303,6 +303,7 @@ The final selected BookIR records the complete attempt trail under
 ### Milestone 6 — Human review UI
 
 - [x] Disk-backed review sessions preserve source PDF, BookIR, QualityReport, and decisions.
+- [x] The frontend remembers the latest review session id and restores it after refresh.
 - [x] Review upload runs the quality-aware parser orchestrator instead of the legacy converter.
 - [x] Source PDF endpoint supports browser-native page navigation.
 - [x] Review session response exposes BookIR nodes, provenance, quality issues, and orchestration attempts.
