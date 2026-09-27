@@ -7,9 +7,11 @@ from pathlib import Path
 from typing import Optional
 
 from book.compiler import EpubCompiler
+from book.publication import PublicationQAEngine
 from book.repair import (
     AIRepairProposalError,
     AIRepairProposalGenerator,
+    PatchUndoError,
     SourceEvidenceRenderer,
 )
 from book.review import ReviewSessionStore
@@ -29,6 +31,7 @@ review_store = ReviewSessionStore(REVIEW_DIR)
 epub_compiler = EpubCompiler()
 ai_repair_generator = AIRepairProposalGenerator()
 source_evidence_renderer = SourceEvidenceRenderer()
+publication_qa_engine = PublicationQAEngine()
 
 
 class RejectIssueRequest(BaseModel):
@@ -275,6 +278,52 @@ async def reject_ai_repair_proposal(session_id: str, proposal_id: str):
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.post("/sessions/{session_id}/patches/{patch_id}/undo")
+async def undo_review_patch(session_id: str, patch_id: str):
+    try:
+        session = await run_in_threadpool(
+            review_store.undo_patch,
+            session_id,
+            patch_id,
+        )
+        return session.response_dict()
+    except PatchUndoError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.post("/sessions/{session_id}/publication-qa")
+async def run_publication_qa(session_id: str):
+    try:
+        session = await run_in_threadpool(review_store.get, session_id)
+        output_path = review_store.epub_path(session_id)
+        await run_in_threadpool(
+            epub_compiler.compile,
+            session.book,
+            output_path,
+        )
+        report = await run_in_threadpool(
+            publication_qa_engine.analyze,
+            session.book,
+            session.quality_report,
+            issue_resolutions=session.issue_resolution_map(),
+            epub_path=output_path,
+        )
+        updated = await run_in_threadpool(
+            review_store.save_publication_report,
+            session_id,
+            report,
+        )
+        return updated.response_dict()
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
