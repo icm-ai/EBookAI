@@ -15,7 +15,7 @@ from book.domain.models import Book
 from book.orchestration import OrchestrationResult, ParserOrchestrator
 from book.parsers import MarkerAdapter, MinerUAdapter, ParserRegistry, PyMuPDFAdapter
 from book.quality import QualityEngine, QualityIssue, QualityReport
-from book.repair import PatchEngine
+from book.repair import AIRepairProposal, PatchEngine
 
 
 def _utc_now() -> str:
@@ -73,6 +73,7 @@ class ReviewSession:
     created_at: str
     updated_at: str
     decisions: Dict[str, ReviewDecision] = field(default_factory=dict)
+    ai_proposals: Dict[str, AIRepairProposal] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -86,6 +87,9 @@ class ReviewSession:
             "decisions": [
                 self.decisions[key].to_dict() for key in sorted(self.decisions)
             ],
+            "ai_proposals": [
+                self.ai_proposals[key].to_dict() for key in sorted(self.ai_proposals)
+            ],
         }
 
     @classmethod
@@ -93,6 +97,10 @@ class ReviewSession:
         decisions = {
             item["issue_id"]: ReviewDecision.from_dict(item)
             for item in value.get("decisions", [])
+        }
+        ai_proposals = {
+            item["id"]: AIRepairProposal.from_dict(item)
+            for item in value.get("ai_proposals", [])
         }
         return cls(
             id=str(value["id"]),
@@ -103,6 +111,7 @@ class ReviewSession:
             book=Book.from_dict(value["book"]),
             quality_report=QualityReport.from_dict(value["quality_report"]),
             decisions=decisions,
+            ai_proposals=ai_proposals,
         )
 
     def response_dict(self) -> Dict[str, Any]:
@@ -245,6 +254,83 @@ class ReviewSessionStore:
             self._write(session)
             return session
 
+    def add_ai_proposal(
+        self,
+        session_id: str,
+        proposal: AIRepairProposal,
+    ) -> ReviewSession:
+        with self._lock:
+            session = self.get(session_id)
+            issue = self._find_issue(session, proposal.issue_id)
+            if issue.id != proposal.issue_id:
+                raise ValueError("AI proposal issue does not match current quality issue")
+            self.patch_engine.validator.validate(session.book, proposal.patch)
+            session.ai_proposals[proposal.id] = proposal
+            session.updated_at = _utc_now()
+            self._attach_review_metadata(session)
+            self._write(session)
+            return session
+
+    def accept_ai_proposal(
+        self,
+        session_id: str,
+        proposal_id: str,
+    ) -> ReviewSession:
+        with self._lock:
+            session = self.get(session_id)
+            proposal = self._find_ai_proposal(session, proposal_id)
+            if proposal.status != "pending":
+                raise ValueError(
+                    f"AI proposal {proposal_id!r} is not pending"
+                )
+
+            session.book = self.patch_engine.apply(session.book, proposal.patch)
+            session.quality_report = self.quality_engine.analyze(session.book)
+            session.ai_proposals[proposal_id] = proposal.with_status("accepted")
+            for other_id, other in list(session.ai_proposals.items()):
+                if (
+                    other_id != proposal_id
+                    and other.issue_id == proposal.issue_id
+                    and other.status == "pending"
+                ):
+                    session.ai_proposals[other_id] = other.with_status("superseded")
+
+            session.decisions[proposal.issue_id] = ReviewDecision(
+                issue_id=proposal.issue_id,
+                decision="accepted",
+                issue=proposal.issue,
+                patch_id=proposal.patch.id,
+                reason=(
+                    f"Accepted AI proposal {proposal.id} "
+                    f"from {proposal.provider}/{proposal.model}"
+                ),
+            )
+            session.updated_at = _utc_now()
+            self._attach_review_metadata(session)
+            self._write(session)
+            return session
+
+    def reject_ai_proposal(
+        self,
+        session_id: str,
+        proposal_id: str,
+    ) -> ReviewSession:
+        with self._lock:
+            session = self.get(session_id)
+            proposal = self._find_ai_proposal(session, proposal_id)
+            if proposal.status != "pending":
+                raise ValueError(
+                    f"AI proposal {proposal_id!r} is not pending"
+                )
+            session.ai_proposals[proposal_id] = proposal.with_status("rejected")
+            session.updated_at = _utc_now()
+            self._attach_review_metadata(session)
+            self._write(session)
+            return session
+
+    def get_issue(self, session_id: str, issue_id: str) -> QualityIssue:
+        return self._find_issue(self.get(session_id), issue_id)
+
     def epub_path(self, session_id: str) -> Path:
         self._validate_session_id(session_id)
         return self._session_dir(session_id) / "reviewed.epub"
@@ -254,6 +340,16 @@ class ReviewSessionStore:
             if issue.id == issue_id:
                 return issue
         raise KeyError(f"Quality issue not found: {issue_id}")
+
+    @staticmethod
+    def _find_ai_proposal(
+        session: ReviewSession,
+        proposal_id: str,
+    ) -> AIRepairProposal:
+        proposal = session.ai_proposals.get(proposal_id)
+        if proposal is None:
+            raise KeyError(f"AI repair proposal not found: {proposal_id}")
+        return proposal
 
     def _write(self, session: ReviewSession) -> None:
         session_dir = self._session_dir(session.id)
@@ -277,6 +373,10 @@ class ReviewSessionStore:
             "updated_at": session.updated_at,
             "decisions": [
                 session.decisions[key].to_dict() for key in sorted(session.decisions)
+            ],
+            "ai_proposals": [
+                session.ai_proposals[key].to_dict()
+                for key in sorted(session.ai_proposals)
             ],
         }
         session.book.metadata.extra.setdefault("quality", {})[
