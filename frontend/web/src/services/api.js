@@ -129,6 +129,18 @@ const apiService = {
     );
   },
 
+  async undoReviewPatch(sessionId, patchId) {
+    return await api.post(
+      `/api/review/sessions/${encodeURIComponent(sessionId)}/patches/${encodeURIComponent(patchId)}/undo`
+    );
+  },
+
+  async runReviewPublicationQA(sessionId) {
+    return await api.post(
+      `/api/review/sessions/${encodeURIComponent(sessionId)}/publication-qa`
+    );
+  },
+
   getReviewSourceUrl(sessionId) {
     return `${API_BASE}/api/review/sessions/${encodeURIComponent(sessionId)}/source`;
   },
