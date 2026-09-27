@@ -347,6 +347,90 @@ that same BookIR through the dependency-light EPUB compiler. Review decisions
 and applied patch history therefore travel with the auditable JSON artifact,
 while EPUB remains a publication output.
 
+### Milestone 7 — Source-grounded AI repair proposals
+
+- [x] Provider-neutral AI proposal model and validator under `book/repair`.
+- [x] Grounding context includes the current quality issue, target node, bounded
+  neighboring BookIR nodes, confidence, and full source page/bbox/parser/source-id
+  provenance.
+- [x] Grounding context is SHA-256 hashed and the hash is stored with every
+  proposal for audit.
+- [x] Model output is untrusted JSON and must pass BookIR-aware validation before
+  it can enter a review session.
+- [x] AI operations are deliberately allowlisted to `replace_content` and
+  `set_attribute`; the latter may only change heading `level` in v0.1.
+- [x] Invented node ids, invented source ids, out-of-scope targets, malformed
+  payloads, no-op replacements, oversized replacements, and unsupported
+  operations are rejected.
+- [x] Book-level issues without source-grounded target nodes cannot request AI
+  repair.
+- [x] AI proposals are persisted with provider, model, rationale, confidence,
+  cited evidence, patch, status, and timestamps.
+- [x] Proposal lifecycle is explicit: `pending -> accepted|rejected`; accepting
+  one proposal supersedes other pending proposals for the same issue.
+- [x] Acceptance still goes through `PatchEngine`, followed by a fresh
+  `QualityEngine` analysis; generation alone never mutates canonical BookIR.
+- [x] Optional vision grounding renders issue-target PDF bbox regions as
+  transient PNG crops.
+- [x] Source crop bytes are sent only for the current provider request and are
+  not persisted in `session.json`; only auditable source-image reference labels
+  are retained.
+- [x] OpenAI-compatible and Anthropic transports support the same source-image
+  evidence envelope.
+- [x] Human Review UI exposes configured providers, an explicit source-crop
+  toggle, proposal evidence/confidence/patch, accept/reject controls, and
+  proposal history.
+- [x] Focused CI covers grounding validation, hallucinated provenance rejection,
+  operation restrictions, proposal persistence/review lifecycle, PDF crop
+  rendering, and vision audit metadata.
+
+#### Grounding contract
+
+AI repair is a constrained transformation proposal, not a second parser and not
+a whole-book rewriting stage:
+
+    QualityIssue
+      + target BookIR node
+      + bounded BookIR neighbors
+      + SourceRef(page, bbox, parser, source_id)
+      + optional rendered source crop
+        -> provider model
+        -> untrusted JSON
+        -> AIRepairProposalGenerator
+        -> PatchValidator
+        -> pending AIRepairProposal
+        -> Human Review
+        -> PatchEngine
+        -> QualityEngine
+
+Text-only proposals can reason over the extracted BookIR context and its exact
+provenance metadata. They must not be described as having visually inspected
+the PDF. When the reviewer explicitly enables source-crop grounding, EBookAI
+renders up to three bbox-aligned PNG crops and sends them through a
+vision-capable provider transport. The persisted proposal records
+`input_mode=text|vision` and the source-image reference labels used for that
+request.
+
+The first AI repair allowlist is intentionally narrow. `replace_content`
+supports source-grounded OCR/text correction. `set_attribute` is restricted
+to heading `level` so model output cannot arbitrarily rewrite internal BookIR
+attributes. Structural operations such as merge, split, move, insert, and
+delete remain deterministic/human-controlled until stronger multi-node
+grounding and validation rules are defined.
+
+#### Proposal persistence and review
+
+A generated proposal is stored alongside the review session but does not enter
+`Book.patches` until a human accepts it. Rejection changes only proposal
+status. Acceptance validates the patch against the current BookIR again, applies
+it through the normal Patch Engine, re-runs quality analysis, records the human
+decision, and marks competing pending proposals for the same issue as
+`superseded`.
+
+This separation preserves the core invariant:
+
+    model output != canonical BookIR mutation
+
 ## Legacy boundary
 
 The current services/conversion/conversion_pipeline.py is a legacy converter pipeline and should not become the foundation of BookIR. It remains operational until the new pipeline reaches functional parity.
