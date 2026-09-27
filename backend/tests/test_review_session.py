@@ -247,7 +247,6 @@ def test_rejected_ai_proposal_never_mutates_book(tmp_path):
     assert issue.id not in rejected.decisions
 
 
-
 def test_undo_patch_reopens_issue_and_persists_resolution_state(tmp_path):
     book = _issue_book()
     report = QualityEngine().analyze(book)
