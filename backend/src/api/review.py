@@ -44,6 +44,10 @@ class AIProposalRequest(BaseModel):
     include_source_images: bool = False
 
 
+class ReleaseRequest(BaseModel):
+    require_epubcheck: bool = False
+
+
 @router.get("/ai-providers")
 async def get_review_ai_providers():
     return {
@@ -328,6 +332,31 @@ async def run_publication_qa(session_id: str):
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
+@router.post("/sessions/{session_id}/release")
+async def build_review_release(session_id: str, request: ReleaseRequest):
+    try:
+        session = await run_in_threadpool(
+            review_store.build_release,
+            session_id,
+            require_epubcheck=request.require_epubcheck,
+        )
+        return session.response_dict()
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.get("/sessions/{session_id}/release/verify")
+async def verify_review_release(session_id: str):
+    try:
+        return await run_in_threadpool(review_store.verify_release, session_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
 @router.get("/sessions/{session_id}/export/bookir")
 async def export_review_bookir(session_id: str):
     try:
@@ -342,6 +371,27 @@ async def export_review_bookir(session_id: str):
         content=session.book.to_json(indent=2),
         media_type="application/json",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/sessions/{session_id}/export/release")
+async def export_review_release(session_id: str):
+    try:
+        session = await run_in_threadpool(review_store.get, session_id)
+        path = await run_in_threadpool(
+            review_store.release_bundle_path,
+            session_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    stem = Path(session.source_filename).stem
+    return FileResponse(
+        path=path,
+        filename=f"{stem}.release.zip",
+        media_type="application/zip",
     )
 
 
