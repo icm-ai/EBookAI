@@ -83,9 +83,7 @@ def build_reviewed_baseline(
     manifest_path = Path(manifest_path).resolve()
     manifest = CorpusManifest.load(manifest_path)
     if manifest.corpus_id != leaderboard.corpus_id:
-        raise ValueError(
-            "Leaderboard corpus_id does not match the corpus manifest"
-        )
+        raise ValueError("Leaderboard corpus_id does not match the corpus manifest")
 
     root = manifest_path.parent
     gold_sha256: Dict[str, str] = {}
