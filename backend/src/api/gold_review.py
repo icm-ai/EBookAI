@@ -10,7 +10,7 @@ from book.benchmark.review_workbench import GoldReviewStore
 from book.parsers.base import ParserBackendUnavailable
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse, Response
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
 from config import OUTPUT_DIR
@@ -47,7 +47,7 @@ class GoldElementRequest(BaseModel):
     text: str = ""
     bbox: List[float] | None = None
     level: int | None = None
-    attrs: Dict[str, Any] = {}
+    attrs: Dict[str, Any] = Field(default_factory=dict)
 
 
 class GoldReadingOrderRequest(BaseModel):
