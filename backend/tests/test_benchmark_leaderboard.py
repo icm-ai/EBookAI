@@ -172,9 +172,7 @@ def test_leaderboard_regression_compares_metrics_not_rank():
         maximum_metric_regression=0.05,
     )
 
-    assert failures == [
-        "alpha:text.f1: baseline 0.85, current 0.75, drop 0.1 > 0.05"
-    ]
+    assert failures == ["alpha:text.f1: baseline 0.85, current 0.75, drop 0.1 > 0.05"]
 
 
 def test_leaderboard_round_trip_and_markdown(tmp_path):
