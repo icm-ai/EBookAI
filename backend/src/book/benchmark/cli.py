@@ -8,7 +8,13 @@ from pathlib import Path
 from typing import List, Optional
 
 from book.benchmark.corpus import CorpusStore
-from book.benchmark.models import BenchmarkReport
+from book.benchmark.gold import (
+    evaluate_gold,
+    evaluate_gold_gate,
+    load_gold_annotation,
+)
+from book.benchmark.models import BenchmarkReport, CorpusManifest
+from book.domain.models import Book
 from book.benchmark.report import write_markdown
 from book.benchmark.runner import ParserBenchmarkRunner
 
@@ -58,6 +64,22 @@ def build_parser() -> argparse.ArgumentParser:
     report = subparsers.add_parser("report", help="Render benchmark JSON as Markdown")
     report.add_argument("results", type=Path)
     report.add_argument("--output", type=Path, required=True)
+
+    gold_validate = subparsers.add_parser(
+        "gold-validate", help="Validate source-pinned sparse gold annotations"
+    )
+    gold_validate.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    gold_validate.add_argument(
+        "--documents", help="Comma-separated corpus document ids (default: all)"
+    )
+
+    gold_evaluate = subparsers.add_parser(
+        "gold-evaluate", help="Evaluate an existing BookIR JSON against gold"
+    )
+    gold_evaluate.add_argument("bookir", type=Path)
+    gold_evaluate.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    gold_evaluate.add_argument("--document", required=True)
+    gold_evaluate.add_argument("--backend", default="pymupdf")
     return parser
 
 
@@ -83,16 +105,56 @@ def main(argv: Optional[List[str]] = None) -> int:
             fetch_missing=not args.no_fetch,
         )
         print(result.to_json())
-        return (
-            0
-            if not any(run.status in {"failed", "timeout"} for run in result.runs)
-            else 1
+        has_runtime_failure = any(
+            run.status in {"failed", "timeout"} for run in result.runs
         )
+        has_gold_gate_failure = any(run.gold_gate_failures for run in result.runs)
+        return 0 if not (has_runtime_failure or has_gold_gate_failure) else 1
     if args.command == "report":
         result = BenchmarkReport.load(args.results)
         write_markdown(result, args.output)
         print(str(args.output))
         return 0
+    if args.command == "gold-validate":
+        manifest = CorpusManifest.load(args.manifest)
+        results = []
+        for spec in manifest.select(_csv(args.documents)):
+            annotation = load_gold_annotation(args.manifest, spec)
+            results.append(
+                {
+                    "document_id": spec.id,
+                    "status": "valid" if annotation is not None else "unannotated",
+                    "annotation_status": (
+                        annotation.status if annotation is not None else None
+                    ),
+                    "annotated_pages": (
+                        [page.page_index for page in annotation.pages]
+                        if annotation is not None
+                        else []
+                    ),
+                }
+            )
+        print(json.dumps(results, indent=2))
+        return 0
+    if args.command == "gold-evaluate":
+        manifest = CorpusManifest.load(args.manifest)
+        spec = manifest.select([args.document])[0]
+        annotation = load_gold_annotation(args.manifest, spec)
+        if annotation is None:
+            raise ValueError(f"Document {spec.id!r} has no gold annotation")
+        book = Book.from_json(args.bookir.read_text(encoding="utf-8"))
+        evaluation = evaluate_gold(book, annotation)
+        failures, baseline_deltas = evaluate_gold_gate(
+            evaluation.metrics,
+            thresholds=spec.gold_thresholds.get(args.backend, {}),
+            baselines=spec.gold_baselines.get(args.backend, {}),
+            max_regression=spec.gold_max_regression.get(args.backend, {}),
+        )
+        payload = evaluation.to_dict()
+        payload["gate_failures"] = failures
+        payload["baseline_deltas"] = baseline_deltas
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return 0 if not failures else 1
     raise AssertionError(f"Unhandled command: {args.command}")
 
 
