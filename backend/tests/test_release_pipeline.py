@@ -84,9 +84,7 @@ def _passed_epubcheck():
 def test_release_pipeline_is_byte_reproducible_and_self_verifying(tmp_path):
     source = tmp_path / "source.pdf"
     source.write_bytes(b"%PDF-1.4\nfixture\n")
-    pipeline = ReleasePipeline(
-        epubcheck_runner=StaticRunner(_passed_epubcheck())
-    )
+    pipeline = ReleasePipeline(epubcheck_runner=StaticRunner(_passed_epubcheck()))
 
     first = pipeline.build(
         source_path=source,
@@ -130,9 +128,7 @@ def test_release_pipeline_is_byte_reproducible_and_self_verifying(tmp_path):
 def test_release_pipeline_detects_tampered_artifact(tmp_path):
     source = tmp_path / "source.pdf"
     source.write_bytes(b"%PDF-1.4\nfixture\n")
-    pipeline = ReleasePipeline(
-        epubcheck_runner=StaticRunner(_passed_epubcheck())
-    )
+    pipeline = ReleasePipeline(epubcheck_runner=StaticRunner(_passed_epubcheck()))
     result = pipeline.build(
         source_path=source,
         source_filename="fixture.pdf",
@@ -144,10 +140,7 @@ def test_release_pipeline_detects_tampered_artifact(tmp_path):
 
     tampered = tmp_path / "tampered.zip"
     with zipfile.ZipFile(result.bundle_path) as original:
-        entries = {
-            name: original.read(name)
-            for name in original.namelist()
-        }
+        entries = {name: original.read(name) for name in original.namelist()}
     entries["book/bookir.json"] += b"\n"
     with zipfile.ZipFile(tampered, "w") as archive:
         for name in sorted(entries):
@@ -168,9 +161,7 @@ def test_required_unavailable_epubcheck_blocks_release(tmp_path):
         valid=None,
         error="not installed",
     )
-    pipeline = ReleasePipeline(
-        epubcheck_runner=StaticRunner(unavailable)
-    )
+    pipeline = ReleasePipeline(epubcheck_runner=StaticRunner(unavailable))
 
     optional = pipeline.build(
         source_path=source,
@@ -220,9 +211,7 @@ def test_available_but_failing_epubcheck_always_blocks_release(tmp_path):
             )
         ],
     )
-    pipeline = ReleasePipeline(
-        epubcheck_runner=StaticRunner(failed)
-    )
+    pipeline = ReleasePipeline(epubcheck_runner=StaticRunner(failed))
 
     result = pipeline.build(
         source_path=source,
@@ -268,9 +257,7 @@ print(json.dumps({
 """,
         encoding="utf-8",
     )
-    runner = ExternalEpubCheckRunner(
-        command=[sys.executable, str(script)]
-    )
+    runner = ExternalEpubCheckRunner(command=[sys.executable, str(script)])
 
     result = runner.run(epub)
 
