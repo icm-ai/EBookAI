@@ -64,6 +64,13 @@ class LeaderboardPolicy:
 
     @classmethod
     def from_dict(cls, value: Dict[str, Any]) -> "LeaderboardPolicy":
+        schema_version = str(
+            value.get("schema_version", LEADERBOARD_SCHEMA_VERSION)
+        )
+        if schema_version != LEADERBOARD_SCHEMA_VERSION:
+            raise ValueError(
+                f"Unsupported leaderboard policy schema: {schema_version!r}"
+            )
         return cls(
             accuracy_paths=tuple(
                 str(item)
