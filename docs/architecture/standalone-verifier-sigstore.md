@@ -76,6 +76,13 @@ create a circular dependency. The content-addressed `release_id` therefore
 identifies the release content/policy, while the native Sigstore bundle
 authenticates that exact manifest.
 
+Unsigned M9-style bundles remain byte-reproducible. Signed bundles are not
+required to be byte-identical across signing runs because certificates,
+timestamps, transparency-log proofs, and some signature mechanisms can contain
+fresh evidence. The stable reproducibility boundary is the publication
+artifacts, canonical manifest, and `release_id`; attestation is an external
+evidence layer over that stable identity.
+
 ## Signing modes
 
 Sigstore signing is explicitly configured; merely having Cosign on PATH does not
