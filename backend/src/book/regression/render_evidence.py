@@ -48,18 +48,22 @@ class EpubRenderEvidenceCollector:
                         xhtml_parts.append(f"{tag}:{text}")
                     else:
                         xhtml_parts.append(f"{tag}:")
-                    if tag in {
-                        "h1",
-                        "h2",
-                        "h3",
-                        "h4",
-                        "h5",
-                        "h6",
-                        "p",
-                        "li",
-                        "blockquote",
-                        "aside",
-                    } and text:
+                    if (
+                        tag
+                        in {
+                            "h1",
+                            "h2",
+                            "h3",
+                            "h4",
+                            "h5",
+                            "h6",
+                            "p",
+                            "li",
+                            "blockquote",
+                            "aside",
+                        }
+                        and text
+                    ):
                         flow_parts.append(f"{tag}:{text}")
                     if tail:
                         flow_parts.append(f"tail:{tail}")
