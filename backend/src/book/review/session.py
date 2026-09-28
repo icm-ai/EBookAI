@@ -463,6 +463,7 @@ class ReviewSessionStore:
         *,
         require_epubcheck: bool = False,
         require_signature: bool = False,
+        signature_provider: str = "external",
     ) -> ReviewSession:
         with self._lock:
             session = self.get(session_id)
@@ -476,6 +477,7 @@ class ReviewSessionStore:
                 output_dir=self.release_dir(session_id),
                 require_epubcheck=require_epubcheck,
                 require_signature=require_signature,
+                signature_provider=signature_provider,
             )
             session.publication_report = result.publication_report
             session.release_manifest = result.manifest
