@@ -23,8 +23,8 @@ _TAG_RE = re.compile(r"<[^>]+>")
 _WS_RE = re.compile(r"\s+")
 
 
-def _ratio(numerator: int, denominator: int) -> float:
-    return 1.0 if denominator == 0 else numerator / denominator
+def _ratio(numerator: int, denominator: int) -> Optional[float]:
+    return None if denominator == 0 else numerator / denominator
 
 
 def _text_recall(text: str, fragments: Iterable[str]) -> float:
@@ -124,8 +124,8 @@ class GoldenCorpusHarness:
             publication.release_ready,
             external_epubcheck.to_dict() if external_epubcheck else None,
         )
-        failures = self._failures(spec, metrics, report)
         evidence = self.render_collector.collect(epub_path)
+        failures = self._failures(spec, metrics, report, evidence)
 
         return GoldenCaseResult(
             case_id=spec.id,
@@ -198,19 +198,13 @@ class GoldenCorpusHarness:
             "semantic_score": semantic_score,
             "text_recall": round(text_recall, 4),
             "reading_order": round(reading_order, 4),
-            "provenance_coverage": round(
-                _ratio(
-                    sum(1 for node in content_nodes if node.source),
-                    len(content_nodes),
-                ),
-                4,
+            "provenance_coverage": self._rounded_ratio(
+                sum(1 for node in content_nodes if node.source),
+                len(content_nodes),
             ),
-            "bbox_coverage": round(
-                _ratio(
-                    sum(1 for source in source_refs if source.bbox is not None),
-                    len(source_refs),
-                ),
-                4,
+            "bbox_coverage": self._rounded_ratio(
+                sum(1 for source in source_refs if source.bbox is not None),
+                len(source_refs),
             ),
             "quality_score": report.score,
             "quality_issue_codes": issue_codes,
@@ -224,10 +218,16 @@ class GoldenCorpusHarness:
         }
 
     @staticmethod
+    def _rounded_ratio(numerator: int, denominator: int) -> Optional[float]:
+        value = _ratio(numerator, denominator)
+        return round(value, 4) if value is not None else None
+
+    @staticmethod
     def _failures(
         spec: GoldenCaseSpec,
         metrics: Dict[str, Any],
         report: Any,
+        evidence: Any,
     ) -> List[str]:
         failures: List[str] = []
         expected = spec.expectation
@@ -279,6 +279,26 @@ class GoldenCorpusHarness:
 
         if not metrics["epub_reproducible"]:
             failures.append("EPUB bytes are not reproducible for identical BookIR")
+
+        for name, actual, baseline in (
+            ("render_xhtml_digest", evidence.xhtml_digest, expected.render_xhtml_digest),
+            ("render_flow_digest", evidence.flow_digest, expected.render_flow_digest),
+            (
+                "render_stylesheet_digest",
+                evidence.stylesheet_digest,
+                expected.render_stylesheet_digest,
+            ),
+        ):
+            if baseline and actual != baseline:
+                failures.append(f"{name}: expected {baseline}, got {actual}")
+        if (
+            expected.render_section_count is not None
+            and evidence.section_count != expected.render_section_count
+        ):
+            failures.append(
+                "render_section_count: expected "
+                f"{expected.render_section_count}, got {evidence.section_count}"
+            )
 
         external = metrics.get("epubcheck")
         if expected.publication_ready is True and external is not None:
