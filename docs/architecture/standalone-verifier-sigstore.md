@@ -154,7 +154,9 @@ an ephemeral local key pair. It performs real `sign-blob --bundle` and
 `verify-blob --bundle` operations. For this local-key fixture the gate creates
 a Cosign v3 signing configuration with no Fulcio, OIDC, Rekor, or TSA services,
 avoiding public transparency-log noise while still testing the native bundle
-format and Cosign verification path.
+format and Cosign verification path. Verification in that isolated local-key
+gate explicitly uses `--insecure-ignore-tlog`; production keyless verification
+does not set this flag and continues to require its transparency-log evidence.
 
 Keyless public-Fulcio/Rekor signing remains supported by the adapter but is not
 performed on every pull-request CI run, because that would create a public
