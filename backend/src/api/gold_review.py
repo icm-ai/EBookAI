@@ -6,7 +6,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List
 
-from book.benchmark.consensus import GoldConsensusStore\nfrom book.benchmark.gold import GoldValidationError
+from book.benchmark.consensus import GoldConsensusStore
+from book.benchmark.gold import GoldValidationError
 from book.benchmark.review_workbench import GoldReviewStore
 from book.parsers.base import ParserBackendUnavailable
 from fastapi import APIRouter, HTTPException, Query
