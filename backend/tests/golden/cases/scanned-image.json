@@ -6,7 +6,11 @@
     "required_issue_codes": [
       "empty_document"
     ],
-    "publication_ready": false
+    "publication_ready": false,
+    "render_xhtml_digest": "e65b55ae52a2cf967e9e4f448332fba79fd7a1d7de0adb948a89fa33c90e4a7a",
+    "render_flow_digest": "0f8dc28518d6d168f1152f8a75aeebefc51e7f4701a7e713d40f5b271a9c1790",
+    "render_stylesheet_digest": "1852c87bc123bcad6928e048b95398730ab38e4386fcd11cd29d76550c6fe8ac",
+    "render_section_count": 1
   },
   "thresholds": {
     "text_recall_min": 1,
