@@ -161,9 +161,7 @@ class ExternalEpubCheckRunner:
             "info": self._count(checker, "nInfo", messages, "INFO"),
         }
         valid = (
-            completed.returncode == 0
-            and counts["fatal"] == 0
-            and counts["error"] == 0
+            completed.returncode == 0 and counts["fatal"] == 0 and counts["error"] == 0
         )
         return EpubCheckResult(
             available=True,
