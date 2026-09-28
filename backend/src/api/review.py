@@ -46,6 +46,7 @@ class AIProposalRequest(BaseModel):
 
 class ReleaseRequest(BaseModel):
     require_epubcheck: bool = False
+    require_signature: bool = False
 
 
 @router.get("/ai-providers")
@@ -339,6 +340,7 @@ async def build_review_release(session_id: str, request: ReleaseRequest):
             review_store.build_release,
             session_id,
             require_epubcheck=request.require_epubcheck,
+            require_signature=request.require_signature,
         )
         return session.response_dict()
     except ValueError as exc:
