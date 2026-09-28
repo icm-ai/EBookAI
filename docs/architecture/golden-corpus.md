@@ -80,6 +80,30 @@ Built-in Publication QA runs for every case. In the dedicated CI gate,
 EPUBCheck 5.4.0 also validates each generated EPUB when the case is expected to
 be publishable.
 
+### Baseline drift budgets
+
+Absolute thresholds answer: "is this metric still above the minimum acceptable
+floor?" They do not detect a quieter regression that remains above that floor.
+
+Each golden case can therefore also pin deterministic `baseline_metrics` and a
+per-metric `max_regression` budget. The harness reports:
+
+    delta = current - baseline
+
+Only negative drift is gated. Improvements are allowed without updating the
+baseline. A case fails when:
+
+    delta < -max_regression
+
+For example, a semantic score can have an absolute minimum of 0.80 while also
+pinning a 1.00 deterministic baseline with a 0.05 regression budget. A drop to
+0.90 still clears the absolute threshold but correctly fails the drift gate.
+
+The initial synthetic corpus uses zero regression budget for deterministic
+metrics observed at the current baseline. When intentional pipeline changes
+alter a baseline, the expectation, baseline value, render digest, and rationale
+should be reviewed together in the same change.
+
 ## Render evidence
 
 The first render-regression layer is browser-independent and deterministic. The
