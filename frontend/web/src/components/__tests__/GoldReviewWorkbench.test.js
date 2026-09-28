@@ -17,6 +17,11 @@ jest.mock('../../services/api', () => ({
   publishGoldReview: jest.fn(),
   getGoldReviewExportUrl: jest.fn(() => 'http://localhost/promoted.json'),
   getGoldReviewAuditUrl: jest.fn(() => 'http://localhost/audit.json'),
+  createGoldConsensus: jest.fn(),
+  adjudicateGoldConsensus: jest.fn(),
+  publishGoldConsensus: jest.fn(),
+  getGoldConsensusExportUrl: jest.fn(() => 'http://localhost/consensus.json'),
+  getGoldConsensusAuditUrl: jest.fn(() => 'http://localhost/consensus-audit.json'),
 }));
 
 const queue = {
@@ -133,6 +138,43 @@ describe('GoldReviewWorkbench', () => {
         screen.getByText('Promote staged draft to reviewed artifact')
       ).not.toBeDisabled();
     });
+  });
+
+  test('compares two promoted sessions and surfaces consensus state', async () => {
+    api.createGoldConsensus.mockResolvedValue({
+      data: {
+        id: 'bundle-1',
+        status: 'consensus',
+        reviewer_a: 'alice',
+        reviewer_b: 'bob',
+        conflicts: [],
+        unresolved_conflicts: [],
+        consensus_annotation: {
+          reviewed_by: 'alice + bob',
+        },
+      },
+    });
+
+    render(<GoldReviewWorkbench />);
+    fireEvent.click(await screen.findByText('PDF page 3'));
+    await screen.findByText('unconfirmed elements: h1');
+
+    fireEvent.change(screen.getByLabelText('Reviewer A session'), {
+      target: { value: 'session-a' },
+    });
+    fireEvent.change(screen.getByLabelText('Reviewer B session'), {
+      target: { value: 'session-b' },
+    });
+    fireEvent.click(screen.getByText('Compare independent reviews'));
+
+    await waitFor(() => {
+      expect(api.createGoldConsensus).toHaveBeenCalledWith(
+        'session-a',
+        'session-b'
+      );
+    });
+    expect(await screen.findByText('Status: consensus')).toBeInTheDocument();
+    expect(screen.getByText('reviewed_by: alice + bob')).toBeInTheDocument();
   });
 
   test('confirming a task requires reviewer identity', async () => {
