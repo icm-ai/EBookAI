@@ -43,8 +43,16 @@ def _digital_basic(path: Path):
         _text(page, 285, 815, f"Page {index + 1}", 9)
         if index == 0:
             _text(page, 60, 90, "Chapter 1", 22)
-            _text(page, 60, 145, "A clean digital paragraph with source provenance.", 12)
-            _text(page, 60, 735, "This paragraph continues across the page boundary without", 12)
+            _text(
+                page, 60, 145, "A clean digital paragraph with source provenance.", 12
+            )
+            _text(
+                page,
+                60,
+                735,
+                "This paragraph continues across the page boundary without",
+                12,
+            )
         elif index == 1:
             _text(page, 60, 105, "losing its provenance.", 12)
             _text(page, 60, 180, "A second paragraph ends normally.", 12)
