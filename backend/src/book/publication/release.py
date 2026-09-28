@@ -320,9 +320,7 @@ class ReleasePipeline:
                 release_ready=release_ready,
                 epubcheck_status=epubcheck_result.status,
                 signed=signer_available,
-                signature_provider=(
-                    signature_provider if signer_available else "none"
-                ),
+                signature_provider=(signature_provider if signer_available else "none"),
                 signing_key_id=signing_key_id,
                 signing_algorithm=signing_algorithm,
             )
@@ -335,9 +333,7 @@ class ReleasePipeline:
                 epubcheck_status=epubcheck_result.status,
                 epubcheck_version=epubcheck_result.version,
                 signed=signer_available,
-                signature_provider=(
-                    signature_provider if signer_available else "none"
-                ),
+                signature_provider=(signature_provider if signer_available else "none"),
                 signing_key_id=signing_key_id,
                 signing_algorithm=signing_algorithm,
                 artifacts=artifacts,
@@ -518,8 +514,7 @@ class ReleasePipeline:
                     signature_payload = sigstore_result.to_dict()
                     if sigstore_result.cryptographically_valid is not True:
                         errors.append(
-                            sigstore_result.error
-                            or "Sigstore verification failed"
+                            sigstore_result.error or "Sigstore verification failed"
                         )
                     elif not sigstore_result.trusted:
                         errors.append(
