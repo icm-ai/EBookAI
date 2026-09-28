@@ -559,6 +559,8 @@ def test_real_openssl_detached_release_signature(tmp_path):
                 "-inkey",
                 str(private_key),
                 "-rawin",
+                "-in",
+                "{payload}",
             ],
             key_id="openssl-ed25519-fixture",
             algorithm="ed25519",
