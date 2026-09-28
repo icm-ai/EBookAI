@@ -606,7 +606,6 @@ def test_real_openssl_detached_release_signature(tmp_path):
     assert verification["signature"]["trusted"] is True
 
 
-
 def _write_fake_cosign(tmp_path: Path) -> Path:
     script = tmp_path / "fake_cosign.py"
     script.write_text(
@@ -725,9 +724,7 @@ def test_native_sigstore_bundle_is_preserved_and_verified(tmp_path):
         assert "attestation.json" not in names
         native = archive.read("sigstore/manifest.sigstore.json")
         parsed = json.loads(native)
-        assert parsed["mediaType"].startswith(
-            "application/vnd.dev.sigstore.bundle"
-        )
+        assert parsed["mediaType"].startswith("application/vnd.dev.sigstore.bundle")
         assert len(parsed["verificationMaterial"]["tlogEntries"]) == 1
 
     verification = pipeline.verify_bundle(result.bundle_path)
@@ -738,10 +735,7 @@ def test_native_sigstore_bundle_is_preserved_and_verified(tmp_path):
     assert verification["signature"]["trusted"] is True
     assert verification["signature"]["identity"] == identity
     assert verification["signature"]["issuer"] == issuer
-    assert (
-        verification["signature"]["evidence"]["transparency_log_entries"]
-        == 1
-    )
+    assert verification["signature"]["evidence"]["transparency_log_entries"] == 1
 
 
 def test_sigstore_keyless_verification_requires_identity_policy(tmp_path):
