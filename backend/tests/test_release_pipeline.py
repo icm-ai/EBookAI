@@ -21,7 +21,12 @@ from book.publication import (
     ExternalManifestSigner,
     ExternalManifestVerifier,
     ReleasePipeline,
+    ReleaseVerificationPolicy,
+    SigstoreBundleSigner,
+    SigstoreBundleVerifier,
+    StandaloneReleaseVerifier,
 )
+from book.publication.verify_cli import main as verify_cli_main
 from book.quality import QualityReport
 
 
@@ -599,3 +604,260 @@ def test_real_openssl_detached_release_signature(tmp_path):
     assert verification["valid"] is True
     assert verification["signature"]["cryptographically_valid"] is True
     assert verification["signature"]["trusted"] is True
+
+
+
+def _write_fake_cosign(tmp_path: Path) -> Path:
+    script = tmp_path / "fake_cosign.py"
+    script.write_text(
+        """import hashlib
+import json
+import pathlib
+import sys
+
+args = sys.argv[1:]
+if args and args[0] == "version":
+    print("GitVersion: v3.1.3")
+    raise SystemExit(0)
+
+if args and args[0] == "sign-blob":
+    bundle = pathlib.Path(args[args.index("--bundle") + 1])
+    payload = pathlib.Path(args[-1]).read_bytes()
+    digest = hashlib.sha256(payload).hexdigest()
+    native = {
+        "mediaType": "application/vnd.dev.sigstore.bundle.v0.3+json",
+        "messageSignature": {
+            "messageDigest": {
+                "algorithm": "SHA2_256",
+                "digest": digest,
+            },
+            "signature": "ZmFrZS1zaWduYXR1cmU=",
+        },
+        "verificationMaterial": {
+            "certificate": {"rawBytes": "ZmFrZS1jZXJ0"},
+            "tlogEntries": [
+                {
+                    "logIndex": "7",
+                    "integratedTime": "123456789",
+                    "inclusionPromise": {
+                        "signedEntryTimestamp": "ZmFrZS1zZXQ="
+                    },
+                }
+            ],
+            "timestampVerificationData": {
+                "rfc3161Timestamps": [{"signedTimestamp": "ZmFrZS10cw=="}]
+            },
+        },
+    }
+    bundle.parent.mkdir(parents=True, exist_ok=True)
+    bundle.write_text(
+        json.dumps(native, sort_keys=True, separators=(",", ":")),
+        encoding="utf-8",
+    )
+    raise SystemExit(0)
+
+if args and args[0] == "verify-blob":
+    payload = pathlib.Path(args[1]).read_bytes()
+    bundle = pathlib.Path(args[args.index("--bundle") + 1])
+    native = json.loads(bundle.read_text(encoding="utf-8"))
+    expected = hashlib.sha256(payload).hexdigest()
+    actual = native["messageSignature"]["messageDigest"]["digest"]
+    identity_ok = (
+        "--certificate-identity" in args
+        and args[args.index("--certificate-identity") + 1]
+        == "https://github.com/icm-ai/EBookAI/.github/workflows/ci.yml@refs/heads/develop"
+    )
+    issuer_ok = (
+        "--certificate-oidc-issuer" in args
+        and args[args.index("--certificate-oidc-issuer") + 1]
+        == "https://token.actions.githubusercontent.com"
+    )
+    raise SystemExit(0 if expected == actual and identity_ok and issuer_ok else 1)
+
+raise SystemExit(2)
+""",
+        encoding="utf-8",
+    )
+    return script
+
+
+def test_native_sigstore_bundle_is_preserved_and_verified(tmp_path):
+    source = tmp_path / "source.pdf"
+    source.write_bytes(b"%PDF-1.4\nfixture\n")
+    fake_cosign = _write_fake_cosign(tmp_path)
+    command = [sys.executable, str(fake_cosign)]
+    identity = (
+        "https://github.com/icm-ai/EBookAI/.github/workflows/"
+        "ci.yml@refs/heads/develop"
+    )
+    issuer = "https://token.actions.githubusercontent.com"
+    pipeline = ReleasePipeline(
+        epubcheck_runner=StaticRunner(_passed_epubcheck()),
+        sigstore_signer=SigstoreBundleSigner(
+            command=command,
+            keyless=True,
+        ),
+        sigstore_verifier=SigstoreBundleVerifier(
+            command=command,
+            certificate_identity=identity,
+            certificate_oidc_issuer=issuer,
+        ),
+    )
+
+    result = pipeline.build(
+        source_path=source,
+        source_filename="fixture.pdf",
+        book=_book(),
+        quality_report=_quality_report(),
+        issue_resolutions={},
+        output_dir=tmp_path / "sigstore-release",
+        require_signature=True,
+        signature_provider="sigstore",
+    )
+
+    assert result.manifest.signed is True
+    assert result.manifest.signature_provider == "sigstore"
+    assert result.manifest.signing_algorithm == "sigstore-bundle"
+
+    with zipfile.ZipFile(result.bundle_path) as archive:
+        names = set(archive.namelist())
+        assert "sigstore/manifest.sigstore.json" in names
+        assert "attestation.json" not in names
+        native = archive.read("sigstore/manifest.sigstore.json")
+        parsed = json.loads(native)
+        assert parsed["mediaType"].startswith(
+            "application/vnd.dev.sigstore.bundle"
+        )
+        assert len(parsed["verificationMaterial"]["tlogEntries"]) == 1
+
+    verification = pipeline.verify_bundle(result.bundle_path)
+
+    assert verification["valid"] is True
+    assert verification["signature"]["provider"] == "sigstore"
+    assert verification["signature"]["cryptographically_valid"] is True
+    assert verification["signature"]["trusted"] is True
+    assert verification["signature"]["identity"] == identity
+    assert verification["signature"]["issuer"] == issuer
+    assert (
+        verification["signature"]["evidence"]["transparency_log_entries"]
+        == 1
+    )
+
+
+def test_sigstore_keyless_verification_requires_identity_policy(tmp_path):
+    source = tmp_path / "source.pdf"
+    source.write_bytes(b"%PDF-1.4\nfixture\n")
+    fake_cosign = _write_fake_cosign(tmp_path)
+    command = [sys.executable, str(fake_cosign)]
+    pipeline = ReleasePipeline(
+        epubcheck_runner=StaticRunner(_passed_epubcheck()),
+        sigstore_signer=SigstoreBundleSigner(
+            command=command,
+            keyless=True,
+        ),
+        sigstore_verifier=SigstoreBundleVerifier(command=command),
+    )
+    result = pipeline.build(
+        source_path=source,
+        source_filename="fixture.pdf",
+        book=_book(),
+        quality_report=_quality_report(),
+        issue_resolutions={},
+        output_dir=tmp_path / "sigstore-release",
+        require_signature=True,
+        signature_provider="sigstore",
+    )
+
+    verification = pipeline.verify_bundle(result.bundle_path)
+
+    assert verification["valid"] is False
+    assert verification["signature"]["cryptographically_valid"] is None
+    assert "identity policy" in " ".join(verification["errors"])
+
+
+def test_standalone_verifier_and_cli_match_release_pipeline(tmp_path, capsys):
+    source = tmp_path / "source.pdf"
+    source.write_bytes(b"%PDF-1.4\nfixture\n")
+    pipeline = ReleasePipeline(epubcheck_runner=StaticRunner(_passed_epubcheck()))
+    result = pipeline.build(
+        source_path=source,
+        source_filename="fixture.pdf",
+        book=_book(),
+        quality_report=_quality_report(),
+        issue_resolutions={},
+        output_dir=tmp_path / "release",
+        signature_provider="none",
+    )
+
+    standalone = StandaloneReleaseVerifier()
+    verification = standalone.verify(
+        result.bundle_path,
+        policy=ReleaseVerificationPolicy(),
+    )
+    assert verification["valid"] is True
+    assert verification["release_id"] == result.manifest.release_id
+
+    exit_code = verify_cli_main([str(result.bundle_path), "--json"])
+    output = json.loads(capsys.readouterr().out)
+
+    assert exit_code == 0
+    assert output["valid"] is True
+    assert output["release_id"] == result.manifest.release_id
+
+
+def test_verifier_accepts_legacy_manifest_v02_release_id(tmp_path):
+    source = tmp_path / "source.pdf"
+    source.write_bytes(b"%PDF-1.4\nfixture\n")
+    pipeline = ReleasePipeline(epubcheck_runner=StaticRunner(_passed_epubcheck()))
+    result = pipeline.build(
+        source_path=source,
+        source_filename="fixture.pdf",
+        book=_book(),
+        quality_report=_quality_report(),
+        issue_resolutions={},
+        output_dir=tmp_path / "current",
+        signature_provider="none",
+    )
+
+    with zipfile.ZipFile(result.bundle_path) as archive:
+        entries = {name: archive.read(name) for name in archive.namelist()}
+    manifest_payload = json.loads(entries["manifest.json"])
+    manifest_payload["schema_version"] = "0.2"
+    manifest_payload["attestation"].pop("provider", None)
+    artifacts = [
+        type(result.manifest.artifacts[0]).from_dict(item)
+        for item in manifest_payload["artifacts"]
+    ]
+    manifest_payload["release_id"] = ReleasePipeline._release_id(
+        artifacts,
+        require_epubcheck=manifest_payload["policy"]["require_epubcheck"],
+        require_signature=manifest_payload["policy"]["require_signature"],
+        release_ready=manifest_payload["release_ready"],
+        epubcheck_status=manifest_payload["external_validation"]["epubcheck"][
+            "status"
+        ],
+        signed=manifest_payload["attestation"]["signed"],
+        signature_provider="none",
+        signing_key_id=manifest_payload["attestation"]["key_id"],
+        signing_algorithm=manifest_payload["attestation"]["algorithm"],
+        schema_version="0.2",
+    )
+    entries["manifest.json"] = (
+        json.dumps(
+            manifest_payload,
+            ensure_ascii=False,
+            sort_keys=True,
+            indent=2,
+        )
+        + "\n"
+    ).encode("utf-8")
+
+    legacy = tmp_path / "legacy-v02.release.zip"
+    with zipfile.ZipFile(legacy, "w") as archive:
+        for name in sorted(entries):
+            archive.writestr(name, entries[name])
+
+    verification = pipeline.verify_bundle(legacy)
+
+    assert verification["valid"] is True
+    assert verification["release_id"] == manifest_payload["release_id"]
