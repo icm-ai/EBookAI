@@ -23,10 +23,7 @@ from book.publication.epubcheck import EpubCheckResult, ExternalEpubCheckRunner
 from book.publication.models import PublicationReport
 from book.publication.provenance import ToolchainProvenanceBuilder
 from book.publication.qa import PublicationQAEngine
-from book.publication.sigstore import (
-    SigstoreBundleSigner,
-    SigstoreBundleVerifier,
-)
+from book.publication.sigstore import SigstoreBundleSigner, SigstoreBundleVerifier
 from book.quality import QualityReport
 
 
