@@ -14,7 +14,12 @@ from typing import Any, Dict, List, Optional
 from book.domain.models import Book
 from book.orchestration import OrchestrationResult, ParserOrchestrator
 from book.parsers import MarkerAdapter, MinerUAdapter, ParserRegistry, PyMuPDFAdapter
-from book.publication import PublicationReport, ReleaseManifest, ReleasePipeline
+from book.publication import (
+    PublicationReport,
+    ReleaseManifest,
+    ReleasePipeline,
+    load_trusted_key_ids,
+)
 from book.quality import QualityEngine, QualityIssue, QualityReport
 from book.repair import AIRepairProposal, PatchEngine
 
@@ -457,6 +462,7 @@ class ReviewSessionStore:
         session_id: str,
         *,
         require_epubcheck: bool = False,
+        require_signature: bool = False,
     ) -> ReviewSession:
         with self._lock:
             session = self.get(session_id)
@@ -469,6 +475,7 @@ class ReviewSessionStore:
                 issue_resolutions=session.issue_resolution_map(),
                 output_dir=self.release_dir(session_id),
                 require_epubcheck=require_epubcheck,
+                require_signature=require_signature,
             )
             session.publication_report = result.publication_report
             session.release_manifest = result.manifest
@@ -480,7 +487,10 @@ class ReviewSessionStore:
         session = self.get(session_id)
         if session.release_manifest is None:
             raise ValueError("No current release bundle exists for this review state")
-        return self.release_pipeline.verify_bundle(self.release_bundle_path(session_id))
+        return self.release_pipeline.verify_bundle(
+            self.release_bundle_path(session_id),
+            trusted_key_ids=load_trusted_key_ids(),
+        )
 
     def get_issue(self, session_id: str, issue_id: str) -> QualityIssue:
         return self._find_issue(self.get(session_id), issue_id)
