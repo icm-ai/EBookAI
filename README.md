@@ -256,6 +256,28 @@ PYTHONPATH=backend/src python -m book.benchmark.cli gold-evaluate \
 threshold/baseline 规则见
 [`docs/architecture/gold-annotation-benchmark.md`](docs/architecture/gold-annotation-benchmark.md)。
 
+### Gold Corpus & Parser Leaderboard
+
+Milestone 15 将真实 corpus 扩到 5 份 NIST PDF，并维护 25 页人工复核队列。
+正式 leaderboard 默认只使用 `reviewed` gold；`draft` 只能显式
+`--include-draft` 做探索性比较。accuracy、latency 与 Quality proxy
+分别展示，只有 reviewed-gold accuracy 参与排名。
+
+```bash
+PYTHONPATH=backend/src python -m book.benchmark.cli review-plan \
+  --manifest benchmark/corpus/manifest.json \
+  --plan benchmark/corpus/review-plan.json \
+  --output artifacts/gold-review-plan.md
+
+PYTHONPATH=backend/src python -m book.benchmark.cli leaderboard \
+  artifacts/parser-benchmark/benchmark-results.json \
+  --policy benchmark/leaderboard/policy.json \
+  --output artifacts/parser-leaderboard
+```
+
+详见
+[`docs/architecture/gold-corpus-leaderboard.md`](docs/architecture/gold-corpus-leaderboard.md)。
+
 ## 支持的格式
 
 | 输入格式 | 输出格式 | 说明 |
