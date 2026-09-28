@@ -11,7 +11,7 @@ from book.domain.models import (
     SourceRef,
 )
 from book.orchestration import OrchestrationResult, StopReason
-from book.publication import PublicationReport
+from book.publication import EpubCheckResult, PublicationReport, ReleasePipeline
 from book.quality import QualityEngine
 from book.repair import AIRepairProposalGenerator
 from book.review import ReviewSessionStore
@@ -307,3 +307,73 @@ def test_publication_report_persists_and_is_invalidated_by_review_change(tmp_pat
         if issue.suggested_patch is not None:
             changed = store.accept_issue(saved.id, issue.id)
             assert changed.publication_report is None
+
+
+
+class StaticEpubCheckRunner:
+    def run(self, epub_path):
+        assert Path(epub_path).is_file()
+        return EpubCheckResult(
+            available=True,
+            executed=True,
+            valid=True,
+            version="5.4.0",
+            exit_code=0,
+            counts={
+                "fatal": 0,
+                "error": 0,
+                "warning": 0,
+                "usage": 0,
+                "info": 0,
+            },
+        )
+
+
+def test_release_bundle_persists_verifies_and_invalidates_after_review_change(tmp_path):
+    book = _issue_book()
+    report = QualityEngine().analyze(book)
+    result = OrchestrationResult(
+        book=book,
+        quality_report=report,
+        accepted=False,
+        selected_parser="fixture",
+        stop_reason=StopReason.EXHAUSTED,
+        attempts=[],
+        required_features=(),
+    )
+    source = tmp_path / "fixture.pdf"
+    source.write_bytes(b"%PDF-1.4\n")
+    store = ReviewSessionStore(
+        tmp_path / "sessions",
+        orchestrator=FakeOrchestrator(result),
+        release_pipeline=ReleasePipeline(
+            epubcheck_runner=StaticEpubCheckRunner()
+        ),
+    )
+
+    session = store.create(source, "fixture.pdf")
+    released = store.build_release(
+        session.id,
+        require_epubcheck=True,
+    )
+    restored = store.get(session.id)
+    verification = store.verify_release(session.id)
+
+    assert released.release_manifest is not None
+    assert released.release_manifest.require_epubcheck is True
+    assert released.release_manifest.epubcheck_status == "passed"
+    assert restored.release_manifest.release_id == released.release_manifest.release_id
+    assert store.release_bundle_path(session.id).is_file()
+    assert verification["valid"] is True
+
+    issue = next(
+        item for item in restored.quality_report.issues if item.code == "empty_content"
+    )
+    changed = store.reject_issue(
+        session.id,
+        issue.id,
+        reason="Intentional blank",
+    )
+
+    assert changed.release_manifest is None
+    assert not store.release_dir(session.id).exists()
