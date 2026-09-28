@@ -820,6 +820,9 @@ See `docs/architecture/standalone-verifier-sigstore.md`.
   metrics, evaluation, and render-oriented evidence.
 - [x] Define JSON per-case expectations and threshold policy instead of relying
   on ad-hoc assertions.
+- [x] Pin deterministic per-case metric baselines with explicit maximum regression
+  budgets so silent quality drops can fail even when absolute minimum thresholds
+  are still satisfied.
 - [x] Bootstrap a deterministic rights-safe synthetic corpus covering digital,
   scanned/image-only, multi-column, table-like, and footnote-heavy sources.
 - [x] Execute the real PyMuPDF adapter, deterministic reconstruction pipeline,
