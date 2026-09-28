@@ -596,24 +596,26 @@ class ReleasePipeline:
         signing_algorithm: str,
         schema_version: str = "0.3",
     ) -> str:
-        attestation = {
-            "signed": signed,
-            "key_id": signing_key_id,
-            "algorithm": signing_algorithm,
-        }
-        if schema_version not in {"0.1", "0.2"}:
-            attestation["provider"] = signature_provider
-
         payload = {
             "artifacts": [artifact.to_dict() for artifact in artifacts],
             "policy": {
                 "require_epubcheck": require_epubcheck,
-                "require_signature": require_signature,
             },
             "release_ready": release_ready,
             "epubcheck_status": epubcheck_status,
-            "attestation": attestation,
         }
+        if schema_version == "0.1":
+            pass
+        else:
+            payload["policy"]["require_signature"] = require_signature
+            attestation = {
+                "signed": signed,
+                "key_id": signing_key_id,
+                "algorithm": signing_algorithm,
+            }
+            if schema_version != "0.2":
+                attestation["provider"] = signature_provider
+            payload["attestation"] = attestation
         digest = hashlib.sha256(
             json.dumps(
                 payload,
