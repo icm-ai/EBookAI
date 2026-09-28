@@ -1817,3 +1817,484 @@ code {
     justify-content: flex-start;
   }
 }
+
+
+/* Milestone 16: Gold annotation review workbench */
+.gold-workbench {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.gold-workbench-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: flex-start;
+  padding: 18px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+}
+
+.gold-workbench-toolbar h2 {
+  margin: 0 0 6px;
+}
+
+.gold-workbench-toolbar p {
+  margin: 0;
+  color: #667085;
+  max-width: 760px;
+}
+
+.gold-review-identity {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.gold-review-identity label,
+.gold-element-card label,
+.gold-promotion label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: #475467;
+}
+
+.gold-review-identity input,
+.gold-review-identity select,
+.gold-element-card input,
+.gold-element-card select,
+.gold-element-card textarea,
+.gold-promotion textarea,
+.gold-reading-order {
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font: inherit;
+  background: #fff;
+}
+
+.gold-review-error {
+  padding: 12px 14px;
+  border: 1px solid #fda29b;
+  border-radius: 10px;
+  background: #fef3f2;
+  color: #b42318;
+}
+
+.gold-workbench-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.72fr) minmax(420px, 1.6fr) minmax(320px, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.gold-review-queue,
+.gold-review-canvas,
+.gold-review-editor {
+  min-width: 0;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.gold-review-queue,
+.gold-review-editor {
+  max-height: calc(100vh - 210px);
+  overflow-y: auto;
+}
+
+.gold-panel-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border-bottom: 1px solid #eaecf0;
+}
+
+.gold-panel-title > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gold-panel-title span {
+  color: #667085;
+  font-size: 12px;
+}
+
+.gold-queue-document {
+  padding: 10px;
+  border-bottom: 1px solid #eaecf0;
+}
+
+.gold-queue-document > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 8px;
+}
+
+.gold-queue-document > div span {
+  color: #667085;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.gold-queue-target {
+  width: 100%;
+  text-align: left;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 5px 8px;
+  margin: 5px 0;
+  padding: 9px 10px;
+  border: 1px solid #eaecf0;
+  border-radius: 8px;
+  background: #f9fafb;
+  cursor: pointer;
+}
+
+.gold-queue-target:hover,
+.gold-queue-target.active {
+  border-color: #98a2b3;
+  background: #f2f4f7;
+}
+
+.gold-queue-target small {
+  grid-column: 1 / -1;
+  color: #667085;
+}
+
+.gold-status {
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.gold-status.reviewed {
+  background: #ecfdf3;
+  color: #027a48;
+}
+
+.gold-status.draft {
+  background: #fffaeb;
+  color: #b54708;
+}
+
+.gold-status.unannotated {
+  background: #f2f4f7;
+  color: #475467;
+}
+
+.gold-page-stage {
+  position: relative;
+  margin: 14px;
+  border: 1px solid #d0d5dd;
+  background: #f2f4f7;
+}
+
+.gold-page-stage img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.gold-page-overlays {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.gold-overlay {
+  position: absolute;
+  min-width: 2px;
+  min-height: 2px;
+  padding: 0;
+  background: transparent;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.gold-overlay span {
+  position: absolute;
+  top: -15px;
+  left: -1px;
+  white-space: nowrap;
+  font-size: 9px;
+  line-height: 12px;
+  padding: 1px 3px;
+  border-radius: 3px;
+}
+
+.gold-overlay.parser {
+  border: 1px dashed rgba(37, 99, 235, 0.75);
+}
+
+.gold-overlay.parser span {
+  background: rgba(219, 234, 254, 0.92);
+  color: #1d4ed8;
+}
+
+.gold-overlay.gold {
+  border: 2px solid rgba(220, 38, 38, 0.8);
+}
+
+.gold-overlay.gold span {
+  background: rgba(254, 226, 226, 0.94);
+  color: #b91c1c;
+}
+
+.gold-overlay-legend {
+  display: flex;
+  gap: 16px;
+  padding: 0 14px 14px;
+  color: #667085;
+  font-size: 11px;
+}
+
+.gold-overlay-legend span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.gold-overlay-legend i {
+  width: 18px;
+  height: 10px;
+  display: inline-block;
+}
+
+.gold-overlay-legend i.parser {
+  border: 1px dashed #2563eb;
+}
+
+.gold-overlay-legend i.gold {
+  border: 2px solid #dc2626;
+}
+
+.gold-evidence {
+  margin: 0 14px 14px;
+  border: 1px solid #eaecf0;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.gold-evidence pre {
+  max-height: 280px;
+  overflow: auto;
+  font-size: 10px;
+}
+
+.gold-review-placeholder {
+  padding: 28px;
+  color: #667085;
+  text-align: center;
+}
+
+.gold-editor-section {
+  padding-bottom: 14px;
+  border-bottom: 1px solid #eaecf0;
+}
+
+.gold-task-grid {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px 0;
+}
+
+.gold-task {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+  padding: 7px 8px;
+  border: 1px solid #eaecf0;
+  border-radius: 7px;
+  background: #f9fafb;
+}
+
+.gold-task.enabled {
+  background: #fff;
+}
+
+.gold-task.confirmed {
+  border-color: #75e0a7;
+  background: #ecfdf3;
+}
+
+.gold-task button,
+.gold-element-actions button,
+.gold-element-card > button,
+.gold-editor-section > button,
+.gold-promoted-artifact button {
+  border: 1px solid #d0d5dd;
+  border-radius: 7px;
+  padding: 6px 9px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.gold-task button:disabled,
+.gold-element-actions button:disabled,
+.gold-editor-section > button:disabled,
+.gold-promoted-artifact button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.gold-element-list {
+  padding: 10px 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.gold-element-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #eaecf0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.gold-element-card.confirmed {
+  border-color: #75e0a7;
+  background: #f6fef9;
+}
+
+.gold-element-card.new-element {
+  margin: 10px 12px 0;
+  background: #f9fafb;
+}
+
+.gold-element-card textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.gold-element-row,
+.gold-element-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.gold-element-row span,
+.gold-element-card small {
+  color: #667085;
+  font-size: 11px;
+}
+
+.gold-element-actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.gold-element-actions .danger {
+  color: #b42318;
+}
+
+.gold-reading-order {
+  display: block;
+  width: calc(100% - 24px);
+  min-height: 110px;
+  margin: 10px 12px 8px;
+  resize: vertical;
+}
+
+.gold-editor-section > button {
+  margin-left: 12px;
+}
+
+.gold-promotion {
+  padding: 0 12px 14px;
+  border-bottom: 0;
+}
+
+.gold-promotion .gold-panel-title {
+  margin: 0 -12px 10px;
+}
+
+.gold-promotion .ready {
+  color: #027a48;
+  font-weight: 700;
+}
+
+.gold-promotion .blocked {
+  color: #b42318;
+  font-weight: 700;
+}
+
+.gold-promotion ul {
+  margin: 8px 0 12px;
+  padding-left: 18px;
+  color: #b42318;
+  font-size: 12px;
+}
+
+.gold-promotion textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.gold-promote-button {
+  width: 100%;
+  margin: 10px 0 0 !important;
+}
+
+.gold-promoted-artifact {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid #75e0a7;
+  border-radius: 8px;
+  background: #ecfdf3;
+}
+
+.gold-promoted-artifact a {
+  color: #175cd3;
+  font-size: 12px;
+}
+
+.gold-promoted-artifact small {
+  color: #667085;
+}
+
+@media (max-width: 1180px) {
+  .gold-workbench-grid {
+    grid-template-columns: 260px 1fr;
+  }
+
+  .gold-review-editor {
+    grid-column: 1 / -1;
+    max-height: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .gold-workbench-toolbar {
+    flex-direction: column;
+  }
+
+  .gold-workbench-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .gold-review-queue,
+  .gold-review-editor {
+    max-height: none;
+  }
+}
