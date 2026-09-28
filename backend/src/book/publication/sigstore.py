@@ -109,10 +109,9 @@ class SigstoreBundleInspector:
         if not isinstance(tlog_entries, list):
             tlog_entries = []
 
-        timestamp_data = payload.get("verificationMaterial", {}).get(
-            "timestampVerificationData",
-            {},
-        )
+        timestamp_data = payload.get("timestampVerificationData")
+        if not isinstance(timestamp_data, dict):
+            timestamp_data = verification.get("timestampVerificationData", {})
         if not isinstance(timestamp_data, dict):
             timestamp_data = {}
         timestamps = timestamp_data.get("rfc3161Timestamps", [])
