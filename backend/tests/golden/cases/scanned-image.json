@@ -1,0 +1,21 @@
+{
+  "id": "scanned-image",
+  "category": "scanned",
+  "fixture_kind": "scanned_image",
+  "expectation": {
+    "required_issue_codes": [
+      "empty_document"
+    ],
+    "publication_ready": false
+  },
+  "thresholds": {
+    "text_recall_min": 1,
+    "reading_order_min": 1,
+    "provenance_coverage_min": 1,
+    "bbox_coverage_min": 1,
+    "epub_text_recall_min": 1
+  },
+  "known_gaps": [
+    "ocr_required"
+  ]
+}
