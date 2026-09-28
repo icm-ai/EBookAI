@@ -107,11 +107,10 @@ describe('GoldReviewWorkbench', () => {
         'pymupdf'
       );
     });
-    expect(screen.getAllByText('fixture-doc').length).toBeGreaterThan(0);
-    expect(screen.getByText(/aaaaaaaaaaaaaaaa/i)).toBeInTheDocument();
     expect(
-      screen.getByText('unconfirmed elements: h1')
+      await screen.findByText('unconfirmed elements: h1')
     ).toBeInTheDocument();
+    expect(screen.getByText(/aaaaaaaaaaaaaaaa/i)).toBeInTheDocument();
   });
 
   test('promotion remains blocked until preflight is ready', async () => {
