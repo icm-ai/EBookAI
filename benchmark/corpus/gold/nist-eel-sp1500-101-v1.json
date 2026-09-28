@@ -1,0 +1,43 @@
+{
+  "schema_version": "1",
+  "document_id": "nist-eel-sp1500-101-v1",
+  "source_sha256": "c80d033062a52c8880eedb5fbbdcec29267f7298998f1bda78fe18e09561849c",
+  "status": "draft",
+  "annotated_by": "ChatGPT-assisted visual seed",
+  "reviewed_by": "",
+  "notes": "Sparse seed annotation for PDF page index 8. It was transcribed from visual inspection of the source PDF and must receive explicit human review before regression thresholds may gate releases.",
+  "pages": [
+    {
+      "page_index": 8,
+      "tasks": [
+        "headings",
+        "reading_order"
+      ],
+      "elements": [
+        {
+          "id": "p8-h1",
+          "type": "heading",
+          "text": "1 Introduction",
+          "level": 1
+        },
+        {
+          "id": "p8-h1-1",
+          "type": "heading",
+          "text": "1.1 Why this Specification is Needed",
+          "level": 2
+        },
+        {
+          "id": "p8-h1-2",
+          "type": "heading",
+          "text": "1.2 Intended Audience",
+          "level": 2
+        }
+      ],
+      "reading_order": [
+        "p8-h1",
+        "p8-h1-1",
+        "p8-h1-2"
+      ]
+    }
+  ]
+}
