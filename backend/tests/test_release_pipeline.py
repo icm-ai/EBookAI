@@ -827,9 +827,7 @@ def test_verifier_accepts_legacy_manifest_v02_release_id(tmp_path):
         require_epubcheck=manifest_payload["policy"]["require_epubcheck"],
         require_signature=manifest_payload["policy"]["require_signature"],
         release_ready=manifest_payload["release_ready"],
-        epubcheck_status=manifest_payload["external_validation"]["epubcheck"][
-            "status"
-        ],
+        epubcheck_status=manifest_payload["external_validation"]["epubcheck"]["status"],
         signed=manifest_payload["attestation"]["signed"],
         signature_provider="none",
         signing_key_id=manifest_payload["attestation"]["key_id"],
@@ -855,7 +853,6 @@ def test_verifier_accepts_legacy_manifest_v02_release_id(tmp_path):
 
     assert verification["valid"] is True
     assert verification["release_id"] == manifest_payload["release_id"]
-
 
 
 @pytest.mark.skipif(shutil.which("cosign") is None, reason="Cosign is not installed")
@@ -905,6 +902,7 @@ def test_real_cosign_native_bundle_with_key(tmp_path, monkeypatch):
         sigstore_verifier=SigstoreBundleVerifier(
             command=[cosign],
             key=str(prefix) + ".pub",
+            extra_args=["--insecure-ignore-tlog"],
         ),
     )
 
@@ -926,7 +924,6 @@ def test_real_cosign_native_bundle_with_key(tmp_path, monkeypatch):
     assert verification["signature"]["trusted"] is True
     assert verification["signature"]["mode"] == "key"
     assert verification["signature"]["cosign_version"]
-
 
 
 def test_verifier_accepts_legacy_manifest_v01_release_id(tmp_path):
@@ -958,9 +955,7 @@ def test_verifier_accepts_legacy_manifest_v01_release_id(tmp_path):
         require_epubcheck=manifest_payload["policy"]["require_epubcheck"],
         require_signature=False,
         release_ready=manifest_payload["release_ready"],
-        epubcheck_status=manifest_payload["external_validation"]["epubcheck"][
-            "status"
-        ],
+        epubcheck_status=manifest_payload["external_validation"]["epubcheck"]["status"],
         signed=False,
         signature_provider="none",
         signing_key_id="",
