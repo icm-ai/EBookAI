@@ -40,7 +40,6 @@ def test_golden_corpus_with_external_epubcheck_when_available(tmp_path):
         assert result.passed, (spec.id, result.failures, result.metrics)
 
 
-
 def test_baseline_drift_fails_even_above_absolute_threshold():
     spec = GoldenCaseSpec.from_dict(
         {
