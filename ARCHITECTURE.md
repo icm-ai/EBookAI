@@ -521,6 +521,124 @@ ZIP/XML/package invariants but is not presented as a substitute for the complete
 external EPUBCheck conformance suite. A future release pipeline may run EPUBCheck
 as an additional gate when the Java/runtime dependency is available.
 
+### Milestone 9 — Release Pipeline and external EPUBCheck
+
+- [x] EPUB compilation is deterministic when no explicit identifier is supplied.
+- [x] Generated EPUB ZIP entries use fixed metadata timestamps and permissions so
+  identical BookIR produces byte-identical EPUB output.
+- [x] External EPUBCheck is integrated as an optional process-level validator
+  without adding Java or EPUBCheck to EBookAI's base runtime dependencies.
+- [x] EPUBCheck discovery supports an explicit command, a PATH executable, or
+  `EPUBCHECK_JAR` plus Java.
+- [x] External validation consumes EPUBCheck JSON output rather than parsing
+  human-readable stderr.
+- [x] External validation records a stable normalized result: availability,
+  execution state, pass/fail, version, counts, messages, and source locations.
+- [x] Release policy can require EPUBCheck; unavailable required validation blocks
+  release instead of silently degrading.
+- [x] If EPUBCheck is available and reports errors, release is blocked even when
+  external validation was configured as optional.
+- [x] Release bundles include the source document, BookIR JSON, compiled EPUB,
+  Publication QA report, normalized EPUBCheck report, and release manifest.
+- [x] Every release artifact is bound by SHA-256, byte size, and media type.
+- [x] `release_id` is deterministically derived from artifact hashes and release
+  policy rather than timestamps or random identifiers.
+- [x] Release bundle ZIP entries use deterministic metadata and stored bytes so
+  identical release state produces byte-identical bundles.
+- [x] Bundles can be independently verified without re-running parsers or AI:
+  verifier checks every artifact size/hash and recomputes the release id.
+- [x] Review sessions persist the latest release manifest and invalidate/remove it
+  after any review mutation or a new standalone Publication QA run.
+- [x] Review API exposes release build, release bundle verification, and ZIP export.
+- [x] Human Review UI separates Publication QA from Release state and exposes
+  release policy, release id, external EPUBCheck status/version, artifact hashes,
+  bundle verification, and release ZIP download.
+- [x] CI has a lightweight focused release suite plus a separate real EPUBCheck
+  integration gate pinned to EPUBCheck 5.4.0.
+
+#### Reproducibility contract
+
+A release is a content-addressed snapshot, not merely a downloadable EPUB.
+
+The EPUB compiler therefore avoids runtime entropy. When BookIR has no explicit
+publication identifier, EBookAI derives a stable UUID from semantic publication
+content. ZIP entry timestamps and permission bits are fixed. For the same
+publication state, the compiler must emit the same EPUB bytes.
+
+The release pipeline then snapshots:
+
+    source/source.<ext>
+    book/bookir.json
+    publication/book.epub
+    reports/publication-qa.json
+    reports/epubcheck.json
+    manifest.json
+
+The first five files are represented as `ReleaseArtifact` records containing
+their path, SHA-256 digest, byte size, and media type. `manifest.json` binds
+those records to the release policy and derives:
+
+    release_id = sha256(
+      artifact descriptors
+      + require_epubcheck policy
+      + release readiness
+      + EPUBCheck status
+    )
+
+No wall-clock timestamp participates in release identity.
+
+#### External EPUBCheck contract
+
+EPUBCheck remains an external conformance tool. EBookAI does not vendor its Java
+runtime or libraries into the Python core.
+
+Runtime discovery order is:
+
+    explicit runner command
+      -> EPUBCHECK_COMMAND
+      -> epubcheck executable on PATH
+      -> EPUBCHECK_JAR + java
+      -> unavailable
+
+The runner invokes EPUBCheck with a JSON report and normalizes stable data only.
+Runtime paths, elapsed times, and checker wall-clock timestamps are deliberately
+excluded from the persisted normalized report because they would make otherwise
+identical releases non-reproducible.
+
+Release readiness policy is:
+
+    built-in Publication QA fails
+      -> blocked
+
+    EPUBCheck available + passes
+      -> external gate satisfied
+
+    EPUBCheck available + fails/errors
+      -> blocked
+
+    EPUBCheck unavailable + optional
+      -> allowed, manifest records unavailable
+
+    EPUBCheck unavailable + required
+      -> blocked
+
+The current CI integration pins EPUBCheck 5.4.0. The application runner itself
+does not hard-code a version and records the actual checker version returned by
+the external tool.
+
+#### Independent verification contract
+
+Bundle verification does not trust the session database and does not need the
+source parser, reconstruction engine, AI provider, or EPUBCheck runtime.
+
+The verifier opens the ZIP, reads `manifest.json`, verifies every declared
+artifact's byte size and SHA-256 digest, then recomputes `release_id`. Any
+missing or modified artifact fails verification.
+
+This verifies release integrity and provenance binding. It does not re-prove the
+semantic correctness of the source reconstruction; that evidence remains in the
+BookIR, review history, QA report, and external conformance report.
+
 ## Legacy boundary
 
 The current services/conversion/conversion_pipeline.py is a legacy converter pipeline and should not become the foundation of BookIR. It remains operational until the new pipeline reaches functional parity.
@@ -534,4 +652,4 @@ The current services/conversion/conversion_pipeline.py is a legacy converter pip
 - whole-book LLM rewriting;
 - preserving PDF visual layout pixel-for-pixel.
 
-The v0.1 success criterion is smaller: **a source document can be parsed into BookIR without losing provenance and compiled into a reflowable EPUB skeleton.**
+The v0.1 success criterion is now end-to-end: **a source document can be reconstructed into source-grounded BookIR, reviewed through reversible patches, compiled into a conformant reflowable EPUB, and packaged as a content-addressed release bundle whose integrity can be independently verified.**
