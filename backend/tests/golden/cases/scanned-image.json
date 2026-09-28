@@ -19,5 +19,11 @@
   },
   "known_gaps": [
     "ocr_required"
-  ]
+  ],
+  "baseline_metrics": {
+    "quality_score": 0.82
+  },
+  "max_regression": {
+    "quality_score": 0
+  }
 }
