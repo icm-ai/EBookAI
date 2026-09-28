@@ -70,9 +70,7 @@ class ReviewPlan:
 
     def __post_init__(self) -> None:
         if self.schema_version != REVIEW_PLAN_SCHEMA_VERSION:
-            raise ValueError(
-                f"Unsupported review plan schema: {self.schema_version!r}"
-            )
+            raise ValueError(f"Unsupported review plan schema: {self.schema_version!r}")
         if not self.corpus_id.strip():
             raise ValueError("Review plan corpus_id must not be empty")
         keys = [(target.document_id, target.page_index) for target in self.targets]
