@@ -1,5 +1,17 @@
 """Rights-cleared real-world parser benchmark utilities."""
 
+from book.benchmark.baseline import (
+    ReviewedBaselineSnapshot,
+    build_reviewed_baseline,
+    write_reviewed_baseline,
+)
+from book.benchmark.consensus import (
+    AdjudicationDecision,
+    ConsensusConflict,
+    GoldConsensusBundle,
+    GoldConsensusStore,
+    compare_reviewed_pages,
+)
 from book.benchmark.corpus import CorpusDownloadError, CorpusIntegrityError, CorpusStore
 from book.benchmark.gold import (
     GoldAnnotation,
@@ -45,6 +57,7 @@ from book.benchmark.review_workbench import (
 from book.benchmark.runner import ParserBenchmarkRunner, default_parser_registry
 
 __all__ = [
+    "AdjudicationDecision",
     "BackendRunResult",
     "BackendLeaderboardEntry",
     "BenchmarkReport",
@@ -54,7 +67,10 @@ __all__ = [
     "CorpusManifest",
     "CorpusMaterialization",
     "CorpusStore",
+    "ConsensusConflict",
     "GoldAnnotation",
+    "GoldConsensusBundle",
+    "GoldConsensusStore",
     "GoldElement",
     "GoldEvaluation",
     "GoldPageAnnotation",
@@ -67,8 +83,11 @@ __all__ = [
     "ParserLeaderboard",
     "ReviewPlan",
     "ReviewTarget",
+    "ReviewedBaselineSnapshot",
     "build_leaderboard",
+    "build_reviewed_baseline",
     "compare_leaderboards",
+    "compare_reviewed_pages",
     "default_parser_registry",
     "evaluate_gold",
     "evaluate_gold_gate",
@@ -82,4 +101,5 @@ __all__ = [
     "validate_review_plan",
     "write_leaderboard",
     "write_markdown",
+    "write_reviewed_baseline",
 ]
