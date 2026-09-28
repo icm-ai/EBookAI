@@ -205,6 +205,31 @@ jobs:
         pytest -v \
           backend/tests/test_release_pipeline.py::test_real_epubcheck_accepts_compiler_release_epub
 
+  test-release-attestation:
+    name: Release Attestation Gate
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install focused test dependency
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest==7.4.3
+
+    - name: Verify real Ed25519 release attestation
+      env:
+        PYTHONPATH: ${{ github.workspace }}/backend/src
+        EBOOKAI_BUILD_REVISION: ${{ github.sha }}
+      run: |
+        pytest -v \
+          backend/tests/test_release_pipeline.py::test_real_openssl_detached_release_signature
+
   lint-frontend:
     name: Frontend Linting
     runs-on: ubuntu-latest
