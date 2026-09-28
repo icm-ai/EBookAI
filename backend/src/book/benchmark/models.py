@@ -66,7 +66,9 @@ class CorpusDocumentSpec:
             document_class=str(value["document_class"]),
             language=str(value.get("language", "und")),
             page_count=int(value["page_count"]),
-            complexity_tags=tuple(str(item) for item in value.get("complexity_tags", [])),
+            complexity_tags=tuple(
+                str(item) for item in value.get("complexity_tags", [])
+            ),
             expected_capabilities=tuple(
                 str(item) for item in value.get("expected_capabilities", [])
             ),
@@ -257,7 +259,8 @@ class BenchmarkReport:
                 ),
                 "mean_elapsed_seconds": (
                     round(
-                        sum(item.elapsed_seconds for item in successes) / len(successes),
+                        sum(item.elapsed_seconds for item in successes)
+                        / len(successes),
                         6,
                     )
                     if successes
