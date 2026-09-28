@@ -10,7 +10,11 @@ from book.benchmark.baseline import (
 )
 from book.benchmark.consensus import GoldConsensusStore, compare_reviewed_pages
 from book.benchmark.gold import GoldAnnotation
-from book.benchmark.leaderboard import (\n    LeaderboardPolicy,\n    ParserLeaderboard,\n    build_leaderboard,\n)
+from book.benchmark.leaderboard import (
+    LeaderboardPolicy,
+    ParserLeaderboard,
+    build_leaderboard,
+)
 from book.benchmark.models import BackendRunResult, BenchmarkReport
 
 from test_gold_review_workbench import _confirm_all, _fixture_store
