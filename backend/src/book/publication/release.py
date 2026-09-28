@@ -261,9 +261,9 @@ class ReleasePipeline:
             provenance_target.write_bytes(_canonical_json(provenance.to_dict()))
 
             media_types = {
-                source_target.relative_to(
-                    staging
-                ).as_posix(): self._source_media_type(source_suffix),
+                source_target.relative_to(staging).as_posix(): self._source_media_type(
+                    source_suffix
+                ),
                 "book/bookir.json": "application/json",
                 "publication/book.epub": "application/epub+zip",
                 "reports/publication-qa.json": "application/json",
@@ -412,7 +412,9 @@ class ReleasePipeline:
                             trusted_key_ids=trusted_key_ids,
                         )
                         if signature.cryptographically_valid is False:
-                            errors.append(signature.error or "Invalid release signature")
+                            errors.append(
+                                signature.error or "Invalid release signature"
+                            )
                         if (
                             (require_signature or manifest.require_signature)
                             and signature.cryptographically_valid is not True
@@ -422,8 +424,15 @@ class ReleasePipeline:
                                 or "Required release signature could not be verified"
                             )
                         if trusted_key_ids and not signature.trusted:
-                            errors.append(signature.error or "Release signer is not trusted")
-                    except (ValueError, TypeError, KeyError, json.JSONDecodeError) as exc:
+                            errors.append(
+                                signature.error or "Release signer is not trusted"
+                            )
+                    except (
+                        ValueError,
+                        TypeError,
+                        KeyError,
+                        json.JSONDecodeError,
+                    ) as exc:
                         errors.append(f"Invalid release attestation: {exc}")
             elif require_signature or manifest.require_signature:
                 errors.append("Release signature is required but bundle is unsigned")
