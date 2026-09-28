@@ -256,6 +256,10 @@ const apiService = {
     return `${API_BASE}/api/gold-review/sessions/${encodeURIComponent(sessionId)}/export/promoted`;
   },
 
+  getGoldReviewAuditUrl(sessionId) {
+    return `${API_BASE}/api/gold-review/sessions/${encodeURIComponent(sessionId)}/export/audit`;
+  },
+
   // Batch operations
   async batchConvertFiles(files, targetFormat) {
     const formData = new FormData();
