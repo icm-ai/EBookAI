@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop, milestone-15-gold-leaderboard ]
+    branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
 
