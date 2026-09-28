@@ -2298,3 +2298,83 @@ code {
     max-height: none;
   }
 }
+
+
+/* Milestone 17: independent reviewer consensus and adjudication */
+.gold-consensus {
+  padding: 0 12px 14px;
+}
+
+.gold-consensus .gold-panel-title {
+  margin: 0 -12px 10px;
+}
+
+.gold-consensus > p {
+  color: #667085;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.gold-consensus > label,
+.gold-consensus-result > label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0;
+  font-size: 12px;
+  color: #475467;
+}
+
+.gold-consensus input {
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font: inherit;
+}
+
+.gold-consensus > button {
+  margin: 4px 0 0;
+}
+
+.gold-consensus-result {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #eaecf0;
+}
+
+.gold-conflict-card {
+  padding: 9px;
+  border: 1px solid #fdb022;
+  border-radius: 8px;
+  background: #fffaeb;
+}
+
+.gold-conflict-candidates {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  margin: 8px 0;
+}
+
+.gold-conflict-candidates pre {
+  min-width: 0;
+  max-height: 180px;
+  overflow: auto;
+  margin: 0;
+  padding: 7px;
+  border: 1px solid #eaecf0;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 9px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 760px) {
+  .gold-conflict-candidates {
+    grid-template-columns: 1fr;
+  }
+}
