@@ -17,6 +17,7 @@ from book.benchmark.leaderboard import (
     write_leaderboard,
 )
 from book.benchmark.models import BenchmarkReport, CorpusManifest
+from book.benchmark.report import write_markdown
 from book.benchmark.review_plan import (
     ReviewPlan,
     render_review_plan_markdown,
@@ -24,7 +25,6 @@ from book.benchmark.review_plan import (
     review_plan_summary,
     validate_review_plan,
 )
-from book.benchmark.report import write_markdown
 from book.benchmark.runner import ParserBenchmarkRunner
 from book.domain.models import Book
 
