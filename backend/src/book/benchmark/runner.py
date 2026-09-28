@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.metadata
+import json
 import multiprocessing
 import os
 import queue
@@ -14,6 +15,12 @@ from statistics import mean
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 from book.benchmark.corpus import CorpusStore
+from book.benchmark.gold import (
+    GoldAnnotation,
+    evaluate_gold,
+    evaluate_gold_gate,
+    load_gold_annotation,
+)
 from book.benchmark.metrics import parser_level_metrics, token_jaccard, token_set
 from book.benchmark.models import BackendRunResult, BenchmarkReport, CorpusDocumentSpec
 from book.domain.models import Book
@@ -101,6 +108,7 @@ class ParserBenchmarkRunner:
         runs: List[BackendRunResult] = []
         for spec in specs:
             source = self._source_for(spec, fetch_missing=fetch_missing)
+            gold = load_gold_annotation(self.store.manifest_path, spec)
             document_runs: List[BackendRunResult] = []
             successful_books: Dict[str, Book] = {}
             for adapter in adapters:
@@ -109,6 +117,7 @@ class ParserBenchmarkRunner:
                     source=source,
                     adapter=adapter,
                     timeout=timeout,
+                    gold=gold,
                 )
                 document_runs.append(result)
                 if book is not None:
@@ -145,6 +154,7 @@ class ParserBenchmarkRunner:
         source: Path,
         adapter: BookParserAdapter,
         timeout: float,
+        gold: Optional[GoldAnnotation],
     ) -> Tuple[BackendRunResult, Optional[Book]]:
         profile = adapter.profile()
         version = _backend_version(adapter.name)
@@ -274,9 +284,35 @@ class ParserBenchmarkRunner:
                 None,
             )
 
+        gold_metrics: Dict[str, object] = {}
+        gold_evidence: Dict[str, object] = {}
+        gold_gate_failures: List[str] = []
+        if gold is not None:
+            gold_result = evaluate_gold(book, gold)
+            gold_metrics = dict(gold_result.metrics)
+            gold_evidence = dict(gold_result.evidence)
+            failures, baseline_deltas = evaluate_gold_gate(
+                gold_metrics,
+                thresholds=spec.gold_thresholds.get(adapter.name, {}),
+                baselines=spec.gold_baselines.get(adapter.name, {}),
+                max_regression=spec.gold_max_regression.get(adapter.name, {}),
+            )
+            gold_gate_failures = failures
+            if baseline_deltas:
+                gold_metrics["baseline_deltas"] = baseline_deltas
+
         bookir_path = stable_dir / "bookir.json"
         bookir_path.write_text(book.to_json() + "\n", encoding="utf-8")
+        if gold_evidence:
+            (stable_dir / "gold-evidence.json").write_text(
+                json.dumps(gold_evidence, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8",
+            )
         warnings = self._warnings(spec, book, metrics)
+        if gold is not None and gold.status != "reviewed":
+            warnings.append(
+                "gold annotation is draft; metrics are informational and cannot gate"
+            )
         return (
             BackendRunResult(
                 document_id=spec.id,
@@ -286,6 +322,9 @@ class ParserBenchmarkRunner:
                 backend_version=version,
                 parser_profile=profile,
                 metrics=metrics,
+                gold_metrics=gold_metrics,
+                gold_evidence=gold_evidence,
+                gold_gate_failures=gold_gate_failures,
                 warnings=warnings,
                 bookir_path=str(bookir_path),
             ),
