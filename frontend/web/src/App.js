@@ -5,6 +5,7 @@ import FeatureIntro from './components/FeatureIntro';
 import ConversionHistory from './components/ConversionHistory';
 import BatchUpload from './components/BatchUpload';
 import ReviewWorkspace from './components/ReviewWorkspace';
+import GoldReviewWorkbench from './components/GoldReviewWorkbench';
 import api from './services/api';
 import websocketService from './services/websocket';
 
@@ -170,7 +171,7 @@ function App() {
   };
 
   return (
-    <div className={`container ${activeTab === 'review' ? 'review-mode' : ''}`}>
+    <div className={`container ${activeTab === 'review' || activeTab === 'gold-review' ? 'review-mode' : ''}`}>
       <div className="header">
         <h1>EBookAI</h1>
         <p>AI-enhanced e-book processing platform</p>
@@ -199,6 +200,12 @@ function App() {
         >
           Human Review
         </button>
+        <button
+          className={`tab-button ${activeTab === 'gold-review' ? 'active' : ''}`}
+          onClick={() => setActiveTab('gold-review')}
+        >
+          Gold Review
+        </button>
       </div>
 
       {activeTab === 'single' ? (
@@ -221,8 +228,10 @@ function App() {
         <BatchUpload
           onBatchConvert={handleBatchConvert}
         />
-      ) : (
+      ) : activeTab === 'review' ? (
         <ReviewWorkspace />
+      ) : (
+        <GoldReviewWorkbench />
       )}
 
       {error && (
@@ -231,7 +240,7 @@ function App() {
         </div>
       )}
 
-      {activeTab !== 'review' && <ConversionHistory />}
+      {activeTab !== 'review' && activeTab !== 'gold-review' && <ConversionHistory />}
     </div>
   );
 }
