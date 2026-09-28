@@ -881,6 +881,24 @@ def test_real_cosign_native_bundle_with_key(tmp_path, monkeypatch):
         text=True,
     )
 
+    signing_config = tmp_path / "signing-config.json"
+    subprocess.run(
+        [
+            cosign,
+            "signing-config",
+            "create",
+            "--no-default-fulcio",
+            "--no-default-oidc",
+            "--no-default-rekor",
+            "--no-default-tsa",
+            "--out",
+            str(signing_config),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
     source = tmp_path / "source.pdf"
     source.write_bytes(b"%PDF-1.4\nfixture\n")
     pipeline = ReleasePipeline(
@@ -888,12 +906,11 @@ def test_real_cosign_native_bundle_with_key(tmp_path, monkeypatch):
         sigstore_signer=SigstoreBundleSigner(
             command=[cosign],
             key=str(prefix) + ".key",
-            extra_args=["--tlog-upload=false"],
+            extra_args=["--signing-config", str(signing_config)],
         ),
         sigstore_verifier=SigstoreBundleVerifier(
             command=[cosign],
             key=str(prefix) + ".pub",
-            extra_args=["--insecure-ignore-tlog"],
         ),
     )
 
