@@ -17,6 +17,10 @@ class GoldenExpectation:
     forbidden_issue_codes: List[str] = field(default_factory=list)
     minimum_footnote_references: int = 0
     publication_ready: Optional[bool] = None
+    render_xhtml_digest: str = ""
+    render_flow_digest: str = ""
+    render_stylesheet_digest: str = ""
+    render_section_count: Optional[int] = None
 
     @classmethod
     def from_dict(cls, value: Dict[str, Any]) -> "GoldenExpectation":
@@ -41,6 +45,16 @@ class GoldenExpectation:
             publication_ready=(
                 bool(value["publication_ready"])
                 if "publication_ready" in value
+                else None
+            ),
+            render_xhtml_digest=str(value.get("render_xhtml_digest", "")),
+            render_flow_digest=str(value.get("render_flow_digest", "")),
+            render_stylesheet_digest=str(
+                value.get("render_stylesheet_digest", "")
+            ),
+            render_section_count=(
+                int(value["render_section_count"])
+                if "render_section_count" in value
                 else None
             ),
         )
