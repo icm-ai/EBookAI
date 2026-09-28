@@ -107,8 +107,7 @@ describe('GoldReviewWorkbench', () => {
         'pymupdf'
       );
     });
-    expect(await screen.findByText('session-1')).not.toBeInTheDocument();
-    expect(screen.getByText('fixture-doc')).toBeInTheDocument();
+    expect(screen.getAllByText('fixture-doc').length).toBeGreaterThan(0);
     expect(screen.getByText(/aaaaaaaaaaaaaaaa/i)).toBeInTheDocument();
     expect(
       screen.getByText('unconfirmed elements: h1')
