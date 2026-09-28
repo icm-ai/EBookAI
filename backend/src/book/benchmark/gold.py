@@ -15,7 +15,7 @@ from book.domain.models import Book, BookNode, NodeType
 
 GOLD_SCHEMA_VERSION = "1"
 _ALLOWED_STATUSES = {"draft", "reviewed"}
-_ALLOWED_TASKS = {
+GOLD_TASKS = {
     "text",
     "reading_order",
     "headings",
@@ -113,7 +113,7 @@ class GoldPageAnnotation:
     def __post_init__(self) -> None:
         if self.page_index < 0:
             raise GoldValidationError("Gold page_index must be >= 0")
-        unknown = sorted(set(self.tasks) - _ALLOWED_TASKS)
+        unknown = sorted(set(self.tasks) - GOLD_TASKS)
         if unknown:
             raise GoldValidationError("Unknown gold tasks: " + ", ".join(unknown))
         if not self.tasks:
