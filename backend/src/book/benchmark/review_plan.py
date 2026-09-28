@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
-from book.benchmark.gold import GOLD_TASKS
+from book.benchmark.gold import GOLD_TASKS, load_gold_annotation
 from book.benchmark.models import CorpusManifest
 
 REVIEW_PLAN_SCHEMA_VERSION = "1"
@@ -161,6 +161,47 @@ def review_plan_summary(
         "task_counts": dict(sorted(task_counts.items())),
         "difficulty_counts": dict(sorted(difficulty_counts.items())),
         "priority_counts": dict(sorted(priority_counts.items())),
+    }
+
+
+
+
+def review_plan_coverage(
+    plan: ReviewPlan,
+    manifest: CorpusManifest,
+    manifest_path: Path,
+) -> Dict[str, Any]:
+    """Classify each target as unannotated, draft, or reviewed."""
+
+    by_document = {document.id: document for document in manifest.documents}
+    status_by_page: Dict[Tuple[str, int], str] = {}
+    for document_id in sorted({target.document_id for target in plan.targets}):
+        spec = by_document.get(document_id)
+        if spec is None:
+            continue
+        annotation = load_gold_annotation(manifest_path, spec)
+        if annotation is None:
+            continue
+        for page in annotation.pages:
+            status_by_page[(document_id, page.page_index)] = annotation.status
+
+    target_statuses = [
+        {
+            "document_id": target.document_id,
+            "page_index": target.page_index,
+            "status": status_by_page.get(
+                (target.document_id, target.page_index), "unannotated"
+            ),
+        }
+        for target in plan.targets
+    ]
+    counts = Counter(item["status"] for item in target_statuses)
+    return {
+        "target_count": len(target_statuses),
+        "unannotated": counts["unannotated"],
+        "draft": counts["draft"],
+        "reviewed": counts["reviewed"],
+        "targets": target_statuses,
     }
 
 
