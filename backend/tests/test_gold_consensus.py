@@ -1,6 +1,9 @@
+import base64
+import hashlib
 import json
 from pathlib import Path
 
+import fitz
 import pytest
 from book.benchmark.baseline import (
     ReviewedBaselineSnapshot,
@@ -16,7 +19,128 @@ from book.benchmark.leaderboard import (
     build_leaderboard,
 )
 from book.benchmark.models import BackendRunResult, BenchmarkReport
-from test_gold_review_workbench import _confirm_all, _fixture_store
+from book.benchmark.review_workbench import GoldReviewStore
+
+
+def _write_pdf(path: Path) -> bytes:
+    document = fitz.open()
+    page = document.new_page()
+    page.insert_text((72, 72), "1 Introduction")
+    page.insert_text((72, 110), "A short paragraph for consensus review.")
+    document.save(path)
+    document.close()
+    return path.read_bytes()
+
+
+def _fixture_store(tmp_path: Path) -> GoldReviewStore:
+    pdf_bytes = _write_pdf(tmp_path / "source.pdf")
+    digest = hashlib.sha256(pdf_bytes).hexdigest()
+    asset = tmp_path / "fixture.pdf.b64"
+    asset.write_bytes(base64.b64encode(pdf_bytes))
+    gold_dir = tmp_path / "gold"
+    gold_dir.mkdir()
+    (gold_dir / "fixture.json").write_text(
+        json.dumps(
+            {
+                "schema_version": "1",
+                "document_id": "fixture",
+                "source_sha256": digest,
+                "status": "draft",
+                "annotated_by": "seed",
+                "reviewed_by": "",
+                "notes": "fixture draft",
+                "pages": [
+                    {
+                        "page_index": 0,
+                        "tasks": ["headings", "reading_order"],
+                        "elements": [
+                            {
+                                "id": "h1",
+                                "type": "heading",
+                                "text": "1 Introduction",
+                                "level": 1,
+                            }
+                        ],
+                        "reading_order": ["h1"],
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "schema_version": "1",
+                "corpus_id": "workbench-fixture",
+                "documents": [
+                    {
+                        "id": "fixture",
+                        "title": "Fixture PDF",
+                        "source_url": "https://example.invalid/fixture.pdf",
+                        "license_url": "https://example.invalid/license",
+                        "rights_basis": "Test fixture",
+                        "sha256": digest,
+                        "document_class": "test",
+                        "language": "en",
+                        "page_count": 1,
+                        "complexity_tags": ["heading"],
+                        "expected_capabilities": ["native_text"],
+                        "redistributable": True,
+                        "embedded_base64_path": asset.name,
+                        "gold_annotations_path": "gold/fixture.json",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    review_plan = tmp_path / "review-plan.json"
+    review_plan.write_text(
+        json.dumps(
+            {
+                "schema_version": "1",
+                "corpus_id": "workbench-fixture",
+                "targets": [
+                    {
+                        "document_id": "fixture",
+                        "page_index": 0,
+                        "tasks": ["headings", "reading_order"],
+                        "difficulty_tags": ["heading"],
+                        "priority": "high",
+                        "rationale": "fixture",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    return GoldReviewStore(
+        manifest,
+        review_plan,
+        tmp_path / "cache",
+        tmp_path / "workspace",
+    )
+
+
+def _confirm_all(store: GoldReviewStore, session_id: str, reviewer: str) -> None:
+    session = store.get(session_id)
+    page = session.annotation.pages[0]
+    for element in page.elements:
+        store.confirm(
+            session_id,
+            subject="element",
+            subject_id=element.id,
+            reviewer=reviewer,
+        )
+    for task in page.tasks:
+        store.confirm(
+            session_id,
+            subject="task",
+            subject_id=task,
+            reviewer=reviewer,
+        )
 
 
 def _promoted_pair(tmp_path: Path, *, conflict: bool = False):
