@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.metadata
+import os
 import platform
 from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List, Optional
@@ -86,15 +87,26 @@ class ToolchainProvenanceBuilder:
 
         package_versions = {
             name: version
-            for name in ("PyMuPDF", "pydantic")
+            for name in (
+                "PyMuPDF",
+                "pydantic",
+                "mineru",
+                "marker-pdf",
+                "openai",
+                "anthropic",
+            )
             if (version := _package_version(name)) is not None
         }
+        runtime = {
+            "python": platform.python_version(),
+            **package_versions,
+        }
+        build_revision = os.environ.get("EBOOKAI_BUILD_REVISION", "").strip()
+        if build_revision:
+            runtime["ebookai_revision"] = build_revision
 
         return ToolchainProvenance(
-            runtime={
-                "python": platform.python_version(),
-                **package_versions,
-            },
+            runtime=runtime,
             parser={
                 "selected": selected_parser,
                 "attempted": parser_names,
