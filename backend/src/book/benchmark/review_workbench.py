@@ -261,6 +261,15 @@ class GoldReviewSession:
             if self.decision_key("task", task) not in self.decisions
         ]
         blockers: List[str] = []
+        if "reading_order" in page.tasks:
+            element_ids = {element.id for element in page.elements}
+            ordered_ids = set(page.reading_order)
+            missing_order_ids = sorted(element_ids - ordered_ids)
+            if missing_order_ids:
+                blockers.append(
+                    "reading_order missing element ids: "
+                    + ", ".join(missing_order_ids)
+                )
         if missing_elements:
             blockers.append(
                 "unconfirmed elements: " + ", ".join(sorted(missing_elements))
