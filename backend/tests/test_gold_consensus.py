@@ -9,7 +9,7 @@ from book.benchmark.baseline import (
 )
 from book.benchmark.consensus import GoldConsensusStore, compare_reviewed_pages
 from book.benchmark.gold import GoldAnnotation
-from book.benchmark.leaderboard import LeaderboardPolicy, build_leaderboard
+from book.benchmark.leaderboard import (\n    LeaderboardPolicy,\n    ParserLeaderboard,\n    build_leaderboard,\n)
 from book.benchmark.models import BackendRunResult, BenchmarkReport
 
 from test_gold_review_workbench import _confirm_all, _fixture_store
@@ -140,7 +140,9 @@ def test_consensus_publish_is_explicit_and_detects_drift(tmp_path):
     assert canonical.status == "reviewed"
     assert canonical.reviewed_by == "alice + bob"
 
-    store2 = _fixture_store(tmp_path / "second")
+    second_root = tmp_path / "second"
+    second_root.mkdir()
+    store2 = _fixture_store(second_root)
     first2 = store2.create("fixture", 0)
     second2 = store2.create("fixture", 0)
     _confirm_all(store2, first2.id, reviewer="alice")
