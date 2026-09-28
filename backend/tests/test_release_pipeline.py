@@ -467,7 +467,6 @@ def test_toolchain_provenance_is_integrity_protected(tmp_path):
     assert artifact["sha256"]
 
 
-
 def test_signing_command_material_is_not_persisted_in_release(tmp_path):
     source = tmp_path / "source.pdf"
     source.write_bytes(b"%PDF-1.4\nfixture\n")
@@ -522,7 +521,6 @@ def test_required_signature_verification_fails_without_verifier(tmp_path):
     assert verification["valid"] is False
     assert verification["signature"]["cryptographically_valid"] is None
     assert "verifier is not configured" in " ".join(verification["errors"])
-
 
 
 @pytest.mark.skipif(shutil.which("openssl") is None, reason="OpenSSL is not installed")
