@@ -144,13 +144,15 @@ const apiService = {
   async buildReviewRelease(
     sessionId,
     requireEpubcheck = false,
-    requireSignature = false
+    requireSignature = false,
+    signatureProvider = 'external'
   ) {
     return await api.post(
       `/api/review/sessions/${encodeURIComponent(sessionId)}/release`,
       {
         require_epubcheck: requireEpubcheck,
         require_signature: requireSignature,
+        signature_provider: signatureProvider,
       }
     );
   },
