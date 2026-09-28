@@ -25,7 +25,11 @@
       "missing_provenance",
       "unclassified_text_block"
     ],
-    "publication_ready": true
+    "publication_ready": true,
+    "render_xhtml_digest": "7b41312403db6a80d89c748cf9716e96bb0f6634207274307ce54c1a1e5967f9",
+    "render_flow_digest": "1d74ea92775f3d7b0c4cbf621c185f279c46bab517cd7efea738098787f146af",
+    "render_stylesheet_digest": "1852c87bc123bcad6928e048b95398730ab38e4386fcd11cd29d76550c6fe8ac",
+    "render_section_count": 1
   },
   "thresholds": {
     "semantic_score_min": 0.9,
