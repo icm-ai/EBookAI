@@ -217,8 +217,7 @@ class GoldConsensusBundle:
             candidate_a=GoldAnnotation.from_dict(value["candidate_a"]),
             candidate_b=GoldAnnotation.from_dict(value["candidate_b"]),
             conflicts=tuple(
-                ConsensusConflict.from_dict(item)
-                for item in value.get("conflicts", [])
+                ConsensusConflict.from_dict(item) for item in value.get("conflicts", [])
             ),
             decisions=decisions,
             consensus_annotation=(
@@ -239,9 +238,7 @@ def _page(annotation: GoldAnnotation, page_index: int) -> GoldPageAnnotation:
 
 def _other_pages(annotation: GoldAnnotation, page_index: int) -> List[Dict[str, Any]]:
     return [
-        page.to_dict()
-        for page in annotation.pages
-        if page.page_index != page_index
+        page.to_dict() for page in annotation.pages if page.page_index != page_index
     ]
 
 
@@ -491,9 +488,7 @@ class GoldConsensusStore:
         for conflict_id, decision in bundle.decisions.items():
             conflict = conflict_by_id[conflict_id]
             value = (
-                conflict.candidate_a
-                if decision.choice == "a"
-                else conflict.candidate_b
+                conflict.candidate_a if decision.choice == "a" else conflict.candidate_b
             )
             adjudicators.add(decision.adjudicator)
             if conflict.kind == "tasks":
