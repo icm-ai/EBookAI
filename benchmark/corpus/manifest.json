@@ -6,8 +6,8 @@
     {
       "id": "nist-ballot-definition-prototype",
       "title": "NIST Ballot Definition Prototype",
-      "source_url": "https://raw.githubusercontent.com/usnistgov/BallotDefinition/master/Ballot_Definition_Prototype.pdf",
-      "license_url": "https://github.com/usnistgov/BallotDefinition/blob/master/LICENSE.md",
+      "source_url": "https://raw.githubusercontent.com/usnistgov/BallotDefinition/8a46646e6af6624b8e5eda2dd35d346c68da5902/Ballot_Definition_Prototype.pdf",
+      "license_url": "https://github.com/usnistgov/BallotDefinition/blob/8a46646e6af6624b8e5eda2dd35d346c68da5902/LICENSE.md",
       "rights_basis": "The upstream NIST repository notice explicitly permits use, copy, distribution, modification, and redistribution of NIST-developed material. This exact PDF is pinned by SHA-256 and embedded only for deterministic CI.",
       "sha256": "98649f6216af762aa9ff1290665f42dc7978d90523ae6ddd9e50c460a8e540a0",
       "document_class": "technical-prototype",
@@ -32,8 +32,8 @@
     {
       "id": "nist-eel-sp1500-101-v1",
       "title": "NIST SP 1500-101 Election Event Logging Common Data Format Specification Version 1",
-      "source_url": "https://raw.githubusercontent.com/usnistgov/ElectionEventLogging/master/NIST%201500-101%20EEL%20Specification%20V1.pdf",
-      "license_url": "https://github.com/usnistgov/ElectionEventLogging/blob/master/LICENSE.md",
+      "source_url": "https://raw.githubusercontent.com/usnistgov/ElectionEventLogging/27436825c81e0810056f935a979d164953dff2ff/NIST%201500-101%20EEL%20Specification%20V1.pdf",
+      "license_url": "https://github.com/usnistgov/ElectionEventLogging/blob/27436825c81e0810056f935a979d164953dff2ff/LICENSE.md",
       "rights_basis": "Official NIST publication distributed publicly by NIST and mirrored in its public repository. The corpus treats it as download-only rather than embedding it, avoiding any broader redistribution assertion for possible third-party contributions.",
       "sha256": "c80d033062a52c8880eedb5fbbdcec29267f7298998f1bda78fe18e09561849c",
       "document_class": "technical-standard",
