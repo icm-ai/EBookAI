@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 from typing import List, Optional
 
+from book.benchmark.baseline import build_reviewed_baseline, write_reviewed_baseline
 from book.benchmark.corpus import CorpusStore
 from book.benchmark.gold import evaluate_gold, evaluate_gold_gate, load_gold_annotation
 from book.benchmark.leaderboard import (
@@ -114,6 +115,14 @@ def build_parser() -> argparse.ArgumentParser:
         type=float,
         help="Override allowed per-metric regression for baseline comparison",
     )
+
+    baseline_create = subparsers.add_parser(
+        "baseline-create",
+        help="Freeze a provenance-pinned reviewed-only leaderboard baseline",
+    )
+    baseline_create.add_argument("leaderboard", type=Path)
+    baseline_create.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    baseline_create.add_argument("--output", type=Path, required=True)
 
     review_plan = subparsers.add_parser(
         "review-plan", help="Validate and summarize the gold human-review queue"
@@ -227,6 +236,21 @@ def main(argv: Optional[List[str]] = None) -> int:
             )
         )
         return 0 if not failures else 1
+    if args.command == "baseline-create":
+        board = ParserLeaderboard.load(args.leaderboard)
+        snapshot = build_reviewed_baseline(args.manifest, board)
+        path = write_reviewed_baseline(snapshot, args.output)
+        print(
+            json.dumps(
+                {
+                    "baseline": str(path),
+                    "manifest_sha256": snapshot.manifest_sha256,
+                    "gold_sha256": snapshot.gold_sha256,
+                },
+                indent=2,
+            )
+        )
+        return 0
     if args.command == "review-plan":
         manifest = CorpusManifest.load(args.manifest)
         plan = ReviewPlan.load(args.plan)
