@@ -31,6 +31,7 @@ class CorpusDocumentSpec:
     redistributable: bool = False
     embedded_base64_path: str = ""
     gold_annotations_path: str = ""
+    gold_thresholds: Dict[str, Dict[str, float]] = field(default_factory=dict)
     notes: str = ""
 
     def __post_init__(self) -> None:
@@ -75,6 +76,14 @@ class CorpusDocumentSpec:
             redistributable=bool(value.get("redistributable", False)),
             embedded_base64_path=str(value.get("embedded_base64_path", "")),
             gold_annotations_path=str(value.get("gold_annotations_path", "")),
+            gold_thresholds={
+                str(backend): {
+                    str(metric): float(threshold)
+                    for metric, threshold in values.items()
+                }
+                for backend, values in value.get("gold_thresholds", {}).items()
+                if isinstance(values, dict)
+            },
             notes=str(value.get("notes", "")),
         )
 
@@ -94,6 +103,10 @@ class CorpusDocumentSpec:
             "redistributable": self.redistributable,
             "embedded_base64_path": self.embedded_base64_path,
             "gold_annotations_path": self.gold_annotations_path,
+            "gold_thresholds": {
+                backend: dict(sorted(values.items()))
+                for backend, values in sorted(self.gold_thresholds.items())
+            },
             "notes": self.notes,
         }
 
@@ -189,6 +202,9 @@ class BackendRunResult:
     backend_version: str = "unknown"
     parser_profile: Dict[str, Any] = field(default_factory=dict)
     metrics: Dict[str, Any] = field(default_factory=dict)
+    gold_metrics: Dict[str, Any] = field(default_factory=dict)
+    gold_evidence: Dict[str, Any] = field(default_factory=dict)
+    gold_gate_failures: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
     error: str = ""
     bookir_path: str = ""
@@ -208,6 +224,9 @@ class BackendRunResult:
             "backend_version": self.backend_version,
             "parser_profile": self.parser_profile,
             "metrics": self.metrics,
+            "gold_metrics": self.gold_metrics,
+            "gold_evidence": self.gold_evidence,
+            "gold_gate_failures": list(self.gold_gate_failures),
             "warnings": list(self.warnings),
             "error": self.error,
             "bookir_path": self.bookir_path,
@@ -223,6 +242,11 @@ class BackendRunResult:
             backend_version=str(value.get("backend_version", "unknown")),
             parser_profile=dict(value.get("parser_profile", {})),
             metrics=dict(value.get("metrics", {})),
+            gold_metrics=dict(value.get("gold_metrics", {})),
+            gold_evidence=dict(value.get("gold_evidence", {})),
+            gold_gate_failures=[
+                str(item) for item in value.get("gold_gate_failures", [])
+            ],
             warnings=[str(item) for item in value.get("warnings", [])],
             error=str(value.get("error", "")),
             bookir_path=str(value.get("bookir_path", "")),
