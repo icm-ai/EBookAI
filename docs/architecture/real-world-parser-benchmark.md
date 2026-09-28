@@ -19,7 +19,7 @@ Every document in `benchmark/corpus/manifest.json` must record:
 - document class, language, page count, and complexity tags;
 - expected parser capabilities exercised by the document;
 - whether EBookAI asserts that the exact bytes are redistributable;
-- an optional future gold-annotation path.
+- an optional source-pinned gold-annotation path.
 
 A document may be checked into the repository only when
 `redistributable=true` and the rights basis explicitly supports redistribution.
@@ -28,21 +28,28 @@ Otherwise the manifest is download-only and the fetched bytes stay in the local 
 Do not add PDFs merely because they are publicly downloadable. Public availability alone
 is not treated as redistribution permission.
 
-## Initial corpus
+## Current corpus
 
-| ID | Class | Pages | Materialization | Why it is useful |
-|---|---|---:|---|---|
-| `nist-ballot-definition-prototype` | technical prototype | 1 | checked-in base64, decoded to the original PDF for CI | Real form-like/vector PDF; small enough for deterministic offline smoke tests |
-| `nist-eel-sp1500-101-v1` | technical standard | 32 | download + SHA-256 verification | Long hierarchical technical document with TOC, figures/UML diagrams, appendices, and dense text |
+| ID | Class | Language | Pages | Materialization | Why it is useful |
+|---|---|---|---:|---|---|
+| `nist-ballot-definition-prototype` | technical prototype | en | 1 | checked-in base64 | Form-like/vector PDF and deterministic offline smoke fixture |
+| `nist-eel-sp1500-101-v1` | technical standard | en | 32 | download + SHA-256 verification | Long hierarchy, TOC, figures/UML, appendices, dense text |
+| `nist-ai-rmf-1-0` | technical framework | en | 48 | download + SHA-256 verification | Long-form framework with deep TOC, tables, figures, captions |
+| `nist-sp1299-csf2-overview` | technical guide | en | 8 | download + SHA-256 verification | Short mixed-layout guide with callouts and hierarchy |
+| `nist-sp1299-csf2-overview-ja` | translated technical guide | ja | 8 | download + SHA-256 verification | Japanese/non-Latin extraction and layout coverage |
 
 The NIST Ballot Definition repository carries a NIST notice that explicitly permits use,
 copy, distribution, modification, and redistribution of NIST-developed material. The
 small prototype PDF is therefore used as the offline CI sample.
 
-The NIST SP 1500-101 item is deliberately **not vendored**. It is an official NIST
-publication distributed from a public NIST repository, but this corpus keeps it
-download-only rather than making a broader redistribution assertion for possible
-third-party contributions.
+The other four items are deliberately **not vendored**. They are fetched from official
+NIST or NIST-hosted sources and exact bytes are SHA-256 pinned. The corpus conservatively
+keeps those PDFs download-only rather than making a broader redistribution assertion for
+possible third-party or translated material.
+
+Milestone 15 also adds a 25-page human review queue spanning all five documents. The
+queue is stored in `benchmark/corpus/review-plan.json`; review targets are work items,
+not reviewed gold.
 
 ## CLI
 
@@ -150,6 +157,10 @@ produces matched/unmatched evidence for audit.
 See
 [`gold-annotation-benchmark.md`](gold-annotation-benchmark.md)
 for schema details, accuracy metrics, CLI usage, authoring workflow, and review policy.
+
+Milestone 15 adds corpus expansion, a human-review queue, and a coverage-aware
+reviewed-gold parser leaderboard. See
+[`gold-corpus-leaderboard.md`](gold-corpus-leaderboard.md).
 
 ## Adding a document
 
