@@ -118,6 +118,7 @@ class GoldReviewSession:
     source_path: str
     source_sha256: str
     canonical_hash_at_open: Optional[str]
+    blocking_draft_pages: Tuple[int, ...]
     annotation: GoldAnnotation
     book: Book
     page_width: float
@@ -162,6 +163,7 @@ class GoldReviewSession:
             "backend": self.backend,
             "source_sha256": self.source_sha256,
             "canonical_hash_at_open": self.canonical_hash_at_open,
+            "blocking_draft_pages": list(self.blocking_draft_pages),
             "created_at": self.created_at,
             "updated_at": self.updated_at,
             "published_at": self.published_at,
@@ -207,6 +209,9 @@ class GoldReviewSession:
                 if value.get("canonical_hash_at_open") is not None
                 else None
             ),
+            blocking_draft_pages=tuple(
+                int(item) for item in value.get("blocking_draft_pages", [])
+            ),
             annotation=GoldAnnotation.from_dict(value["annotation"]),
             book=Book.from_dict(value["book"]),
             page_width=float(value["page_width"]),
@@ -229,6 +234,7 @@ class GoldReviewSession:
             "source_path": self.source_path,
             "source_sha256": self.source_sha256,
             "canonical_hash_at_open": self.canonical_hash_at_open,
+            "blocking_draft_pages": list(self.blocking_draft_pages),
             "annotation": self.annotation.to_dict(),
             "book": self.book.to_dict(),
             "page_width": self.page_width,
@@ -261,6 +267,11 @@ class GoldReviewSession:
             if self.decision_key("task", task) not in self.decisions
         ]
         blockers: List[str] = []
+        if self.blocking_draft_pages:
+            blockers.append(
+                "other draft pages require review first: "
+                + ", ".join(str(item) for item in self.blocking_draft_pages)
+            )
         if "reading_order" in page.tasks:
             element_ids = {element.id for element in page.elements}
             ordered_ids = set(page.reading_order)
@@ -374,6 +385,15 @@ class GoldReviewStore:
                 height = float(page.rect.height)
 
             now = _utc_now()
+            blocking_draft_pages = (
+                tuple(
+                    page.page_index
+                    for page in canonical.pages
+                    if page.page_index != page_index
+                )
+                if canonical is not None and canonical.status == "draft"
+                else ()
+            )
             session = GoldReviewSession(
                 id=str(uuid.uuid4()),
                 document_id=document_id,
@@ -382,6 +402,7 @@ class GoldReviewStore:
                 source_path=str(source),
                 source_sha256=spec.sha256,
                 canonical_hash_at_open=_annotation_hash(canonical),
+                blocking_draft_pages=blocking_draft_pages,
                 annotation=annotation,
                 book=book,
                 page_width=width,
