@@ -1,0 +1,48 @@
+{
+  "id": "table-like",
+  "category": "table",
+  "fixture_kind": "table_like",
+  "expectation": {
+    "minimum_node_types": {
+      "heading": 1,
+      "paragraph": 3
+    },
+    "text_fragments": [
+      "Name",
+      "Score",
+      "Status",
+      "Alice",
+      "95",
+      "Bob",
+      "88"
+    ],
+    "ordered_fragments": [
+      "Table Example",
+      "Name",
+      "Score",
+      "Status",
+      "Alice",
+      "95",
+      "Pass",
+      "Bob",
+      "88"
+    ],
+    "forbidden_issue_codes": [
+      "empty_document",
+      "missing_provenance",
+      "unclassified_text_block"
+    ],
+    "publication_ready": true
+  },
+  "thresholds": {
+    "semantic_score_min": 0.75,
+    "text_recall_min": 1,
+    "reading_order_min": 0.75,
+    "provenance_coverage_min": 1,
+    "bbox_coverage_min": 1,
+    "epub_text_recall_min": 1
+  },
+  "known_gaps": [
+    "table_semantics"
+  ]
+}
