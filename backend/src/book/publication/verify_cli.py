@@ -120,9 +120,7 @@ def _human(result: dict) -> str:
                     else "not verified"
                 )
             )
-            lines.append(
-                f"Trusted: {'yes' if signature.get('trusted') else 'no'}"
-            )
+            lines.append(f"Trusted: {'yes' if signature.get('trusted') else 'no'}")
             if signature.get("identity"):
                 lines.append(f"Identity: {signature['identity']}")
             if signature.get("issuer"):
