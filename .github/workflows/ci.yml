@@ -133,9 +133,6 @@ jobs:
           backend/tests/test_benchmark_corpus.py \
           backend/tests/test_benchmark_runner.py \
           backend/tests/test_real_corpus_benchmark.py \
-          backend/tests/test_benchmark_corpus.py \
-          backend/tests/test_benchmark_runner.py \
-          backend/tests/test_real_corpus_benchmark.py \
           backend/tests/golden/run_corpus.py
         isort --check-only --diff \
           backend/src/book \
@@ -176,7 +173,10 @@ jobs:
           backend/tests/test_ai_repair_proposals.py \
           backend/tests/test_publication_qa.py \
           backend/tests/test_release_pipeline.py \
-          backend/tests/test_golden_corpus.py
+          backend/tests/test_golden_corpus.py \
+          backend/tests/test_benchmark_corpus.py \
+          backend/tests/test_benchmark_runner.py \
+          backend/tests/test_real_corpus_benchmark.py
 
   test-epubcheck-release:
     name: EPUBCheck Release Gate
