@@ -141,10 +141,17 @@ const apiService = {
     );
   },
 
-  async buildReviewRelease(sessionId, requireEpubcheck = false) {
+  async buildReviewRelease(
+    sessionId,
+    requireEpubcheck = false,
+    requireSignature = false
+  ) {
     return await api.post(
       `/api/review/sessions/${encodeURIComponent(sessionId)}/release`,
-      { require_epubcheck: requireEpubcheck }
+      {
+        require_epubcheck: requireEpubcheck,
+        require_signature: requireSignature,
+      }
     );
   },
 
