@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -23,12 +24,14 @@ GOLD_REVIEW_PLAN = PROJECT_ROOT / "benchmark" / "corpus" / "review-plan.json"
 GOLD_CACHE = OUTPUT_DIR / "gold-review-cache"
 GOLD_WORKSPACE = OUTPUT_DIR / "gold-review-workspace"
 
-gold_review_store = GoldReviewStore(
-    GOLD_MANIFEST,
-    GOLD_REVIEW_PLAN,
-    GOLD_CACHE,
-    GOLD_WORKSPACE,
-)
+@lru_cache(maxsize=1)
+def _store() -> GoldReviewStore:
+    return GoldReviewStore(
+        GOLD_MANIFEST,
+        GOLD_REVIEW_PLAN,
+        GOLD_CACHE,
+        GOLD_WORKSPACE,
+    )
 
 
 class CreateGoldReviewSessionRequest(BaseModel):
@@ -83,7 +86,7 @@ def _http_error(exc: Exception) -> HTTPException:
 @router.get("/queue")
 async def get_gold_review_queue():
     try:
-        return await run_in_threadpool(gold_review_store.queue)
+        return await run_in_threadpool(_store().queue)
     except Exception as exc:
         raise _http_error(exc) from exc
 
@@ -92,7 +95,7 @@ async def get_gold_review_queue():
 async def create_gold_review_session(request: CreateGoldReviewSessionRequest):
     try:
         session = await run_in_threadpool(
-            gold_review_store.create,
+            _store().create,
             request.document_id,
             request.page_index,
             backend=request.backend,
@@ -105,7 +108,7 @@ async def create_gold_review_session(request: CreateGoldReviewSessionRequest):
 @router.get("/sessions/{session_id}")
 async def get_gold_review_session(session_id: str):
     try:
-        session = await run_in_threadpool(gold_review_store.get, session_id)
+        session = await run_in_threadpool(_store().get, session_id)
         return session.to_dict()
     except Exception as exc:
         raise _http_error(exc) from exc
@@ -118,7 +121,7 @@ async def get_gold_review_page(
 ):
     try:
         image = await run_in_threadpool(
-            gold_review_store.render_page,
+            _store().render_page,
             session_id,
             scale=scale,
         )
@@ -131,7 +134,7 @@ async def get_gold_review_page(
 async def set_gold_review_tasks(session_id: str, request: GoldTasksRequest):
     try:
         session = await run_in_threadpool(
-            gold_review_store.set_tasks,
+            _store().set_tasks,
             session_id,
             request.tasks,
         )
@@ -153,7 +156,7 @@ async def upsert_gold_review_element(
         )
     try:
         session = await run_in_threadpool(
-            gold_review_store.upsert_element,
+            _store().upsert_element,
             session_id,
             request.dict(exclude_none=True),
         )
@@ -166,7 +169,7 @@ async def upsert_gold_review_element(
 async def delete_gold_review_element(session_id: str, element_id: str):
     try:
         session = await run_in_threadpool(
-            gold_review_store.delete_element,
+            _store().delete_element,
             session_id,
             element_id,
         )
@@ -182,7 +185,7 @@ async def set_gold_review_reading_order(
 ):
     try:
         session = await run_in_threadpool(
-            gold_review_store.set_reading_order,
+            _store().set_reading_order,
             session_id,
             request.reading_order,
         )
@@ -198,7 +201,7 @@ async def confirm_gold_review_item(
 ):
     try:
         session = await run_in_threadpool(
-            gold_review_store.confirm,
+            _store().confirm,
             session_id,
             subject=request.subject,
             subject_id=request.subject_id,
@@ -217,7 +220,7 @@ async def promote_gold_review(
 ):
     try:
         session = await run_in_threadpool(
-            gold_review_store.promote,
+            _store().promote,
             session_id,
             reviewer=request.reviewer,
             note=request.note,
@@ -231,7 +234,7 @@ async def promote_gold_review(
 async def publish_gold_review(session_id: str):
     try:
         session = await run_in_threadpool(
-            gold_review_store.publish,
+            _store().publish,
             session_id,
         )
         return session.to_dict()
@@ -242,9 +245,9 @@ async def publish_gold_review(session_id: str):
 @router.get("/sessions/{session_id}/export/promoted")
 async def export_promoted_gold(session_id: str):
     try:
-        session = await run_in_threadpool(gold_review_store.get, session_id)
+        session = await run_in_threadpool(_store().get, session_id)
         path = await run_in_threadpool(
-            gold_review_store.promoted_path,
+            _store().promoted_path,
             session_id,
         )
         return FileResponse(
