@@ -5,6 +5,7 @@ import pytest
 from book.benchmark.baseline import (
     ReviewedBaselineSnapshot,
     build_reviewed_baseline,
+    load_baseline_leaderboard,
     write_reviewed_baseline,
 )
 from book.benchmark.consensus import GoldConsensusStore, compare_reviewed_pages
@@ -234,6 +235,7 @@ def test_reviewed_baseline_requires_canonical_reviewed_gold(tmp_path):
     assert loaded.gold_sha256.keys() == {"fixture"}
     assert loaded.leaderboard.entries[0].eligible is True
     assert loaded.to_dict() == snapshot.to_dict()
+    assert load_baseline_leaderboard(path).to_dict() == board.to_dict()
 
 
 def test_reviewed_baseline_rejects_draft_leaderboard(tmp_path):
