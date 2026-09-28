@@ -97,6 +97,34 @@ def _store(tmp_path: Path) -> CorpusStore:
     raw = b"%PDF-1.4\nbenchmark-runner-fixture\n"
     asset = tmp_path / "fixture.pdf.b64"
     asset.write_bytes(base64.b64encode(raw))
+    gold_path = tmp_path / "gold.json"
+    gold_path.write_text(
+        json.dumps(
+            {
+                "schema_version": "1",
+                "document_id": "fixture",
+                "source_sha256": hashlib.sha256(raw).hexdigest(),
+                "status": "reviewed",
+                "annotated_by": "Fixture Annotator",
+                "reviewed_by": "Fixture Reviewer",
+                "pages": [
+                    {
+                        "page_index": 0,
+                        "tasks": ["headings"],
+                        "elements": [
+                            {
+                                "id": "heading",
+                                "type": "heading",
+                                "text": "Heading",
+                                "level": 1,
+                            }
+                        ],
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
     manifest_path = tmp_path / "manifest.json"
     manifest_path.write_text(
         json.dumps(
@@ -117,6 +145,17 @@ def _store(tmp_path: Path) -> CorpusStore:
                         "expected_capabilities": ["headings"],
                         "redistributable": True,
                         "embedded_base64_path": asset.name,
+                        "gold_annotations_path": gold_path.name,
+                        "gold_thresholds": {
+                            "fake-success": {
+                                "structures.headings.f1_min": 1.0
+                            }
+                        },
+                        "gold_baselines": {
+                            "fake-success": {
+                                "structures.headings.f1": 1.0
+                            }
+                        },
                     }
                 ],
             }
@@ -151,7 +190,19 @@ def test_runner_records_success_skip_failure_and_report(tmp_path):
     assert success.metrics["expected_structure_recovery"] == 1.0
     assert success.metrics["relative_text_coverage"] == 1.0
     assert success.metrics["text_consensus_jaccard_mean"] is None
+    assert success.gold_metrics["structures"]["headings"]["f1"] == 1.0
+    assert success.gold_metrics["baseline_deltas"] == {
+        "structures.headings.f1": 0.0
+    }
+    assert success.gold_gate_failures == []
     assert Path(success.bookir_path).is_file()
+    assert (
+        tmp_path
+        / "output"
+        / "fixture"
+        / "fake-success"
+        / "gold-evidence.json"
+    ).is_file()
     assert (tmp_path / "output" / "benchmark-results.json").is_file()
 
     markdown = render_markdown(report)
