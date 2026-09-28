@@ -4,7 +4,6 @@ from pathlib import Path
 
 import fitz
 
-
 PAGE_W = 595
 PAGE_H = 842
 
