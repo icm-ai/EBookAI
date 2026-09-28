@@ -58,7 +58,8 @@
         "bbox"
       ],
       "redistributable": false,
-      "notes": "Primary complex corpus item. Fetched on demand and digest-verified; not required for offline CI smoke tests."
+      "gold_annotations_path": "gold/nist-eel-sp1500-101-v1.json",
+      "notes": "Primary complex corpus item. Fetched on demand and digest-verified; includes a sparse draft gold seed for page index 8 that requires human review before it may gate regressions."
     }
   ]
 }
