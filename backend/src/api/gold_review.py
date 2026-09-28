@@ -24,6 +24,7 @@ GOLD_REVIEW_PLAN = PROJECT_ROOT / "benchmark" / "corpus" / "review-plan.json"
 GOLD_CACHE = OUTPUT_DIR / "gold-review-cache"
 GOLD_WORKSPACE = OUTPUT_DIR / "gold-review-workspace"
 
+
 @lru_cache(maxsize=1)
 def _store() -> GoldReviewStore:
     return GoldReviewStore(
