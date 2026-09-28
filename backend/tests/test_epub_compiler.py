@@ -57,7 +57,6 @@ def test_epub_compiler_requires_epub_extension(tmp_path: Path):
         raise AssertionError("Compiler accepted a non-EPUB output path")
 
 
-
 def test_epub_compiler_is_byte_reproducible_without_explicit_identifier(tmp_path: Path):
     book = Book(
         metadata=BookMetadata(
