@@ -480,9 +480,7 @@ class ReviewSessionStore:
         session = self.get(session_id)
         if session.release_manifest is None:
             raise ValueError("No current release bundle exists for this review state")
-        return self.release_pipeline.verify_bundle(
-            self.release_bundle_path(session_id)
-        )
+        return self.release_pipeline.verify_bundle(self.release_bundle_path(session_id))
 
     def get_issue(self, session_id: str, issue_id: str) -> QualityIssue:
         return self._find_issue(self.get(session_id), issue_id)
