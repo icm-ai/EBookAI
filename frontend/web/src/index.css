@@ -1690,3 +1690,130 @@ code {
     grid-template-columns: 1fr;
   }
 }
+
+.review-release-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.review-release-policy {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #475467;
+  font-size: 11px;
+}
+
+.review-release-policy input {
+  margin: 0;
+}
+
+.review-release-body {
+  padding: 12px;
+}
+
+.review-release-metadata {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) repeat(2, minmax(160px, 0.7fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.review-release-metadata > div {
+  border: 1px solid #eaecf0;
+  border-radius: 8px;
+  padding: 10px;
+  background: #f9fafb;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.review-release-metadata span {
+  color: #667085;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.review-release-metadata strong,
+.review-release-metadata code {
+  color: #344054;
+  font-size: 11px;
+  word-break: break-all;
+}
+
+.review-release-artifacts {
+  display: grid;
+  gap: 7px;
+}
+
+.review-release-artifact {
+  border: 1px solid #eaecf0;
+  border-radius: 7px;
+  padding: 9px 10px;
+  display: grid;
+  grid-template-columns: minmax(180px, 0.8fr) minmax(0, 2fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.review-release-artifact > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.review-release-artifact strong {
+  color: #344054;
+  font-size: 11px;
+}
+
+.review-release-artifact span {
+  color: #667085;
+  font-size: 10px;
+}
+
+.review-release-artifact code {
+  color: #475467;
+  font-size: 10px;
+  word-break: break-all;
+}
+
+.review-release-verification {
+  margin-top: 12px;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+}
+
+.review-release-verification.valid {
+  background: #ecfdf3;
+  color: #027a48;
+}
+
+.review-release-verification.invalid {
+  background: #fff0f0;
+  color: #b42318;
+}
+
+.review-release-verification span {
+  word-break: break-all;
+}
+
+@media (max-width: 768px) {
+  .review-release-metadata,
+  .review-release-artifact {
+    grid-template-columns: 1fr;
+  }
+
+  .review-release-actions {
+    justify-content: flex-start;
+  }
+}
