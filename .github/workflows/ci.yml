@@ -130,7 +130,6 @@ jobs:
           backend/tests/test_publication_qa.py \
           backend/tests/test_release_pipeline.py \
           backend/tests/test_golden_corpus.py \
-          backend/tests/golden/fixtures.py \
           backend/tests/golden/run_corpus.py
         isort --check-only --diff \
           backend/src/book \
@@ -149,7 +148,6 @@ jobs:
           backend/tests/test_publication_qa.py \
           backend/tests/test_release_pipeline.py \
           backend/tests/test_golden_corpus.py \
-          backend/tests/golden/fixtures.py \
           backend/tests/golden/run_corpus.py
 
     - name: Run BookIR tests
@@ -169,9 +167,7 @@ jobs:
           backend/tests/test_ai_repair_proposals.py \
           backend/tests/test_publication_qa.py \
           backend/tests/test_release_pipeline.py \
-          backend/tests/test_golden_corpus.py \
-          backend/tests/golden/fixtures.py \
-          backend/tests/golden/run_corpus.py
+          backend/tests/test_golden_corpus.py
 
   test-epubcheck-release:
     name: EPUBCheck Release Gate
@@ -304,7 +300,7 @@ jobs:
 
     - name: Run golden corpus regression
       env:
-        PYTHONPATH: ${{ github.workspace }}/backend/src:${{ github.workspace }}/backend/tests
+        PYTHONPATH: ${{ github.workspace }}/backend/src
       run: |
         mkdir -p artifacts/golden-regression
         python backend/tests/golden/run_corpus.py \
