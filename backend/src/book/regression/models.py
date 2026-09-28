@@ -161,6 +161,17 @@ class GoldenSuiteReport:
         return all(case.passed for case in self.cases)
 
     def to_dict(self) -> Dict[str, Any]:
+        def average(metric: str) -> Optional[float]:
+            values = [
+                float(case.metrics[metric])
+                for case in self.cases
+                if case.metrics.get(metric) is not None
+            ]
+            return round(sum(values) / len(values), 4) if values else None
+
+        known_gaps = sorted(
+            {gap for case in self.cases for gap in case.known_gaps}
+        )
         return {
             "passed": self.passed,
             "summary": {
@@ -168,6 +179,18 @@ class GoldenSuiteReport:
                 "passed": sum(1 for case in self.cases if case.passed),
                 "failed": sum(1 for case in self.cases if not case.passed),
                 "categories": sorted({case.category for case in self.cases}),
+                "semantic_score_mean": average("semantic_score"),
+                "text_recall_mean": average("text_recall"),
+                "reading_order_mean": average("reading_order"),
+                "provenance_coverage_mean": average("provenance_coverage"),
+                "bbox_coverage_mean": average("bbox_coverage"),
+                "epub_text_recall_mean": average("epub_text_recall"),
+                "publication_ready_cases": sum(
+                    1
+                    for case in self.cases
+                    if case.metrics.get("publication_ready") is True
+                ),
+                "known_gaps": known_gaps,
             },
             "cases": [case.to_dict() for case in self.cases],
         }
