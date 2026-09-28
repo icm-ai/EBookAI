@@ -217,6 +217,12 @@ def test_edit_resets_confirmation_and_promotion_requires_full_review(tmp_path):
     assert promoted.promoted_annotation.reviewed_by == "alice"
     assert "Review:" in promoted.promoted_annotation.notes
     assert store.promoted_path(session.id).is_file()
+    audit_path = store.audit_path(session.id)
+    audit = json.loads(audit_path.read_text(encoding="utf-8"))
+    assert audit["source_sha256"] == promoted.source_sha256
+    assert audit["reviewed_by"] == "alice"
+    assert audit["published_at"] is None
+    assert len(audit["decisions"]) == 3
 
 
 def test_promotion_reviewer_must_participate_in_confirmations(tmp_path):
@@ -244,6 +250,8 @@ def test_publish_is_explicit_and_detects_canonical_drift(tmp_path):
     assert published.published_at
     assert after.status == "reviewed"
     assert after.reviewed_by == "alice"
+    audit = json.loads(store.audit_path(session.id).read_text(encoding="utf-8"))
+    assert audit["published_at"] == published.published_at
 
     second = store.create("fixture", 0)
     _confirm_all(store, second.id, reviewer="carol")
@@ -278,3 +286,37 @@ def test_unannotated_target_stages_empty_draft_page(tmp_path):
         _confirm_all(fresh, session.id)
         fresh.promote(session.id, reviewer="alice")
         fresh.publish(session.id)
+
+
+def test_other_draft_pages_block_single_page_promotion(tmp_path):
+    store = _fixture_store(tmp_path)
+    canonical_path = tmp_path / "gold" / "fixture.json"
+    payload = json.loads(canonical_path.read_text(encoding="utf-8"))
+    payload["pages"].append(
+        {
+            "page_index": 0,
+            "tasks": ["headings"],
+            "elements": [],
+        }
+    )
+    # Duplicate page indexes are invalid, so instead make the fixture manifest two pages
+    # and move the added draft annotation to page 1.
+    payload["pages"][1]["page_index"] = 1
+    canonical_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    manifest = json.loads(store.manifest_path.read_text(encoding="utf-8"))
+    manifest["documents"][0]["page_count"] = 2
+    store.manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    fresh = GoldReviewStore(
+        store.manifest_path,
+        store.review_plan_path,
+        tmp_path / "cache3",
+        tmp_path / "workspace3",
+    )
+    session = fresh.create("fixture", 0)
+    _confirm_all(fresh, session.id)
+
+    assert session.blocking_draft_pages == (1,)
+    with pytest.raises(ValueError, match="other draft pages require review first"):
+        fresh.promote(session.id, reviewer="alice")
