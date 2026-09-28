@@ -74,6 +74,16 @@ def _parser() -> argparse.ArgumentParser:
         help="Expected OIDC issuer regexp for keyless Sigstore verification.",
     )
     parser.add_argument(
+        "--trusted-root",
+        help="Sigstore TrustedRoot JSON for private/custom Sigstore infrastructure.",
+    )
+    parser.add_argument(
+        "--sigstore-verify-arg",
+        action="append",
+        default=[],
+        help="Additional Cosign verify-blob argument; repeat as needed.",
+    )
+    parser.add_argument(
         "--json",
         action="store_true",
         dest="json_output",
@@ -144,6 +154,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             certificate_identity_regexp=args.certificate_identity_regexp,
             certificate_oidc_issuer=args.certificate_oidc_issuer,
             certificate_oidc_issuer_regexp=args.certificate_oidc_issuer_regexp,
+            trusted_root=args.trusted_root,
+            extra_args=tuple(args.sigstore_verify_arg),
         )
         verifier = StandaloneReleaseVerifier(
             external_verifier=external,
