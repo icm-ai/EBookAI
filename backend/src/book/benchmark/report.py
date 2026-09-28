@@ -181,8 +181,7 @@ def render_markdown(report: BenchmarkReport) -> str:
                             (
                                 "PASS"
                                 if not run.gold_gate_failures
-                                else "FAIL: "
-                                + "; ".join(run.gold_gate_failures)
+                                else "FAIL: " + "; ".join(run.gold_gate_failures)
                             ),
                         ]
                     )
