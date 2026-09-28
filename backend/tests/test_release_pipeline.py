@@ -861,3 +861,57 @@ def test_verifier_accepts_legacy_manifest_v02_release_id(tmp_path):
 
     assert verification["valid"] is True
     assert verification["release_id"] == manifest_payload["release_id"]
+
+
+
+@pytest.mark.skipif(shutil.which("cosign") is None, reason="Cosign is not installed")
+def test_real_cosign_native_bundle_with_key(tmp_path, monkeypatch):
+    cosign = shutil.which("cosign")
+    monkeypatch.setenv("COSIGN_PASSWORD", "ebookai-ci-fixture")
+    prefix = tmp_path / "sigstore-ci"
+    subprocess.run(
+        [
+            cosign,
+            "generate-key-pair",
+            "--output-key-prefix",
+            str(prefix),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    source = tmp_path / "source.pdf"
+    source.write_bytes(b"%PDF-1.4\nfixture\n")
+    pipeline = ReleasePipeline(
+        epubcheck_runner=StaticRunner(_passed_epubcheck()),
+        sigstore_signer=SigstoreBundleSigner(
+            command=[cosign],
+            key=str(prefix) + ".key",
+            extra_args=["--tlog-upload=false"],
+        ),
+        sigstore_verifier=SigstoreBundleVerifier(
+            command=[cosign],
+            key=str(prefix) + ".pub",
+            extra_args=["--insecure-ignore-tlog"],
+        ),
+    )
+
+    result = pipeline.build(
+        source_path=source,
+        source_filename="fixture.pdf",
+        book=_book(),
+        quality_report=_quality_report(),
+        issue_resolutions={},
+        output_dir=tmp_path / "cosign-release",
+        require_signature=True,
+        signature_provider="sigstore",
+    )
+    verification = pipeline.verify_bundle(result.bundle_path)
+
+    assert verification["valid"] is True
+    assert verification["signature"]["provider"] == "sigstore"
+    assert verification["signature"]["cryptographically_valid"] is True
+    assert verification["signature"]["trusted"] is True
+    assert verification["signature"]["mode"] == "key"
+    assert verification["signature"]["cosign_version"]
