@@ -915,3 +915,63 @@ def test_real_cosign_native_bundle_with_key(tmp_path, monkeypatch):
     assert verification["signature"]["trusted"] is True
     assert verification["signature"]["mode"] == "key"
     assert verification["signature"]["cosign_version"]
+
+
+
+def test_verifier_accepts_legacy_manifest_v01_release_id(tmp_path):
+    source = tmp_path / "source.pdf"
+    source.write_bytes(b"%PDF-1.4\nfixture\n")
+    pipeline = ReleasePipeline(epubcheck_runner=StaticRunner(_passed_epubcheck()))
+    result = pipeline.build(
+        source_path=source,
+        source_filename="fixture.pdf",
+        book=_book(),
+        quality_report=_quality_report(),
+        issue_resolutions={},
+        output_dir=tmp_path / "current-v01",
+        signature_provider="none",
+    )
+
+    with zipfile.ZipFile(result.bundle_path) as archive:
+        entries = {name: archive.read(name) for name in archive.namelist()}
+    manifest_payload = json.loads(entries["manifest.json"])
+    manifest_payload["schema_version"] = "0.1"
+    manifest_payload["policy"].pop("require_signature", None)
+    manifest_payload.pop("attestation", None)
+    artifacts = [
+        type(result.manifest.artifacts[0]).from_dict(item)
+        for item in manifest_payload["artifacts"]
+    ]
+    manifest_payload["release_id"] = ReleasePipeline._release_id(
+        artifacts,
+        require_epubcheck=manifest_payload["policy"]["require_epubcheck"],
+        require_signature=False,
+        release_ready=manifest_payload["release_ready"],
+        epubcheck_status=manifest_payload["external_validation"]["epubcheck"][
+            "status"
+        ],
+        signed=False,
+        signature_provider="none",
+        signing_key_id="",
+        signing_algorithm="",
+        schema_version="0.1",
+    )
+    entries["manifest.json"] = (
+        json.dumps(
+            manifest_payload,
+            ensure_ascii=False,
+            sort_keys=True,
+            indent=2,
+        )
+        + "\n"
+    ).encode("utf-8")
+
+    legacy = tmp_path / "legacy-v01.release.zip"
+    with zipfile.ZipFile(legacy, "w") as archive:
+        for name in sorted(entries):
+            archive.writestr(name, entries[name])
+
+    verification = pipeline.verify_bundle(legacy)
+
+    assert verification["valid"] is True
+    assert verification["release_id"] == manifest_payload["release_id"]
