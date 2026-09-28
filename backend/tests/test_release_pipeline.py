@@ -303,7 +303,6 @@ def test_real_epubcheck_accepts_compiler_release_epub(tmp_path):
     assert result.manifest.release_ready is True
 
 
-
 def _write_signature_fixture(tmp_path: Path):
     signer_script = tmp_path / "sign.py"
     signer_script.write_text(
@@ -381,9 +380,7 @@ def test_signed_release_attestation_and_trust_policy(tmp_path):
 def test_required_signature_without_signer_is_rejected(tmp_path):
     source = tmp_path / "source.pdf"
     source.write_bytes(b"%PDF-1.4\nfixture\n")
-    pipeline = ReleasePipeline(
-        epubcheck_runner=StaticRunner(_passed_epubcheck())
-    )
+    pipeline = ReleasePipeline(epubcheck_runner=StaticRunner(_passed_epubcheck()))
 
     with pytest.raises(ValueError, match="signature is required"):
         pipeline.build(
