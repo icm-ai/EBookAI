@@ -141,6 +141,19 @@ const apiService = {
     );
   },
 
+  async buildReviewRelease(sessionId, requireEpubcheck = false) {
+    return await api.post(
+      `/api/review/sessions/${encodeURIComponent(sessionId)}/release`,
+      { require_epubcheck: requireEpubcheck }
+    );
+  },
+
+  async verifyReviewRelease(sessionId) {
+    return await api.get(
+      `/api/review/sessions/${encodeURIComponent(sessionId)}/release/verify`
+    );
+  },
+
   getReviewSourceUrl(sessionId) {
     return `${API_BASE}/api/review/sessions/${encodeURIComponent(sessionId)}/source`;
   },
