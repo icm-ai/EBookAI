@@ -212,7 +212,8 @@ class ParserBenchmarkRunner:
             except queue.Empty:
                 worker_status, payload = (
                     "failed",
-                    f"Parser worker exited with code {process.exitcode} without a result",
+                    "Parser worker exited with code "
+                    f"{process.exitcode} without a result",
                 )
             finally:
                 self._close_queue(result_queue)
@@ -265,7 +266,10 @@ class ParserBenchmarkRunner:
                     elapsed_seconds=elapsed,
                     backend_version=version,
                     parser_profile=profile,
-                    error=f"BookIR normalization/metrics failed: {type(exc).__name__}: {exc}",
+                    error=(
+                        "BookIR normalization/metrics failed: "
+                        f"{type(exc).__name__}: {exc}"
+                    ),
                 ),
                 None,
             )
@@ -296,13 +300,16 @@ class ParserBenchmarkRunner:
         parsed_pages = book.metadata.extra.get("page_count")
         if isinstance(parsed_pages, int) and parsed_pages != spec.page_count:
             warnings.append(
-                f"parser page_count={parsed_pages} differs from manifest={spec.page_count}"
+                f"parser page_count={parsed_pages} differs from "
+                f"manifest={spec.page_count}"
             )
         if int(metrics.get("text_char_count", 0)) == 0:
             warnings.append("parser produced no normalized text")
         structure_hits = metrics.get("structure_hits", {})
         if isinstance(structure_hits, dict):
-            missing = sorted(name for name, count in structure_hits.items() if not count)
+            missing = sorted(
+                name for name, count in structure_hits.items() if not count
+            )
             if missing:
                 warnings.append(
                     "no structural nodes recovered for expected document features: "
@@ -317,7 +324,9 @@ class ParserBenchmarkRunner:
         successful = [run for run in runs if run.status == "success"]
         if not successful:
             return
-        max_chars = max(int(run.metrics.get("text_char_count", 0)) for run in successful)
+        max_chars = max(
+            int(run.metrics.get("text_char_count", 0)) for run in successful
+        )
         tokens = {backend: token_set(book) for backend, book in books.items()}
         for run in successful:
             chars = int(run.metrics.get("text_char_count", 0))
