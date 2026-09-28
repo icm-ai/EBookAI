@@ -1,4 +1,6 @@
 import json
+import shutil
+import subprocess
 import sys
 import zipfile
 from pathlib import Path
@@ -523,3 +525,80 @@ def test_required_signature_verification_fails_without_verifier(tmp_path):
     assert verification["valid"] is False
     assert verification["signature"]["cryptographically_valid"] is None
     assert "verifier is not configured" in " ".join(verification["errors"])
+
+
+
+@pytest.mark.skipif(shutil.which("openssl") is None, reason="OpenSSL is not installed")
+def test_real_openssl_detached_release_signature(tmp_path):
+    openssl = shutil.which("openssl")
+    private_key = tmp_path / "private.pem"
+    public_key = tmp_path / "public.pem"
+    subprocess.run(
+        [openssl, "genpkey", "-algorithm", "ED25519", "-out", str(private_key)],
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        [
+            openssl,
+            "pkey",
+            "-in",
+            str(private_key),
+            "-pubout",
+            "-out",
+            str(public_key),
+        ],
+        check=True,
+        capture_output=True,
+    )
+
+    source = tmp_path / "source.pdf"
+    source.write_bytes(b"%PDF-1.4\nfixture\n")
+    pipeline = ReleasePipeline(
+        epubcheck_runner=StaticRunner(_passed_epubcheck()),
+        signer=ExternalManifestSigner(
+            command=[
+                openssl,
+                "pkeyutl",
+                "-sign",
+                "-inkey",
+                str(private_key),
+                "-rawin",
+            ],
+            key_id="openssl-ed25519-fixture",
+            algorithm="ed25519",
+        ),
+        verifier=ExternalManifestVerifier(
+            command=[
+                openssl,
+                "pkeyutl",
+                "-verify",
+                "-pubin",
+                "-inkey",
+                str(public_key),
+                "-rawin",
+                "-sigfile",
+                "{signature}",
+                "-in",
+                "{payload}",
+            ]
+        ),
+    )
+
+    result = pipeline.build(
+        source_path=source,
+        source_filename="fixture.pdf",
+        book=_book(),
+        quality_report=_quality_report(),
+        issue_resolutions={},
+        output_dir=tmp_path / "signed-openssl",
+        require_signature=True,
+    )
+    verification = pipeline.verify_bundle(
+        result.bundle_path,
+        trusted_key_ids=["openssl-ed25519-fixture"],
+    )
+
+    assert verification["valid"] is True
+    assert verification["signature"]["cryptographically_valid"] is True
+    assert verification["signature"]["trusted"] is True
