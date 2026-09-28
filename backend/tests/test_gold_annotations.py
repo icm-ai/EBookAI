@@ -300,4 +300,4 @@ def test_ai_rmf_seed_is_source_pinned_and_draft():
     assert annotation.source_sha256 == spec.sha256
     assert [page.page_index for page in annotation.pages] == [3]
     assert set(annotation.pages[0].tasks) == {"headings", "reading_order"}
-    assert len(annotation.pages[0].elements) == 16
+    assert len(annotation.pages[0].elements) == 32
