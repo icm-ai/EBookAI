@@ -33,6 +33,10 @@ function ReviewWorkspace() {
   const [aiActionId, setAiActionId] = useState(null);
   const [patchActionId, setPatchActionId] = useState(null);
   const [qaLoading, setQaLoading] = useState(false);
+  const [releaseLoading, setReleaseLoading] = useState(false);
+  const [verifyLoading, setVerifyLoading] = useState(false);
+  const [requireEpubcheck, setRequireEpubcheck] = useState(false);
+  const [releaseVerification, setReleaseVerification] = useState(null);
   const [aiProviders, setAiProviders] = useState([]);
   const [aiProvider, setAiProvider] = useState('');
   const [includeSourceImages, setIncludeSourceImages] = useState(false);
@@ -64,6 +68,7 @@ function ReviewWorkspace() {
   const aiProposals = session?.ai_proposals || [];
   const patchHistory = session?.patch_history || [];
   const publicationReport = session?.publication_report || null;
+  const releaseManifest = session?.release_manifest || null;
   const selectedAIProposals = aiProposals.filter(
     (proposal) => proposal.issue_id === selectedIssueId
   );
@@ -155,6 +160,7 @@ function ReviewWorkspace() {
 
   const setNextSession = (nextSession) => {
     setSession(nextSession);
+    setReleaseVerification(null);
     localStorage.setItem('ebookAI-review-session', nextSession.id);
     const nextIssues = nextSession?.quality_report?.issues || [];
     const stillExists = nextIssues.some(
@@ -333,6 +339,45 @@ function ReviewWorkspace() {
     }
   };
 
+  const buildRelease = async () => {
+    setReleaseLoading(true);
+    setError(null);
+    setReleaseVerification(null);
+    try {
+      const response = await api.buildReviewRelease(
+        session.id,
+        requireEpubcheck
+      );
+      setNextSession(response.data);
+    } catch (err) {
+      setError(
+        err.response?.data?.detail ||
+          err.message ||
+          'Failed to build the release bundle.'
+      );
+    } finally {
+      setReleaseLoading(false);
+    }
+  };
+
+  const verifyRelease = async () => {
+    setVerifyLoading(true);
+    setError(null);
+    try {
+      const response = await api.verifyReviewRelease(session.id);
+      setReleaseVerification(response.data);
+    } catch (err) {
+      setReleaseVerification(null);
+      setError(
+        err.response?.data?.detail ||
+          err.message ||
+          'Failed to verify the release bundle.'
+      );
+    } finally {
+      setVerifyLoading(false);
+    }
+  };
+
   const counts = session?.quality_report?.counts || {};
   const score = session?.quality_report?.score;
   const orchestration = session?.orchestration || {};
@@ -420,9 +465,25 @@ function ReviewWorkspace() {
               >
                 {publicationReport
                   ? publicationReport.release_ready
+                    ? 'QA ready'
+                    : 'QA blocked'
+                  : 'QA not run'}
+              </span>
+              <span
+                className={[
+                  'review-release-status',
+                  releaseManifest
+                    ? releaseManifest.release_ready
+                      ? 'ready'
+                      : 'blocked'
+                    : 'pending',
+                ].join(' ')}
+              >
+                {releaseManifest
+                  ? releaseManifest.release_ready
                     ? 'Release ready'
                     : 'Release blocked'
-                  : 'QA not run'}
+                  : 'Release not built'}
               </span>
               <button
                 className="review-qa-button"
@@ -912,6 +973,126 @@ function ReviewWorkspace() {
                     )}
                 </div>
               ))}
+            </div>
+          </section>
+
+          <section className="review-route-panel">
+            <div className="review-panel-header">
+              <div>
+                <h3>Release Pipeline</h3>
+                <span>
+                  {releaseManifest
+                    ? releaseManifest.release_ready
+                      ? 'Reproducible bundle is release ready'
+                      : 'Bundle built with blocking validation state'
+                    : 'Build a hash-linked release bundle'}
+                </span>
+              </div>
+              <div className="review-release-actions">
+                <label className="review-release-policy">
+                  <input
+                    type="checkbox"
+                    checked={requireEpubcheck}
+                    onChange={(event) =>
+                      setRequireEpubcheck(event.target.checked)
+                    }
+                  />
+                  Require EPUBCheck
+                </label>
+                <button
+                  className="review-qa-button"
+                  onClick={buildRelease}
+                  disabled={releaseLoading}
+                >
+                  {releaseLoading ? 'Building…' : 'Build release'}
+                </button>
+                {releaseManifest && (
+                  <button
+                    className="review-qa-button"
+                    onClick={verifyRelease}
+                    disabled={verifyLoading}
+                  >
+                    {verifyLoading ? 'Verifying…' : 'Verify bundle'}
+                  </button>
+                )}
+                {releaseManifest && (
+                  <a
+                    className="review-export-link"
+                    href={api.getReviewExportUrl(session.id, 'release')}
+                  >
+                    Download release.zip
+                  </a>
+                )}
+              </div>
+            </div>
+            <div className="review-release-body">
+              {!releaseManifest && (
+                <div className="review-empty-state">
+                  The release bundle contains the source document, BookIR,
+                  compiled EPUB, publication QA, normalized EPUBCheck report,
+                  and a SHA-256 manifest.
+                </div>
+              )}
+              {releaseManifest && (
+                <>
+                  <div className="review-release-metadata">
+                    <div>
+                      <span>Release ID</span>
+                      <code>{releaseManifest.release_id}</code>
+                    </div>
+                    <div>
+                      <span>EPUBCheck</span>
+                      <strong>
+                        {releaseManifest.external_validation?.epubcheck?.status ||
+                          'unknown'}
+                        {releaseManifest.external_validation?.epubcheck?.version
+                          ? ` · v${releaseManifest.external_validation.epubcheck.version}`
+                          : ''}
+                      </strong>
+                    </div>
+                    <div>
+                      <span>Policy</span>
+                      <strong>
+                        {releaseManifest.policy?.require_epubcheck
+                          ? 'EPUBCheck required'
+                          : 'EPUBCheck optional'}
+                      </strong>
+                    </div>
+                  </div>
+                  <div className="review-release-artifacts">
+                    {(releaseManifest.artifacts || []).map((artifact) => (
+                      <div
+                        key={artifact.path}
+                        className="review-release-artifact"
+                      >
+                        <div>
+                          <strong>{artifact.path}</strong>
+                          <span>{artifact.size} bytes</span>
+                        </div>
+                        <code>{artifact.sha256}</code>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+              {releaseVerification && (
+                <div
+                  className={[
+                    'review-release-verification',
+                    releaseVerification.valid ? 'valid' : 'invalid',
+                  ].join(' ')}
+                >
+                  <strong>
+                    {releaseVerification.valid
+                      ? 'Bundle integrity verified'
+                      : 'Bundle verification failed'}
+                  </strong>
+                  <span>{releaseVerification.release_id}</span>
+                  {(releaseVerification.errors || []).map((item) => (
+                    <div key={item}>{item}</div>
+                  ))}
+                </div>
+              )}
             </div>
           </section>
 
