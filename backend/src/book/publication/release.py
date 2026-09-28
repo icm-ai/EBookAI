@@ -1,4 +1,4 @@
-"""Reproducible release bundles for reviewed BookIR publications."""
+"""Reproducible, attestable release bundles for reviewed BookIR publications."""
 
 from __future__ import annotations
 
@@ -9,12 +9,19 @@ import tempfile
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence
 
 from book.compiler import EpubCompiler
 from book.domain.models import BOOK_IR_VERSION, Book
+from book.publication.attestation import (
+    ExternalManifestSigner,
+    ExternalManifestVerifier,
+    ReleaseAttestation,
+    SignatureVerification,
+)
 from book.publication.epubcheck import EpubCheckResult, ExternalEpubCheckRunner
 from book.publication.models import PublicationReport
+from book.publication.provenance import ToolchainProvenanceBuilder
 from book.publication.qa import PublicationQAEngine
 from book.quality import QualityReport
 
@@ -64,16 +71,20 @@ class ReleaseArtifact:
 
 @dataclass(frozen=True)
 class ReleaseManifest:
-    """Deterministic manifest tying source, BookIR, EPUB, and reports together."""
+    """Deterministic manifest tying content, provenance, policy, and validation."""
 
     release_id: str
     source_filename: str
     release_ready: bool
     require_epubcheck: bool
+    require_signature: bool
     epubcheck_status: str
     epubcheck_version: str
+    signed: bool
+    signing_key_id: str
+    signing_algorithm: str
     artifacts: List[ReleaseArtifact]
-    schema_version: str = "0.1"
+    schema_version: str = "0.2"
     book_ir_version: str = BOOK_IR_VERSION
 
     def to_dict(self) -> Dict[str, Any]:
@@ -85,12 +96,18 @@ class ReleaseManifest:
             "release_ready": self.release_ready,
             "policy": {
                 "require_epubcheck": self.require_epubcheck,
+                "require_signature": self.require_signature,
             },
             "external_validation": {
                 "epubcheck": {
                     "status": self.epubcheck_status,
                     "version": self.epubcheck_version,
                 }
+            },
+            "attestation": {
+                "signed": self.signed,
+                "key_id": self.signing_key_id,
+                "algorithm": self.signing_algorithm,
             },
             "artifacts": [artifact.to_dict() for artifact in self.artifacts],
         }
@@ -100,6 +117,9 @@ class ReleaseManifest:
         policy = value.get("policy", {})
         external = value.get("external_validation", {})
         epubcheck = external.get("epubcheck", {}) if isinstance(external, dict) else {}
+        attestation = value.get("attestation", {})
+        if not isinstance(attestation, dict):
+            attestation = {}
         return cls(
             schema_version=str(value.get("schema_version", "0.1")),
             book_ir_version=str(value.get("book_ir_version", BOOK_IR_VERSION)),
@@ -111,12 +131,20 @@ class ReleaseManifest:
                 if isinstance(policy, dict)
                 else False
             ),
+            require_signature=bool(
+                policy.get("require_signature", False)
+                if isinstance(policy, dict)
+                else False
+            ),
             epubcheck_status=str(
                 epubcheck.get("status", "") if isinstance(epubcheck, dict) else ""
             ),
             epubcheck_version=str(
                 epubcheck.get("version", "") if isinstance(epubcheck, dict) else ""
             ),
+            signed=bool(attestation.get("signed", False)),
+            signing_key_id=str(attestation.get("key_id", "")),
+            signing_algorithm=str(attestation.get("algorithm", "")),
             artifacts=[
                 ReleaseArtifact.from_dict(item) for item in value.get("artifacts", [])
             ],
@@ -125,16 +153,15 @@ class ReleaseManifest:
 
 @dataclass(frozen=True)
 class ReleaseBuildResult:
-    """Release pipeline output retained by the review layer."""
-
     manifest: ReleaseManifest
     publication_report: PublicationReport
     epubcheck_result: EpubCheckResult
+    attestation: Optional[ReleaseAttestation]
     bundle_path: Path
 
 
 class ReleasePipeline:
-    """Compile, validate, hash, package, and verify reviewed publication output."""
+    """Compile, validate, attest, package, and verify reviewed publication output."""
 
     BUNDLE_NAME = "release-bundle.zip"
 
@@ -144,10 +171,16 @@ class ReleasePipeline:
         compiler: Optional[EpubCompiler] = None,
         qa_engine: Optional[PublicationQAEngine] = None,
         epubcheck_runner: Optional[ExternalEpubCheckRunner] = None,
+        provenance_builder: Optional[ToolchainProvenanceBuilder] = None,
+        signer: Optional[ExternalManifestSigner] = None,
+        verifier: Optional[ExternalManifestVerifier] = None,
     ) -> None:
         self.compiler = compiler or EpubCompiler()
         self.qa_engine = qa_engine or PublicationQAEngine()
         self.epubcheck_runner = epubcheck_runner or ExternalEpubCheckRunner()
+        self.provenance_builder = provenance_builder or ToolchainProvenanceBuilder()
+        self.signer = signer or ExternalManifestSigner()
+        self.verifier = verifier or ExternalManifestVerifier()
 
     def build(
         self,
@@ -159,10 +192,17 @@ class ReleasePipeline:
         issue_resolutions: Dict[str, str],
         output_dir: Path,
         require_epubcheck: bool = False,
+        require_signature: bool = False,
     ) -> ReleaseBuildResult:
         source_path = Path(source_path)
         if not source_path.is_file():
             raise FileNotFoundError(source_path)
+
+        signer_available = self.signer.available()
+        if require_signature and not signer_available:
+            raise ValueError(
+                "Release signature is required but no signing command/key id is configured"
+            )
 
         output_dir = Path(output_dir)
         output_dir.parent.mkdir(parents=True, exist_ok=True)
@@ -212,34 +252,59 @@ class ReleasePipeline:
             epubcheck_target = staging / "reports" / "epubcheck.json"
             epubcheck_target.write_bytes(_canonical_json(epubcheck_result.to_dict()))
 
-            artifacts = self._artifacts(
-                staging,
-                {
-                    source_target.relative_to(
-                        staging
-                    ).as_posix(): self._source_media_type(source_suffix),
-                    "book/bookir.json": "application/json",
-                    "publication/book.epub": "application/epub+zip",
-                    "reports/publication-qa.json": "application/json",
-                    "reports/epubcheck.json": "application/json",
-                },
+            provenance_target = staging / "provenance" / "toolchain.json"
+            provenance_target.parent.mkdir(parents=True, exist_ok=True)
+            provenance = self.provenance_builder.build(
+                release_book,
+                epubcheck_result,
             )
+            provenance_target.write_bytes(_canonical_json(provenance.to_dict()))
+
+            media_types = {
+                source_target.relative_to(
+                    staging
+                ).as_posix(): self._source_media_type(source_suffix),
+                "book/bookir.json": "application/json",
+                "publication/book.epub": "application/epub+zip",
+                "reports/publication-qa.json": "application/json",
+                "reports/epubcheck.json": "application/json",
+                "provenance/toolchain.json": "application/json",
+            }
+            artifacts = self._artifacts(staging, media_types)
+            signing_key_id = self.signer.resolve_key_id() if signer_available else ""
+            signing_algorithm = self.signer.algorithm if signer_available else ""
             release_id = self._release_id(
                 artifacts,
                 require_epubcheck=require_epubcheck,
+                require_signature=require_signature,
                 release_ready=release_ready,
                 epubcheck_status=epubcheck_result.status,
+                signed=signer_available,
+                signing_key_id=signing_key_id,
+                signing_algorithm=signing_algorithm,
             )
             manifest = ReleaseManifest(
                 release_id=release_id,
                 source_filename=source_filename,
                 release_ready=release_ready,
                 require_epubcheck=require_epubcheck,
+                require_signature=require_signature,
                 epubcheck_status=epubcheck_result.status,
                 epubcheck_version=epubcheck_result.version,
+                signed=signer_available,
+                signing_key_id=signing_key_id,
+                signing_algorithm=signing_algorithm,
                 artifacts=artifacts,
             )
-            (staging / "manifest.json").write_bytes(_canonical_json(manifest.to_dict()))
+            manifest_bytes = _canonical_json(manifest.to_dict())
+            (staging / "manifest.json").write_bytes(manifest_bytes)
+
+            attestation: Optional[ReleaseAttestation] = None
+            if signer_available:
+                attestation = self.signer.sign(manifest_bytes)
+                (staging / "attestation.json").write_bytes(
+                    _canonical_json(attestation.to_dict())
+                )
 
             bundle_path = staging / self.BUNDLE_NAME
             self._write_bundle(staging, bundle_path)
@@ -252,16 +317,29 @@ class ReleasePipeline:
             manifest=manifest,
             publication_report=publication_report,
             epubcheck_result=epubcheck_result,
+            attestation=attestation,
             bundle_path=output_dir / self.BUNDLE_NAME,
         )
 
-    def verify_bundle(self, bundle_path: Path) -> Dict[str, Any]:
+    def verify_bundle(
+        self,
+        bundle_path: Path,
+        *,
+        require_signature: bool = False,
+        trusted_key_ids: Sequence[str] = (),
+    ) -> Dict[str, Any]:
         bundle_path = Path(bundle_path)
         errors: List[str] = []
+        signature = SignatureVerification(
+            signed=False,
+            cryptographically_valid=None,
+            trusted=False,
+        )
         if not bundle_path.is_file():
             return {
                 "valid": False,
                 "release_id": "",
+                "signature": signature.to_dict(),
                 "errors": ["Release bundle does not exist"],
             }
 
@@ -271,17 +349,20 @@ class ReleasePipeline:
             return {
                 "valid": False,
                 "release_id": "",
+                "signature": signature.to_dict(),
                 "errors": ["Release bundle is not a valid ZIP archive"],
             }
 
         with archive:
             try:
-                manifest_payload = json.loads(archive.read("manifest.json"))
+                manifest_bytes = archive.read("manifest.json")
+                manifest_payload = json.loads(manifest_bytes)
                 manifest = ReleaseManifest.from_dict(manifest_payload)
             except (KeyError, ValueError, TypeError, json.JSONDecodeError) as exc:
                 return {
                     "valid": False,
                     "release_id": "",
+                    "signature": signature.to_dict(),
                     "errors": [f"Invalid release manifest: {exc}"],
                 }
 
@@ -299,15 +380,50 @@ class ReleasePipeline:
             expected_release_id = self._release_id(
                 manifest.artifacts,
                 require_epubcheck=manifest.require_epubcheck,
+                require_signature=manifest.require_signature,
                 release_ready=manifest.release_ready,
                 epubcheck_status=manifest.epubcheck_status,
+                signed=manifest.signed,
+                signing_key_id=manifest.signing_key_id,
+                signing_algorithm=manifest.signing_algorithm,
             )
             if expected_release_id != manifest.release_id:
                 errors.append("Release id does not match manifest contents")
 
+            if manifest.signed:
+                if "attestation.json" not in names:
+                    errors.append("Signed release is missing attestation.json")
+                else:
+                    try:
+                        attestation = ReleaseAttestation.from_dict(
+                            json.loads(archive.read("attestation.json"))
+                        )
+                        if attestation.key_id != manifest.signing_key_id:
+                            errors.append(
+                                "Attestation key id does not match release manifest"
+                            )
+                        if attestation.algorithm != manifest.signing_algorithm:
+                            errors.append(
+                                "Attestation algorithm does not match release manifest"
+                            )
+                        signature = self.verifier.verify(
+                            manifest_bytes,
+                            attestation,
+                            trusted_key_ids=trusted_key_ids,
+                        )
+                        if signature.cryptographically_valid is False:
+                            errors.append(signature.error or "Invalid release signature")
+                        if trusted_key_ids and not signature.trusted:
+                            errors.append(signature.error or "Release signer is not trusted")
+                    except (ValueError, TypeError, KeyError, json.JSONDecodeError) as exc:
+                        errors.append(f"Invalid release attestation: {exc}")
+            elif require_signature or manifest.require_signature:
+                errors.append("Release signature is required but bundle is unsigned")
+
         return {
             "valid": not errors,
             "release_id": manifest.release_id,
+            "signature": signature.to_dict(),
             "errors": errors,
         }
 
@@ -347,14 +463,26 @@ class ReleasePipeline:
         artifacts: List[ReleaseArtifact],
         *,
         require_epubcheck: bool,
+        require_signature: bool,
         release_ready: bool,
         epubcheck_status: str,
+        signed: bool,
+        signing_key_id: str,
+        signing_algorithm: str,
     ) -> str:
         payload = {
             "artifacts": [artifact.to_dict() for artifact in artifacts],
-            "policy": {"require_epubcheck": require_epubcheck},
+            "policy": {
+                "require_epubcheck": require_epubcheck,
+                "require_signature": require_signature,
+            },
             "release_ready": release_ready,
             "epubcheck_status": epubcheck_status,
+            "attestation": {
+                "signed": signed,
+                "key_id": signing_key_id,
+                "algorithm": signing_algorithm,
+            },
         }
         digest = hashlib.sha256(
             json.dumps(
