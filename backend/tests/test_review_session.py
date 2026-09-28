@@ -309,7 +309,6 @@ def test_publication_report_persists_and_is_invalidated_by_review_change(tmp_pat
             assert changed.publication_report is None
 
 
-
 class StaticEpubCheckRunner:
     def run(self, epub_path):
         assert Path(epub_path).is_file()
@@ -346,9 +345,7 @@ def test_release_bundle_persists_verifies_and_invalidates_after_review_change(tm
     store = ReviewSessionStore(
         tmp_path / "sessions",
         orchestrator=FakeOrchestrator(result),
-        release_pipeline=ReleasePipeline(
-            epubcheck_runner=StaticEpubCheckRunner()
-        ),
+        release_pipeline=ReleasePipeline(epubcheck_runner=StaticEpubCheckRunner()),
     )
 
     session = store.create(source, "fixture.pdf")
