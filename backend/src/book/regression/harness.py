@@ -125,13 +125,21 @@ class GoldenCorpusHarness:
             external_epubcheck.to_dict() if external_epubcheck else None,
         )
         evidence = self.render_collector.collect(epub_path)
-        failures = self._failures(spec, metrics, report, evidence)
+        baseline_deltas = self._baseline_deltas(spec, metrics)
+        failures = self._failures(
+            spec,
+            metrics,
+            report,
+            evidence,
+            baseline_deltas,
+        )
 
         return GoldenCaseResult(
             case_id=spec.id,
             category=spec.category,
             passed=not failures,
             metrics=metrics,
+            baseline_deltas=baseline_deltas,
             failures=failures,
             known_gaps=spec.known_gaps,
             render_evidence=evidence,
@@ -218,6 +226,23 @@ class GoldenCorpusHarness:
         }
 
     @staticmethod
+    def _baseline_deltas(
+        spec: GoldenCaseSpec,
+        metrics: Dict[str, Any],
+    ) -> Dict[str, Optional[float]]:
+        deltas: Dict[str, Optional[float]] = {}
+        for name, baseline in sorted(spec.baseline_metrics.items()):
+            current = metrics.get(name)
+            if current is None:
+                deltas[name] = None
+                continue
+            try:
+                deltas[name] = round(float(current) - float(baseline), 4)
+            except (TypeError, ValueError):
+                deltas[name] = None
+        return deltas
+
+    @staticmethod
     def _rounded_ratio(numerator: int, denominator: int) -> Optional[float]:
         value = _ratio(numerator, denominator)
         return round(value, 4) if value is not None else None
@@ -228,6 +253,7 @@ class GoldenCorpusHarness:
         metrics: Dict[str, Any],
         report: Any,
         evidence: Any,
+        baseline_deltas: Dict[str, Optional[float]],
     ) -> List[str]:
         failures: List[str] = []
         expected = spec.expectation
@@ -276,6 +302,21 @@ class GoldenCorpusHarness:
             value = metrics.get(name)
             if minimum is not None and (value is None or float(value) < minimum):
                 failures.append(f"{name}: expected >= {minimum}, got {value}")
+
+        for name, baseline in sorted(spec.baseline_metrics.items()):
+            allowed = float(spec.max_regression.get(name, 0.0))
+            current = metrics.get(name)
+            delta = baseline_deltas.get(name)
+            if current is None or delta is None:
+                failures.append(
+                    f"{name} baseline drift: expected numeric metric, got {current}"
+                )
+                continue
+            if delta < -allowed:
+                failures.append(
+                    f"{name} regression: baseline {baseline}, current {current}, "
+                    f"allowed drop {allowed}"
+                )
 
         if not metrics["epub_reproducible"]:
             failures.append("EPUB bytes are not reproducible for identical BookIR")
