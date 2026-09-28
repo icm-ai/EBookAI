@@ -235,6 +235,27 @@ MinerU / Marker 仍是可选依赖；未安装时 benchmark 会记录为 `skippe
 和新增语料规范见
 [`docs/architecture/real-world-parser-benchmark.md`](docs/architecture/real-world-parser-benchmark.md)。
 
+### Gold Annotation Accuracy
+
+Milestone 14 在真实 corpus 上增加 source-pinned 的 sparse gold annotation。
+未标注的页/任务不会被按 0 分处理；`draft` annotation 只用于观察，
+只有显式人工复核为 `reviewed` 后才允许成为 regression gate。
+
+```bash
+PYTHONPATH=backend/src python -m book.benchmark.cli gold-validate \
+  --manifest benchmark/corpus/manifest.json
+
+PYTHONPATH=backend/src python -m book.benchmark.cli gold-evaluate \
+  artifacts/parser-benchmark/nist-eel-sp1500-101-v1/pymupdf/bookir.json \
+  --manifest benchmark/corpus/manifest.json \
+  --document nist-eel-sp1500-101-v1 \
+  --backend pymupdf
+```
+
+标注 schema、确定性 matching、accuracy 指标、review checklist 与
+threshold/baseline 规则见
+[`docs/architecture/gold-annotation-benchmark.md`](docs/architecture/gold-annotation-benchmark.md)。
+
 ## 支持的格式
 
 | 输入格式 | 输出格式 | 说明 |
