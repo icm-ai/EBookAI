@@ -17,10 +17,7 @@ from book.publication.models import (
     PublicationReport,
     PublicationSeverity,
 )
-from book.publication.provenance import (
-    ToolchainProvenance,
-    ToolchainProvenanceBuilder,
-)
+from book.publication.provenance import ToolchainProvenance, ToolchainProvenanceBuilder
 from book.publication.qa import PublicationQAEngine
 from book.publication.release import (
     ReleaseArtifact,
