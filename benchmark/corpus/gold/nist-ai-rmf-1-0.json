@@ -1,0 +1,134 @@
+{
+  "schema_version": "1",
+  "document_id": "nist-ai-rmf-1-0",
+  "source_sha256": "7576edb531d9848825814ee88e28b1795d3a84b435b4b797d3670eafdc4a89f1",
+  "status": "draft",
+  "annotated_by": "ChatGPT-assisted visual seed",
+  "reviewed_by": "",
+  "notes": "Sparse Milestone 15 seed for PDF page index 3 (Table of Contents). Transcribed from visual inspection of the exact SHA-pinned NIST PDF. Human review is required before leaderboard eligibility or regression gating.",
+  "pages": [
+    {
+      "page_index": 3,
+      "tasks": [
+        "headings",
+        "reading_order"
+      ],
+      "elements": [
+        {
+          "id": "p3-toc",
+          "type": "heading",
+          "text": "Table of Contents",
+          "level": 1
+        },
+        {
+          "id": "p3-exec",
+          "type": "heading",
+          "text": "Executive Summary",
+          "level": 1
+        },
+        {
+          "id": "p3-part1",
+          "type": "heading",
+          "text": "Part 1: Foundational Information",
+          "level": 1
+        },
+        {
+          "id": "p3-1",
+          "type": "heading",
+          "text": "1 Framing Risk",
+          "level": 2
+        },
+        {
+          "id": "p3-1-1",
+          "type": "heading",
+          "text": "1.1 Understanding and Addressing Risks, Impacts, and Harms",
+          "level": 3
+        },
+        {
+          "id": "p3-1-2",
+          "type": "heading",
+          "text": "1.2 Challenges for AI Risk Management",
+          "level": 3
+        },
+        {
+          "id": "p3-2",
+          "type": "heading",
+          "text": "2 Audience",
+          "level": 2
+        },
+        {
+          "id": "p3-3",
+          "type": "heading",
+          "text": "3 AI Risks and Trustworthiness",
+          "level": 2
+        },
+        {
+          "id": "p3-4",
+          "type": "heading",
+          "text": "4 Effectiveness of the AI RMF",
+          "level": 2
+        },
+        {
+          "id": "p3-part2",
+          "type": "heading",
+          "text": "Part 2: Core and Profiles",
+          "level": 1
+        },
+        {
+          "id": "p3-5",
+          "type": "heading",
+          "text": "5 AI RMF Core",
+          "level": 2
+        },
+        {
+          "id": "p3-6",
+          "type": "heading",
+          "text": "6 AI RMF Profiles",
+          "level": 2
+        },
+        {
+          "id": "p3-app-a",
+          "type": "heading",
+          "text": "Appendix A: Descriptions of AI Actor Tasks from Figures 2 and 3",
+          "level": 1
+        },
+        {
+          "id": "p3-app-b",
+          "type": "heading",
+          "text": "Appendix B: How AI Risks Differ from Traditional Software Risks",
+          "level": 1
+        },
+        {
+          "id": "p3-app-c",
+          "type": "heading",
+          "text": "Appendix C: AI Risk Management and Human-AI Interaction",
+          "level": 1
+        },
+        {
+          "id": "p3-app-d",
+          "type": "heading",
+          "text": "Appendix D: Attributes of the AI RMF",
+          "level": 1
+        }
+      ],
+      "reading_order": [
+        "p3-toc",
+        "p3-exec",
+        "p3-part1",
+        "p3-1",
+        "p3-1-1",
+        "p3-1-2",
+        "p3-2",
+        "p3-3",
+        "p3-4",
+        "p3-part2",
+        "p3-5",
+        "p3-6",
+        "p3-app-a",
+        "p3-app-b",
+        "p3-app-c",
+        "p3-app-d"
+      ]
+    }
+  ]
+}
