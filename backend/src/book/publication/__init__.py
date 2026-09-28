@@ -25,6 +25,17 @@ from book.publication.release import (
     ReleaseManifest,
     ReleasePipeline,
 )
+from book.publication.sigstore import (
+    SigstoreBundleEvidence,
+    SigstoreBundleInspector,
+    SigstoreBundleSigner,
+    SigstoreBundleVerifier,
+    SigstoreVerificationResult,
+)
+from book.publication.verification import (
+    ReleaseVerificationPolicy,
+    StandaloneReleaseVerifier,
+)
 
 __all__ = [
     "ExternalManifestSigner",
@@ -45,4 +56,11 @@ __all__ = [
     "ReleaseBuildResult",
     "ReleaseManifest",
     "ReleasePipeline",
+    "ReleaseVerificationPolicy",
+    "SigstoreBundleEvidence",
+    "SigstoreBundleInspector",
+    "SigstoreBundleSigner",
+    "SigstoreBundleVerifier",
+    "SigstoreVerificationResult",
+    "StandaloneReleaseVerifier",
 ]
