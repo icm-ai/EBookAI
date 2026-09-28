@@ -101,7 +101,7 @@ class ToolchainProvenanceBuilder:
             },
             reconstruction={
                 "engine": "ebookai.book.reconstruction",
-                "book_ir_version": str(book.version),
+                "book_ir_version": str(book.schema_version),
             },
             ai_repairs=ai_repairs,
             compiler={
