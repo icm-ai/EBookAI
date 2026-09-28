@@ -171,6 +171,91 @@ const apiService = {
     return `${API_BASE}/api/review/sessions/${encodeURIComponent(sessionId)}/export/${format}`;
   },
 
+  // Gold annotation review workbench
+  async getGoldReviewQueue() {
+    return await api.get('/api/gold-review/queue');
+  },
+
+  async createGoldReviewSession(documentId, pageIndex, backend = 'pymupdf') {
+    return await api.post('/api/gold-review/sessions', {
+      document_id: documentId,
+      page_index: pageIndex,
+      backend,
+    });
+  },
+
+  async getGoldReviewSession(sessionId) {
+    return await api.get(
+      `/api/gold-review/sessions/${encodeURIComponent(sessionId)}`
+    );
+  },
+
+  async setGoldReviewTasks(sessionId, tasks) {
+    return await api.put(
+      `/api/gold-review/sessions/${encodeURIComponent(sessionId)}/tasks`,
+      { tasks }
+    );
+  },
+
+  async upsertGoldReviewElement(sessionId, element) {
+    return await api.put(
+      `/api/gold-review/sessions/${encodeURIComponent(sessionId)}/elements/${encodeURIComponent(element.id)}`,
+      element
+    );
+  },
+
+  async deleteGoldReviewElement(sessionId, elementId) {
+    return await api.delete(
+      `/api/gold-review/sessions/${encodeURIComponent(sessionId)}/elements/${encodeURIComponent(elementId)}`
+    );
+  },
+
+  async setGoldReviewReadingOrder(sessionId, readingOrder) {
+    return await api.put(
+      `/api/gold-review/sessions/${encodeURIComponent(sessionId)}/reading-order`,
+      { reading_order: readingOrder }
+    );
+  },
+
+  async confirmGoldReviewItem(
+    sessionId,
+    subject,
+    subjectId,
+    reviewer,
+    note = ''
+  ) {
+    return await api.post(
+      `/api/gold-review/sessions/${encodeURIComponent(sessionId)}/confirm`,
+      {
+        subject,
+        subject_id: subjectId,
+        reviewer,
+        note,
+      }
+    );
+  },
+
+  async promoteGoldReview(sessionId, reviewer, note = '') {
+    return await api.post(
+      `/api/gold-review/sessions/${encodeURIComponent(sessionId)}/promote`,
+      { reviewer, note }
+    );
+  },
+
+  async publishGoldReview(sessionId) {
+    return await api.post(
+      `/api/gold-review/sessions/${encodeURIComponent(sessionId)}/publish`
+    );
+  },
+
+  getGoldReviewPageUrl(sessionId, scale = 1.5) {
+    return `${API_BASE}/api/gold-review/sessions/${encodeURIComponent(sessionId)}/page.png?scale=${encodeURIComponent(scale)}`;
+  },
+
+  getGoldReviewExportUrl(sessionId) {
+    return `${API_BASE}/api/gold-review/sessions/${encodeURIComponent(sessionId)}/export/promoted`;
+  },
+
   // Batch operations
   async batchConvertFiles(files, targetFormat) {
     const formData = new FormData();
