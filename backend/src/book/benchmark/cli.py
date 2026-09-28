@@ -9,13 +9,28 @@ from typing import List, Optional
 
 from book.benchmark.corpus import CorpusStore
 from book.benchmark.gold import evaluate_gold, evaluate_gold_gate, load_gold_annotation
+from book.benchmark.leaderboard import (
+    LeaderboardPolicy,
+    ParserLeaderboard,
+    build_leaderboard,
+    compare_leaderboards,
+    write_leaderboard,
+)
 from book.benchmark.models import BenchmarkReport, CorpusManifest
+from book.benchmark.review_plan import (
+    ReviewPlan,
+    render_review_plan_markdown,
+    review_plan_summary,
+    validate_review_plan,
+)
 from book.benchmark.report import write_markdown
 from book.benchmark.runner import ParserBenchmarkRunner
 from book.domain.models import Book
 
 DEFAULT_MANIFEST = Path("benchmark/corpus/manifest.json")
 DEFAULT_CACHE = Path(".cache/ebookai/corpus")
+DEFAULT_LEADERBOARD_POLICY = Path("benchmark/leaderboard/policy.json")
+DEFAULT_REVIEW_PLAN = Path("benchmark/corpus/review-plan.json")
 
 
 def _csv(value: Optional[str]) -> Optional[List[str]]:
@@ -76,6 +91,37 @@ def build_parser() -> argparse.ArgumentParser:
     gold_evaluate.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     gold_evaluate.add_argument("--document", required=True)
     gold_evaluate.add_argument("--backend", default="pymupdf")
+
+    leaderboard = subparsers.add_parser(
+        "leaderboard", help="Build a coverage-aware parser gold leaderboard"
+    )
+    leaderboard.add_argument("results", type=Path)
+    leaderboard.add_argument("--output", type=Path, required=True)
+    leaderboard.add_argument(
+        "--policy", type=Path, default=DEFAULT_LEADERBOARD_POLICY
+    )
+    leaderboard.add_argument(
+        "--include-draft",
+        action="store_true",
+        help="Include draft annotations for exploratory, non-gating rankings",
+    )
+    leaderboard.add_argument(
+        "--baseline",
+        type=Path,
+        help="Optional saved leaderboard.json to compare for metric regressions",
+    )
+    leaderboard.add_argument(
+        "--max-regression",
+        type=float,
+        help="Override allowed per-metric regression for baseline comparison",
+    )
+
+    review_plan = subparsers.add_parser(
+        "review-plan", help="Validate and summarize the gold human-review queue"
+    )
+    review_plan.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    review_plan.add_argument("--plan", type=Path, default=DEFAULT_REVIEW_PLAN)
+    review_plan.add_argument("--output", type=Path)
     return parser
 
 
@@ -151,6 +197,50 @@ def main(argv: Optional[List[str]] = None) -> int:
         payload["baseline_deltas"] = baseline_deltas
         print(json.dumps(payload, ensure_ascii=False, indent=2))
         return 0 if not failures else 1
+    if args.command == "leaderboard":
+        report = BenchmarkReport.load(args.results)
+        policy = LeaderboardPolicy.load(args.policy)
+        if args.include_draft:
+            policy = LeaderboardPolicy(
+                accuracy_paths=policy.accuracy_paths,
+                include_draft=True,
+                minimum_annotated_pages=policy.minimum_annotated_pages,
+                minimum_annotated_documents=policy.minimum_annotated_documents,
+                maximum_metric_regression=policy.maximum_metric_regression,
+            )
+        board = build_leaderboard(report, policy=policy)
+        json_path, markdown_path = write_leaderboard(board, args.output)
+        failures = []
+        if args.baseline is not None:
+            failures = compare_leaderboards(
+                board,
+                ParserLeaderboard.load(args.baseline),
+                maximum_metric_regression=args.max_regression,
+            )
+        print(
+            json.dumps(
+                {
+                    "leaderboard": str(json_path),
+                    "markdown": str(markdown_path),
+                    "regressions": failures,
+                },
+                indent=2,
+            )
+        )
+        return 0 if not failures else 1
+    if args.command == "review-plan":
+        manifest = CorpusManifest.load(args.manifest)
+        plan = ReviewPlan.load(args.plan)
+        validate_review_plan(plan, manifest)
+        summary = review_plan_summary(plan)
+        if args.output is not None:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            args.output.write_text(
+                render_review_plan_markdown(plan),
+                encoding="utf-8",
+            )
+        print(json.dumps(summary, indent=2))
+        return 0
     raise AssertionError(f"Unhandled command: {args.command}")
 
 
