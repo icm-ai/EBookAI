@@ -169,7 +169,9 @@ class _CosignCommand:
         for line in completed.stdout.splitlines():
             if "GitVersion" in line and ":" in line:
                 return line.split(":", 1)[1].strip()
-        return completed.stdout.strip().splitlines()[0] if completed.stdout.strip() else ""
+        return (
+            completed.stdout.strip().splitlines()[0] if completed.stdout.strip() else ""
+        )
 
 
 class SigstoreBundleSigner(_CosignCommand):
@@ -201,8 +203,7 @@ class SigstoreBundleSigner(_CosignCommand):
 
     def available(self) -> bool:
         return bool(
-            self.resolve_command()
-            and (self.resolve_key() or self.is_keyless())
+            self.resolve_command() and (self.resolve_key() or self.is_keyless())
         )
 
     def identity_hint(self) -> str:
@@ -282,8 +283,7 @@ class SigstoreBundleVerifier(_CosignCommand):
     def _policy(self) -> Dict[str, str]:
         return {
             "key": (
-                self.key
-                or os.environ.get("EBOOKAI_SIGSTORE_VERIFY_KEY", "")
+                self.key or os.environ.get("EBOOKAI_SIGSTORE_VERIFY_KEY", "")
             ).strip(),
             "identity": (
                 self.certificate_identity
@@ -302,8 +302,7 @@ class SigstoreBundleVerifier(_CosignCommand):
                 or os.environ.get("EBOOKAI_SIGSTORE_CERT_ISSUER_REGEXP", "")
             ).strip(),
             "trusted_root": (
-                self.trusted_root
-                or os.environ.get("EBOOKAI_SIGSTORE_TRUSTED_ROOT", "")
+                self.trusted_root or os.environ.get("EBOOKAI_SIGSTORE_TRUSTED_ROOT", "")
             ).strip(),
         }
 
