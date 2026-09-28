@@ -139,9 +139,7 @@ class GoldReviewSession:
         )
         parser_nodes = []
         for position, node in enumerate(self.book.walk()):
-            refs = [
-                ref for ref in node.source if ref.page_index == self.page_index
-            ]
+            refs = [ref for ref in node.source if ref.page_index == self.page_index]
             if not refs:
                 continue
             parser_nodes.append(
@@ -150,9 +148,7 @@ class GoldReviewSession:
                     "id": node.id,
                     "type": node.type.value,
                     "text": node.content,
-                    "bbox": (
-                        list(refs[0].bbox) if refs[0].bbox is not None else None
-                    ),
+                    "bbox": (list(refs[0].bbox) if refs[0].bbox is not None else None),
                     "attrs": node.attrs,
                 }
             )
@@ -278,8 +274,7 @@ class GoldReviewSession:
             missing_order_ids = sorted(element_ids - ordered_ids)
             if missing_order_ids:
                 blockers.append(
-                    "reading_order missing element ids: "
-                    + ", ".join(missing_order_ids)
+                    "reading_order missing element ids: " + ", ".join(missing_order_ids)
                 )
         if missing_elements:
             blockers.append(
@@ -502,9 +497,7 @@ class GoldReviewStore:
             updated_page = GoldPageAnnotation(
                 page_index=page.page_index,
                 tasks=page.tasks,
-                elements=tuple(
-                    item for item in page.elements if item.id != element_id
-                ),
+                elements=tuple(item for item in page.elements if item.id != element_id),
                 reading_order=tuple(
                     item for item in page.reading_order if item != element_id
                 ),
@@ -588,9 +581,7 @@ class GoldReviewStore:
                 raise GoldValidationError(
                     "Gold promotion blocked: " + "; ".join(preflight["blockers"])
                 )
-            decision_reviewers = {
-                item.reviewer for item in session.decisions.values()
-            }
+            decision_reviewers = {item.reviewer for item in session.decisions.values()}
             if reviewer not in decision_reviewers:
                 raise GoldValidationError(
                     "Promotion reviewer must have confirmed at least one task or element"
@@ -685,15 +676,12 @@ class GoldReviewStore:
                 "staged_annotation_hash",
                 _annotation_hash(session.annotation),
             ),
-            "promoted_annotation_hash": _annotation_hash(
-                session.promoted_annotation
-            ),
+            "promoted_annotation_hash": _annotation_hash(session.promoted_annotation),
             "reviewed_by": session.promoted_annotation.reviewed_by,
             "promoted_at": previous.get("promoted_at", session.updated_at),
             "published_at": session.published_at or None,
             "decisions": [
-                session.decisions[key].to_dict()
-                for key in sorted(session.decisions)
+                session.decisions[key].to_dict() for key in sorted(session.decisions)
             ],
             "evaluation": previous.get("evaluation", evaluation.to_dict()),
         }
