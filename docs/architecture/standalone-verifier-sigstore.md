@@ -144,9 +144,10 @@ preservation, CLI parity, and historical compatibility.
 
 A separate Native Sigstore Release Gate installs pinned Cosign 3.1.3 and creates
 an ephemeral local key pair. It performs real `sign-blob --bundle` and
-`verify-blob --bundle` operations. The gate disables transparency-log upload
-for the ephemeral CI key, avoiding public Rekor noise while still testing the
-native bundle format and Cosign verification path.
+`verify-blob --bundle` operations. For this local-key fixture the gate creates
+a Cosign v3 signing configuration with no Fulcio, OIDC, Rekor, or TSA services,
+avoiding public transparency-log noise while still testing the native bundle
+format and Cosign verification path.
 
 Keyless public-Fulcio/Rekor signing remains supported by the adapter but is not
 performed on every pull-request CI run, because that would create a public
