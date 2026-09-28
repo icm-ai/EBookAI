@@ -155,7 +155,7 @@ async def upsert_gold_review_element(
         session = await run_in_threadpool(
             gold_review_store.upsert_element,
             session_id,
-            request.model_dump(),
+            request.dict(),
         )
         return session.to_dict()
     except Exception as exc:
