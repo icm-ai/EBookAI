@@ -587,6 +587,7 @@ class GoldReviewStore:
             self._write(session)
             promoted_path = self._session_dir(session.id) / "promoted-gold.json"
             _atomic_write_json(promoted_path, promoted.to_dict())
+            self._write_audit(session)
             return session
 
     def publish(self, session_id: str) -> GoldReviewSession:
@@ -603,7 +604,13 @@ class GoldReviewStore:
                     "Canonical gold changed since this review session opened"
                 )
             path = self._canonical_gold_path(spec)
-            _atomic_write_json(path, session.promoted_annotation.to_dict())
+            try:
+                _atomic_write_json(path, session.promoted_annotation.to_dict())
+            except OSError as exc:
+                raise GoldValidationError(
+                    "Canonical gold is not writable in this environment; "
+                    "download the reviewed artifact and publish it from a writable checkout"
+                ) from exc
             session.canonical_hash_at_open = _annotation_hash(
                 session.promoted_annotation
             )
@@ -611,6 +618,7 @@ class GoldReviewStore:
             session.published_at = _utc_now()
             session.updated_at = session.published_at
             self._write(session)
+            self._write_audit(session)
             return session
 
     def promoted_path(self, session_id: str) -> Path:
@@ -621,6 +629,45 @@ class GoldReviewStore:
         if not path.is_file():
             _atomic_write_json(path, session.promoted_annotation.to_dict())
         return path
+
+    def audit_path(self, session_id: str) -> Path:
+        session = self.get(session_id)
+        if session.promoted_annotation is None:
+            raise FileNotFoundError("No promotion audit exists")
+        path = self._session_dir(session_id) / "promotion-audit.json"
+        if not path.is_file():
+            self._write_audit(session)
+        return path
+
+    def _write_audit(self, session: GoldReviewSession) -> None:
+        if session.promoted_annotation is None:
+            return
+        evaluation = evaluate_gold(session.book, session.annotation)
+        payload = {
+            "schema_version": "1",
+            "session_id": session.id,
+            "document_id": session.document_id,
+            "page_index": session.page_index,
+            "backend": session.backend,
+            "source_sha256": session.source_sha256,
+            "canonical_hash_at_open": session.canonical_hash_at_open,
+            "staged_annotation_hash": _annotation_hash(session.annotation),
+            "promoted_annotation_hash": _annotation_hash(
+                session.promoted_annotation
+            ),
+            "reviewed_by": session.promoted_annotation.reviewed_by,
+            "promoted_at": session.updated_at,
+            "published_at": session.published_at or None,
+            "decisions": [
+                session.decisions[key].to_dict()
+                for key in sorted(session.decisions)
+            ],
+            "evaluation": evaluation.to_dict(),
+        }
+        _atomic_write_json(
+            self._session_dir(session.id) / "promotion-audit.json",
+            payload,
+        )
 
     def _spec(self, document_id: str) -> CorpusDocumentSpec:
         return self.manifest.select([document_id])[0]
