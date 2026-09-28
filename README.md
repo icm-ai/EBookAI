@@ -300,6 +300,31 @@ canonical publish 还会检查 session 打开后 gold 是否被其他人修改�
 详见
 [`docs/architecture/gold-review-workbench.md`](docs/architecture/gold-review-workbench.md)。
 
+### Multi-reviewer Consensus & Reviewed Baseline
+
+Milestone 17 在 Gold Review 上增加双 reviewer 独立审阅与第三方仲裁：
+
+```text
+Reviewer A promoted candidate ─┐
+                               ├─ semantic consensus diff
+Reviewer B promoted candidate ─┘
+                 ↓
+        conflict adjudication
+                 ↓
+          consensus gold
+                 ↓
+       explicit canonical publish
+                 ↓
+ provenance-pinned reviewed baseline
+```
+
+两份候选必须来自相同 source SHA 与相同 canonical revision，且 reviewer 身份不同。
+冲突按 task / reading order / stable element id 显式处理，不使用 LLM 自动裁决。
+
+首个真实 baseline **不会自动生成**：当前 real corpus seed 仍是 draft，必须先经过真实独立人工审阅。
+详见
+[`docs/architecture/multi-reviewer-consensus.md`](docs/architecture/multi-reviewer-consensus.md)。
+
 ## 支持的格式
 
 | 输入格式 | 输出格式 | 说明 |
