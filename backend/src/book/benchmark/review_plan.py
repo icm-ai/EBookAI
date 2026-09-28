@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
-from book.benchmark.gold import _ALLOWED_TASKS
+from book.benchmark.gold import GOLD_TASKS
 from book.benchmark.models import CorpusManifest
 
 REVIEW_PLAN_SCHEMA_VERSION = "1"
@@ -31,7 +31,7 @@ class ReviewTarget:
             raise ValueError("Review target page_index must be >= 0")
         if not self.tasks:
             raise ValueError("Review target must include at least one task")
-        unknown = sorted(set(self.tasks) - _ALLOWED_TASKS)
+        unknown = sorted(set(self.tasks) - GOLD_TASKS)
         if unknown:
             raise ValueError("Unknown review tasks: " + ", ".join(unknown))
         if self.priority not in _ALLOWED_PRIORITIES:
