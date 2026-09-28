@@ -3,6 +3,7 @@
 from book.benchmark.baseline import (
     ReviewedBaselineSnapshot,
     build_reviewed_baseline,
+    load_baseline_leaderboard,
     write_reviewed_baseline,
 )
 from book.benchmark.consensus import (
@@ -91,6 +92,7 @@ __all__ = [
     "default_parser_registry",
     "evaluate_gold",
     "evaluate_gold_gate",
+    "load_baseline_leaderboard",
     "load_gold_annotation",
     "render_leaderboard_markdown",
     "render_markdown",
