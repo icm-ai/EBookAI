@@ -16,6 +16,8 @@ from book.publication import (
     EpubCheckMessage,
     EpubCheckResult,
     ExternalEpubCheckRunner,
+    ExternalManifestSigner,
+    ExternalManifestVerifier,
     ReleasePipeline,
 )
 from book.quality import QualityReport
@@ -108,11 +110,11 @@ def test_release_pipeline_is_byte_reproducible_and_self_verifying(tmp_path):
     assert first.manifest.release_ready is True
     assert first.manifest.release_id == second.manifest.release_id
     assert first.bundle_path.read_bytes() == second.bundle_path.read_bytes()
-    assert pipeline.verify_bundle(first.bundle_path) == {
-        "valid": True,
-        "release_id": first.manifest.release_id,
-        "errors": [],
-    }
+    verification = pipeline.verify_bundle(first.bundle_path)
+    assert verification["valid"] is True
+    assert verification["release_id"] == first.manifest.release_id
+    assert verification["signature"]["signed"] is False
+    assert verification["errors"] == []
 
     with zipfile.ZipFile(first.bundle_path) as archive:
         assert {
@@ -122,6 +124,7 @@ def test_release_pipeline_is_byte_reproducible_and_self_verifying(tmp_path):
             "publication/book.epub",
             "reports/publication-qa.json",
             "reports/epubcheck.json",
+            "provenance/toolchain.json",
         }.issubset(set(archive.namelist()))
 
 
@@ -296,3 +299,170 @@ def test_real_epubcheck_accepts_compiler_release_epub(tmp_path):
         indent=2,
     )
     assert result.manifest.release_ready is True
+
+
+
+def _write_signature_fixture(tmp_path: Path):
+    signer_script = tmp_path / "sign.py"
+    signer_script.write_text(
+        """import hashlib
+import sys
+payload = sys.stdin.buffer.read()
+sys.stdout.buffer.write(hashlib.sha256(b"fixture-public-key" + payload).digest())
+""",
+        encoding="utf-8",
+    )
+    verifier_script = tmp_path / "verify.py"
+    verifier_script.write_text(
+        """import hashlib
+import pathlib
+import sys
+payload = pathlib.Path(sys.argv[1]).read_bytes()
+signature = pathlib.Path(sys.argv[2]).read_bytes()
+expected = hashlib.sha256(b"fixture-public-key" + payload).digest()
+raise SystemExit(0 if signature == expected else 1)
+""",
+        encoding="utf-8",
+    )
+    return signer_script, verifier_script
+
+
+def test_signed_release_attestation_and_trust_policy(tmp_path):
+    source = tmp_path / "source.pdf"
+    source.write_bytes(b"%PDF-1.4\nfixture\n")
+    signer_script, verifier_script = _write_signature_fixture(tmp_path)
+    pipeline = ReleasePipeline(
+        epubcheck_runner=StaticRunner(_passed_epubcheck()),
+        signer=ExternalManifestSigner(
+            command=[sys.executable, str(signer_script)],
+            key_id="fixture-key",
+            algorithm="fixture-sha256",
+        ),
+        verifier=ExternalManifestVerifier(
+            command=[sys.executable, str(verifier_script)]
+        ),
+    )
+
+    result = pipeline.build(
+        source_path=source,
+        source_filename="fixture.pdf",
+        book=_book(),
+        quality_report=_quality_report(),
+        issue_resolutions={},
+        output_dir=tmp_path / "signed",
+        require_signature=True,
+    )
+
+    assert result.manifest.signed is True
+    assert result.manifest.signing_key_id == "fixture-key"
+    assert result.attestation is not None
+
+    trusted = pipeline.verify_bundle(
+        result.bundle_path,
+        require_signature=True,
+        trusted_key_ids=["fixture-key"],
+    )
+    assert trusted["valid"] is True
+    assert trusted["signature"]["cryptographically_valid"] is True
+    assert trusted["signature"]["trusted"] is True
+
+    untrusted = pipeline.verify_bundle(
+        result.bundle_path,
+        require_signature=True,
+        trusted_key_ids=["different-key"],
+    )
+    assert untrusted["valid"] is False
+    assert untrusted["signature"]["cryptographically_valid"] is True
+    assert untrusted["signature"]["trusted"] is False
+
+
+def test_required_signature_without_signer_is_rejected(tmp_path):
+    source = tmp_path / "source.pdf"
+    source.write_bytes(b"%PDF-1.4\nfixture\n")
+    pipeline = ReleasePipeline(
+        epubcheck_runner=StaticRunner(_passed_epubcheck())
+    )
+
+    with pytest.raises(ValueError, match="signature is required"):
+        pipeline.build(
+            source_path=source,
+            source_filename="fixture.pdf",
+            book=_book(),
+            quality_report=_quality_report(),
+            issue_resolutions={},
+            output_dir=tmp_path / "unsigned",
+            require_signature=True,
+        )
+
+
+def test_signed_manifest_tampering_invalidates_attestation(tmp_path):
+    source = tmp_path / "source.pdf"
+    source.write_bytes(b"%PDF-1.4\nfixture\n")
+    signer_script, verifier_script = _write_signature_fixture(tmp_path)
+    pipeline = ReleasePipeline(
+        epubcheck_runner=StaticRunner(_passed_epubcheck()),
+        signer=ExternalManifestSigner(
+            command=[sys.executable, str(signer_script)],
+            key_id="fixture-key",
+            algorithm="fixture-sha256",
+        ),
+        verifier=ExternalManifestVerifier(
+            command=[sys.executable, str(verifier_script)]
+        ),
+    )
+    result = pipeline.build(
+        source_path=source,
+        source_filename="fixture.pdf",
+        book=_book(),
+        quality_report=_quality_report(),
+        issue_resolutions={},
+        output_dir=tmp_path / "signed",
+    )
+
+    tampered = tmp_path / "tampered-signed.zip"
+    with zipfile.ZipFile(result.bundle_path) as original:
+        entries = {name: original.read(name) for name in original.namelist()}
+    manifest = json.loads(entries["manifest.json"])
+    manifest["source_filename"] = "tampered.pdf"
+    entries["manifest.json"] = (
+        json.dumps(manifest, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
+    ).encode("utf-8")
+    with zipfile.ZipFile(tampered, "w") as archive:
+        for name in sorted(entries):
+            archive.writestr(name, entries[name])
+
+    verification = pipeline.verify_bundle(
+        tampered,
+        trusted_key_ids=["fixture-key"],
+    )
+
+    assert verification["valid"] is False
+    assert verification["signature"]["cryptographically_valid"] is False
+
+
+def test_toolchain_provenance_is_integrity_protected(tmp_path):
+    source = tmp_path / "source.pdf"
+    source.write_bytes(b"%PDF-1.4\nfixture\n")
+    pipeline = ReleasePipeline(epubcheck_runner=StaticRunner(_passed_epubcheck()))
+    result = pipeline.build(
+        source_path=source,
+        source_filename="fixture.pdf",
+        book=_book(),
+        quality_report=_quality_report(),
+        issue_resolutions={},
+        output_dir=tmp_path / "release",
+    )
+
+    with zipfile.ZipFile(result.bundle_path) as archive:
+        provenance = json.loads(archive.read("provenance/toolchain.json"))
+        manifest = json.loads(archive.read("manifest.json"))
+
+    assert provenance["schema_version"] == "0.1"
+    assert provenance["compiler"]["format"] == "EPUB3"
+    assert provenance["external_validation"]["epubcheck"]["version"] == "5.4.0"
+    artifact = next(
+        item
+        for item in manifest["artifacts"]
+        if item["path"] == "provenance/toolchain.json"
+    )
+    assert artifact["sha256"]
