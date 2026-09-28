@@ -88,16 +88,14 @@ class CorpusDocumentSpec:
             },
             gold_baselines={
                 str(backend): {
-                    str(metric): float(baseline)
-                    for metric, baseline in values.items()
+                    str(metric): float(baseline) for metric, baseline in values.items()
                 }
                 for backend, values in value.get("gold_baselines", {}).items()
                 if isinstance(values, dict)
             },
             gold_max_regression={
                 str(backend): {
-                    str(metric): float(allowed)
-                    for metric, allowed in values.items()
+                    str(metric): float(allowed) for metric, allowed in values.items()
                 }
                 for backend, values in value.get("gold_max_regression", {}).items()
                 if isinstance(values, dict)
