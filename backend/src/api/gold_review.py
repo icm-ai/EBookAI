@@ -257,3 +257,20 @@ async def export_promoted_gold(session_id: str):
         )
     except Exception as exc:
         raise _http_error(exc) from exc
+
+
+@router.get("/sessions/{session_id}/export/audit")
+async def export_gold_review_audit(session_id: str):
+    try:
+        session = await run_in_threadpool(_store().get, session_id)
+        path = await run_in_threadpool(
+            _store().audit_path,
+            session_id,
+        )
+        return FileResponse(
+            path=path,
+            filename=f"{session.document_id}.gold.review-audit.json",
+            media_type="application/json",
+        )
+    except Exception as exc:
+        raise _http_error(exc) from exc
