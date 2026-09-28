@@ -7,7 +7,11 @@ import json
 from pathlib import Path
 from typing import List, Optional
 
-from book.benchmark.baseline import build_reviewed_baseline, write_reviewed_baseline
+from book.benchmark.baseline import (
+    build_reviewed_baseline,
+    load_baseline_leaderboard,
+    write_reviewed_baseline,
+)
 from book.benchmark.corpus import CorpusStore
 from book.benchmark.gold import evaluate_gold, evaluate_gold_gate, load_gold_annotation
 from book.benchmark.leaderboard import (
@@ -222,7 +226,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         if args.baseline is not None:
             failures = compare_leaderboards(
                 board,
-                ParserLeaderboard.load(args.baseline),
+                load_baseline_leaderboard(args.baseline),
                 maximum_metric_regression=args.max_regression,
             )
         print(
