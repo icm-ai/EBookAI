@@ -98,9 +98,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     leaderboard.add_argument("results", type=Path)
     leaderboard.add_argument("--output", type=Path, required=True)
-    leaderboard.add_argument(
-        "--policy", type=Path, default=DEFAULT_LEADERBOARD_POLICY
-    )
+    leaderboard.add_argument("--policy", type=Path, default=DEFAULT_LEADERBOARD_POLICY)
     leaderboard.add_argument(
         "--include-draft",
         action="store_true",
@@ -234,9 +232,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         plan = ReviewPlan.load(args.plan)
         validate_review_plan(plan, manifest)
         summary = review_plan_summary(plan)
-        summary["coverage"] = review_plan_coverage(
-            plan, manifest, args.manifest
-        )
+        summary["coverage"] = review_plan_coverage(plan, manifest, args.manifest)
         if args.output is not None:
             args.output.parent.mkdir(parents=True, exist_ok=True)
             args.output.write_text(
