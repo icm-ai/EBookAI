@@ -37,6 +37,7 @@ function ReviewWorkspace() {
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [requireEpubcheck, setRequireEpubcheck] = useState(false);
   const [requireSignature, setRequireSignature] = useState(false);
+  const [signatureProvider, setSignatureProvider] = useState('external');
   const [releaseVerification, setReleaseVerification] = useState(null);
   const [aiProviders, setAiProviders] = useState([]);
   const [aiProvider, setAiProvider] = useState('');
@@ -348,7 +349,8 @@ function ReviewWorkspace() {
       const response = await api.buildReviewRelease(
         session.id,
         requireEpubcheck,
-        requireSignature
+        requireSignature,
+        signatureProvider
       );
       setNextSession(response.data);
     } catch (err) {
@@ -1011,6 +1013,19 @@ function ReviewWorkspace() {
                   />
                   Require signature
                 </label>
+                <label className="review-release-policy">
+                  Provider
+                  <select
+                    value={signatureProvider}
+                    onChange={(event) =>
+                      setSignatureProvider(event.target.value)
+                    }
+                  >
+                    <option value="external">External</option>
+                    <option value="sigstore">Sigstore</option>
+                    <option value="none">None</option>
+                  </select>
+                </label>
                 <button
                   className="review-qa-button"
                   onClick={buildRelease}
@@ -1079,9 +1094,12 @@ function ReviewWorkspace() {
                       <span>Attestation</span>
                       <strong>
                         {releaseManifest.attestation?.signed
-                          ? `Signed · ${releaseManifest.attestation.key_id}`
+                          ? `Signed · ${releaseManifest.attestation.provider || 'external'}`
                           : 'Unsigned'}
                       </strong>
+                      {releaseManifest.attestation?.key_id && (
+                        <code>{releaseManifest.attestation.key_id}</code>
+                      )}
                       {releaseManifest.attestation?.algorithm && (
                         <code>{releaseManifest.attestation.algorithm}</code>
                       )}
@@ -1126,9 +1144,29 @@ function ReviewWorkspace() {
                         : 'invalid'
                       : 'unsigned'}
                   </span>
+                  <span>
+                    Provider: {releaseVerification.signature?.provider || 'none'}
+                  </span>
                   {releaseVerification.signature?.key_id && (
                     <span>
                       Key: {releaseVerification.signature.key_id}
+                    </span>
+                  )}
+                  {releaseVerification.signature?.identity && (
+                    <span>
+                      Identity: {releaseVerification.signature.identity}
+                    </span>
+                  )}
+                  {releaseVerification.signature?.issuer && (
+                    <span>
+                      Issuer: {releaseVerification.signature.issuer}
+                    </span>
+                  )}
+                  {releaseVerification.signature?.evidence && (
+                    <span>
+                      Transparency log entries:{' '}
+                      {releaseVerification.signature.evidence
+                        .transparency_log_entries || 0}
                     </span>
                   )}
                   {(releaseVerification.errors || []).map((item) => (
