@@ -413,6 +413,14 @@ class ReleasePipeline:
                         )
                         if signature.cryptographically_valid is False:
                             errors.append(signature.error or "Invalid release signature")
+                        if (
+                            (require_signature or manifest.require_signature)
+                            and signature.cryptographically_valid is not True
+                        ):
+                            errors.append(
+                                signature.error
+                                or "Required release signature could not be verified"
+                            )
                         if trusted_key_ids and not signature.trusted:
                             errors.append(signature.error or "Release signer is not trusted")
                     except (ValueError, TypeError, KeyError, json.JSONDecodeError) as exc:
