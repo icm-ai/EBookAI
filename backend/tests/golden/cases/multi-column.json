@@ -1,0 +1,41 @@
+{
+  "id": "multi-column",
+  "category": "multi-column",
+  "fixture_kind": "multi_column",
+  "expectation": {
+    "minimum_node_types": {
+      "heading": 1,
+      "paragraph": 4
+    },
+    "text_fragments": [
+      "Left column first paragraph.",
+      "Right column first paragraph.",
+      "Left column second paragraph.",
+      "Right column second paragraph."
+    ],
+    "ordered_fragments": [
+      "Multi Column Example",
+      "Left column first paragraph",
+      "Right column first paragraph",
+      "Left column second paragraph",
+      "Right column second paragraph"
+    ],
+    "forbidden_issue_codes": [
+      "empty_document",
+      "missing_provenance",
+      "unclassified_text_block"
+    ],
+    "publication_ready": true
+  },
+  "thresholds": {
+    "semantic_score_min": 0.8,
+    "text_recall_min": 1,
+    "reading_order_min": 0.75,
+    "provenance_coverage_min": 1,
+    "bbox_coverage_min": 1,
+    "epub_text_recall_min": 1
+  },
+  "known_gaps": [
+    "multi_column_semantic_grouping"
+  ]
+}
