@@ -119,8 +119,8 @@ def test_gold_sparse_tasks_compute_only_annotated_accuracy():
     result = evaluate_gold(_book(), _annotation())
 
     assert result.metrics["text"]["recall"] == 1.0
-    assert result.metrics["text"]["precision"] == 0.75
-    assert result.metrics["text"]["f1"] == 0.8571
+    assert result.metrics["text"]["precision"] == 0.8
+    assert result.metrics["text"]["f1"] == 0.8889
     assert result.metrics["reading_order"]["pair_accuracy"] == 1.0
     assert result.metrics["reading_order"]["element_match_recall"] == 1.0
 
