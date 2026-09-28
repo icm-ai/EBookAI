@@ -386,6 +386,10 @@ class ReleasePipeline:
             cryptographically_valid=None,
             trusted=False,
         )
+        signature_payload = {
+            **signature.to_dict(),
+            "provider": "none",
+        }
         if not bundle_path.is_file():
             return {
                 "valid": False,
@@ -438,6 +442,7 @@ class ReleasePipeline:
                 signature_provider=manifest.signature_provider,
                 signing_key_id=manifest.signing_key_id,
                 signing_algorithm=manifest.signing_algorithm,
+                schema_version=manifest.schema_version,
             )
             if expected_release_id != manifest.release_id:
                 errors.append("Release id does not match manifest contents")
@@ -589,7 +594,16 @@ class ReleasePipeline:
         signature_provider: str,
         signing_key_id: str,
         signing_algorithm: str,
+        schema_version: str = "0.3",
     ) -> str:
+        attestation = {
+            "signed": signed,
+            "key_id": signing_key_id,
+            "algorithm": signing_algorithm,
+        }
+        if schema_version not in {"0.1", "0.2"}:
+            attestation["provider"] = signature_provider
+
         payload = {
             "artifacts": [artifact.to_dict() for artifact in artifacts],
             "policy": {
@@ -598,12 +612,7 @@ class ReleasePipeline:
             },
             "release_ready": release_ready,
             "epubcheck_status": epubcheck_status,
-            "attestation": {
-                "signed": signed,
-                "provider": signature_provider,
-                "key_id": signing_key_id,
-                "algorithm": signing_algorithm,
-            },
+            "attestation": attestation,
         }
         digest = hashlib.sha256(
             json.dumps(
