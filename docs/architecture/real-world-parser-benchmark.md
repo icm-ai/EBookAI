@@ -137,19 +137,19 @@ These are useful for differential testing but are not correctness scores. A pars
 agree with another parser and still be wrong; a longer extraction can include duplicated
 headers, footers, or noise.
 
-## Future gold annotations
+## Gold annotations
 
-The manifest already reserves `gold_annotations_path`. A later milestone can attach
-human-reviewed annotations for selected pages/documents and add absolute metrics such as:
+Milestone 14 now uses `gold_annotations_path` for sparse, source-pinned reference
+annotations. Gold metrics are computed only for explicitly annotated pages/tasks and are
+rendered separately from the ground-truth-free proxies above.
 
-- text CER/WER;
-- reading-order pair accuracy;
-- heading hierarchy precision/recall;
-- table cell structure similarity;
-- figure/caption association accuracy;
-- formula recovery accuracy.
+Annotations have a `draft` / `reviewed` lifecycle. Only reviewed annotations may
+enforce absolute thresholds or baseline-regression gates. Matching is deterministic and
+produces matched/unmatched evidence for audit.
 
-Those metrics should augment, not replace, the current no-ground-truth engineering signals.
+See
+[`gold-annotation-benchmark.md`](gold-annotation-benchmark.md)
+for schema details, accuracy metrics, CLI usage, authoring workflow, and review policy.
 
 ## Adding a document
 
