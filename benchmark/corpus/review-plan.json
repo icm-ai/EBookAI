@@ -1,0 +1,409 @@
+{
+  "schema_version": "1",
+  "corpus_id": "ebookai-real-pdf-v1",
+  "description": "Milestone 15 human-review queue: 25 representative pages across all five real PDFs. Targets are review work items, not reviewed gold.",
+  "targets": [
+    {
+      "document_id": "nist-ballot-definition-prototype",
+      "page_index": 0,
+      "tasks": [
+        "text",
+        "reading_order"
+      ],
+      "difficulty_tags": [
+        "form-like",
+        "vector-graphics"
+      ],
+      "priority": "high",
+      "rationale": "Single-page form-like prototype; useful for provenance, reading order, and sparse visual layout review."
+    },
+    {
+      "document_id": "nist-eel-sp1500-101-v1",
+      "page_index": 0,
+      "tasks": [
+        "text",
+        "headings",
+        "reading_order"
+      ],
+      "difficulty_tags": [
+        "front-matter",
+        "title-page"
+      ],
+      "priority": "medium",
+      "rationale": "Front matter tests page-level text completeness and ordering."
+    },
+    {
+      "document_id": "nist-eel-sp1500-101-v1",
+      "page_index": 4,
+      "tasks": [
+        "text",
+        "headings",
+        "reading_order"
+      ],
+      "difficulty_tags": [
+        "table-of-contents",
+        "hierarchy"
+      ],
+      "priority": "high",
+      "rationale": "TOC-like hierarchy is useful for heading and reading-order review."
+    },
+    {
+      "document_id": "nist-eel-sp1500-101-v1",
+      "page_index": 8,
+      "tasks": [
+        "headings",
+        "reading_order"
+      ],
+      "difficulty_tags": [
+        "hierarchical-headings"
+      ],
+      "priority": "high",
+      "rationale": "Existing Milestone 14 draft seed; first candidate for explicit human review."
+    },
+    {
+      "document_id": "nist-eel-sp1500-101-v1",
+      "page_index": 12,
+      "tasks": [
+        "text",
+        "headings",
+        "figures",
+        "captions",
+        "reading_order"
+      ],
+      "difficulty_tags": [
+        "mixed-layout",
+        "figure"
+      ],
+      "priority": "high",
+      "rationale": "Representative technical body page for semantic structure and ordering."
+    },
+    {
+      "document_id": "nist-eel-sp1500-101-v1",
+      "page_index": 18,
+      "tasks": [
+        "text",
+        "headings",
+        "figures",
+        "captions",
+        "reading_order"
+      ],
+      "difficulty_tags": [
+        "uml-diagram",
+        "mixed-layout"
+      ],
+      "priority": "high",
+      "rationale": "Diagram-heavy technical page candidate."
+    },
+    {
+      "document_id": "nist-eel-sp1500-101-v1",
+      "page_index": 24,
+      "tasks": [
+        "text",
+        "headings",
+        "reading_order"
+      ],
+      "difficulty_tags": [
+        "dense-technical-text"
+      ],
+      "priority": "medium",
+      "rationale": "Dense body text checks completeness and section hierarchy."
+    },
+    {
+      "document_id": "nist-eel-sp1500-101-v1",
+      "page_index": 31,
+      "tasks": [
+        "text",
+        "headings",
+        "reading_order"
+      ],
+      "difficulty_tags": [
+        "appendix",
+        "end-matter"
+      ],
+      "priority": "medium",
+      "rationale": "Final-page/end-matter behavior often differs from main body pages."
+    },
+    {
+      "document_id": "nist-ai-rmf-1-0",
+      "page_index": 3,
+      "tasks": [
+        "text",
+        "headings",
+        "lists",
+        "reading_order"
+      ],
+      "difficulty_tags": [
+        "table-of-contents",
+        "dense-hierarchy"
+      ],
+      "priority": "high",
+      "rationale": "Visible TOC with multiple heading depths and list-like entries."
+    },
+    {
+      "document_id": "nist-ai-rmf-1-0",
+      "page_index": 4,
+      "tasks": [
+        "text",
+        "headings",
+        "lists",
+        "reading_order"
+      ],
+      "difficulty_tags": [
+        "list-of-figures",
+        "list-of-tables"
+      ],
+      "priority": "high",
+      "rationale": "Front-matter lists stress list semantics and reading order."
+    },
+    {
+      "document_id": "nist-ai-rmf-1-0",
+      "page_index": 8,
+      "tasks": [
+        "text",
+        "headings",
+        "reading_order"
+      ],
+      "difficulty_tags": [
+        "section-opener",
+        "dense-technical-text"
+      ],
+      "priority": "medium",
+      "rationale": "Part/section transition page for hierarchy evaluation."
+    },
+    {
+      "document_id": "nist-ai-rmf-1-0",
+      "page_index": 10,
+      "tasks": [
+        "text",
+        "figures",
+        "captions",
+        "reading_order"
+      ],
+      "difficulty_tags": [
+        "figure",
+        "mixed-layout"
+      ],
+      "priority": "high",
+      "rationale": "Early framework body candidate for figure/caption association review."
+    },
+    {
+      "document_id": "nist-ai-rmf-1-0",
+      "page_index": 12,
+      "tasks": [
+        "text",
+        "figures",
+        "captions",
+        "headings",
+        "reading_order"
+      ],
+      "difficulty_tags": [
+        "figure",
+        "hierarchy"
+      ],
+      "priority": "high",
+      "rationale": "Representative mixed semantic page."
+    },
+    {
+      "document_id": "nist-ai-rmf-1-0",
+      "page_index": 25,
+      "tasks": [
+        "text",
+        "tables",
+        "headings",
+        "reading_order"
+      ],
+      "difficulty_tags": [
+        "table",
+        "dense-layout"
+      ],
+      "priority": "high",
+      "rationale": "Core-function area selected to capture table-heavy structure."
+    },
+    {
+      "document_id": "nist-ai-rmf-1-0",
+      "page_index": 29,
+      "tasks": [
+        "text",
+        "tables",
+        "headings",
+        "reading_order"
+      ],
+      "difficulty_tags": [
+        "table",
+        "dense-layout"
+      ],
+      "priority": "high",
+      "rationale": "Second core-function table candidate for cross-page consistency."
+    },
+    {
+      "document_id": "nist-ai-rmf-1-0",
+      "page_index": 32,
+      "tasks": [
+        "text",
+        "tables",
+        "headings",
+        "reading_order"
+      ],
+      "difficulty_tags": [
+        "table",
+        "dense-layout"
+      ],
+      "priority": "high",
+      "rationale": "Later core-function table candidate."
+    },
+    {
+      "document_id": "nist-ai-rmf-1-0",
+      "page_index": 40,
+      "tasks": [
+        "text",
+        "headings",
+        "reading_order"
+      ],
+      "difficulty_tags": [
+        "appendix",
+        "dense-technical-text"
+      ],
+      "priority": "medium",
+      "rationale": "Appendix page broadens structural coverage beyond the main body."
+    },
+    {
+      "document_id": "nist-ai-rmf-1-0",
+      "page_index": 47,
+      "tasks": [
+        "text",
+        "headings",
+        "reading_order"
+      ],
+      "difficulty_tags": [
+        "end-matter"
+      ],
+      "priority": "low",
+      "rationale": "Last page verifies tail-page completeness and ordering."
+    },
+    {
+      "document_id": "nist-sp1299-csf2-overview",
+      "page_index": 0,
+      "tasks": [
+        "text",
+        "headings",
+        "reading_order"
+      ],
+      "difficulty_tags": [
+        "cover",
+        "mixed-layout"
+      ],
+      "priority": "medium",
+      "rationale": "Short-guide cover/title structure."
+    },
+    {
+      "document_id": "nist-sp1299-csf2-overview",
+      "page_index": 2,
+      "tasks": [
+        "text",
+        "headings",
+        "reading_order"
+      ],
+      "difficulty_tags": [
+        "mixed-layout",
+        "callout"
+      ],
+      "priority": "high",
+      "rationale": "Representative short-guide body page with visual callout layout."
+    },
+    {
+      "document_id": "nist-sp1299-csf2-overview",
+      "page_index": 4,
+      "tasks": [
+        "text",
+        "headings",
+        "lists",
+        "reading_order"
+      ],
+      "difficulty_tags": [
+        "list",
+        "mixed-layout"
+      ],
+      "priority": "high",
+      "rationale": "List-heavy short-guide page for semantic list review."
+    },
+    {
+      "document_id": "nist-sp1299-csf2-overview",
+      "page_index": 7,
+      "tasks": [
+        "text",
+        "headings",
+        "reading_order"
+      ],
+      "difficulty_tags": [
+        "end-matter"
+      ],
+      "priority": "medium",
+      "rationale": "End-page structure for short-document consistency."
+    },
+    {
+      "document_id": "nist-sp1299-csf2-overview-ja",
+      "page_index": 0,
+      "tasks": [
+        "text",
+        "headings",
+        "reading_order"
+      ],
+      "difficulty_tags": [
+        "japanese",
+        "cover",
+        "non-latin-text"
+      ],
+      "priority": "high",
+      "rationale": "Japanese cover/title extraction and ordering."
+    },
+    {
+      "document_id": "nist-sp1299-csf2-overview-ja",
+      "page_index": 2,
+      "tasks": [
+        "text",
+        "headings",
+        "reading_order"
+      ],
+      "difficulty_tags": [
+        "japanese",
+        "mixed-layout",
+        "non-latin-text"
+      ],
+      "priority": "high",
+      "rationale": "Japanese body text and layout coverage."
+    },
+    {
+      "document_id": "nist-sp1299-csf2-overview-ja",
+      "page_index": 4,
+      "tasks": [
+        "text",
+        "headings",
+        "lists",
+        "reading_order"
+      ],
+      "difficulty_tags": [
+        "japanese",
+        "list",
+        "non-latin-text"
+      ],
+      "priority": "high",
+      "rationale": "Japanese list semantics and text segmentation."
+    },
+    {
+      "document_id": "nist-sp1299-csf2-overview-ja",
+      "page_index": 7,
+      "tasks": [
+        "text",
+        "headings",
+        "reading_order"
+      ],
+      "difficulty_tags": [
+        "japanese",
+        "end-matter",
+        "non-latin-text"
+      ],
+      "priority": "medium",
+      "rationale": "Japanese end-page completeness and ordering."
+    }
+  ]
+}
