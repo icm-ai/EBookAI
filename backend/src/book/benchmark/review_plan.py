@@ -162,8 +162,6 @@ def review_plan_summary(
     }
 
 
-
-
 def review_plan_coverage(
     plan: ReviewPlan,
     manifest: CorpusManifest,
