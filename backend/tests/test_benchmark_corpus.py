@@ -14,7 +14,7 @@ def test_real_manifest_has_explicit_rights_and_pinned_digests():
     manifest = CorpusManifest.load(REAL_MANIFEST)
 
     assert manifest.corpus_id == "ebookai-real-pdf-v1"
-    assert len(manifest.documents) >= 2
+    assert len(manifest.documents) == 5
     for document in manifest.documents:
         assert document.rights_basis
         assert document.license_url.startswith("https://")
@@ -76,3 +76,22 @@ def test_embedded_asset_digest_mismatch_is_rejected(tmp_path):
     store = CorpusStore(manifest_path, tmp_path / "cache")
     with pytest.raises(CorpusIntegrityError, match="SHA-256 mismatch"):
         store.fetch(["bad"])
+
+
+def test_milestone_15_corpus_expansion_is_sha_pinned():
+    manifest = CorpusManifest.load(REAL_MANIFEST)
+    by_id = {document.id: document for document in manifest.documents}
+
+    assert by_id["nist-ai-rmf-1-0"].sha256 == (
+        "7576edb531d9848825814ee88e28b1795d3a84b435b4b797d3670eafdc4a89f1"
+    )
+    assert by_id["nist-ai-rmf-1-0"].page_count == 48
+    assert by_id["nist-sp1299-csf2-overview"].sha256 == (
+        "5db59917d92013f06dfefdc62604230959ee34b93db1fd22de726f83d9345f09"
+    )
+    assert by_id["nist-sp1299-csf2-overview"].page_count == 8
+    assert by_id["nist-sp1299-csf2-overview-ja"].sha256 == (
+        "d29c48a3a10777a43a4dc7106611d661a25fa3c3146e858bf93a8fa83d9d2d27"
+    )
+    assert by_id["nist-sp1299-csf2-overview-ja"].page_count == 8
+    assert by_id["nist-sp1299-csf2-overview-ja"].language == "ja"
