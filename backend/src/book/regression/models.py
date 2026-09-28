@@ -89,6 +89,8 @@ class GoldenCaseSpec:
     fixture_kind: str
     expectation: GoldenExpectation
     thresholds: GoldenThresholds
+    baseline_metrics: Dict[str, float] = field(default_factory=dict)
+    max_regression: Dict[str, float] = field(default_factory=dict)
     known_gaps: List[str] = field(default_factory=list)
 
     @classmethod
@@ -99,6 +101,14 @@ class GoldenCaseSpec:
             fixture_kind=str(value["fixture_kind"]),
             expectation=GoldenExpectation.from_dict(value.get("expectation", {})),
             thresholds=GoldenThresholds.from_dict(value.get("thresholds", {})),
+            baseline_metrics={
+                str(key): float(metric)
+                for key, metric in value.get("baseline_metrics", {}).items()
+            },
+            max_regression={
+                str(key): float(metric)
+                for key, metric in value.get("max_regression", {}).items()
+            },
             known_gaps=[str(item) for item in value.get("known_gaps", [])],
         )
 
@@ -132,6 +142,7 @@ class GoldenCaseResult:
     category: str
     passed: bool
     metrics: Dict[str, Any]
+    baseline_deltas: Dict[str, Optional[float]]
     failures: List[str]
     known_gaps: List[str]
     render_evidence: RenderEvidence
@@ -143,6 +154,7 @@ class GoldenCaseResult:
             "category": self.category,
             "passed": self.passed,
             "metrics": self.metrics,
+            "baseline_deltas": dict(self.baseline_deltas),
             "failures": list(self.failures),
             "known_gaps": list(self.known_gaps),
             "render_evidence": self.render_evidence.to_dict(),
