@@ -288,3 +288,16 @@ def test_milestone_13_report_json_remains_loadable_without_gold_fields(tmp_path)
     assert (
         BackendRunResult.from_dict(payload["runs"][0]).to_dict()["gold_metrics"] == {}
     )
+
+
+def test_ai_rmf_seed_is_source_pinned_and_draft():
+    manifest = CorpusManifest.load(REAL_MANIFEST)
+    spec = manifest.select(["nist-ai-rmf-1-0"])[0]
+    annotation = load_gold_annotation(REAL_MANIFEST, spec)
+
+    assert annotation is not None
+    assert annotation.status == "draft"
+    assert annotation.source_sha256 == spec.sha256
+    assert [page.page_index for page in annotation.pages] == [3]
+    assert set(annotation.pages[0].tasks) == {"headings", "reading_order"}
+    assert len(annotation.pages[0].elements) == 16
