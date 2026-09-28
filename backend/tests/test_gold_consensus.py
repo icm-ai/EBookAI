@@ -16,7 +16,6 @@ from book.benchmark.leaderboard import (
     build_leaderboard,
 )
 from book.benchmark.models import BackendRunResult, BenchmarkReport
-
 from test_gold_review_workbench import _confirm_all, _fixture_store
 
 
