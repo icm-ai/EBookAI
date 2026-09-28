@@ -183,11 +183,13 @@ class SigstoreBundleSigner(_CosignCommand):
         *,
         key: Optional[str] = None,
         keyless: Optional[bool] = None,
+        extra_args: Optional[Sequence[str]] = None,
         timeout_seconds: int = 120,
     ) -> None:
         super().__init__(command, timeout_seconds=timeout_seconds)
         self.key = key
         self.keyless = keyless
+        self.extra_args = list(extra_args) if extra_args else []
 
     def resolve_key(self) -> str:
         return (self.key or os.environ.get("EBOOKAI_SIGSTORE_SIGN_KEY", "")).strip()
@@ -233,6 +235,7 @@ class SigstoreBundleSigner(_CosignCommand):
         ]
         if key:
             args.extend(["--key", key])
+        args.extend(self.extra_args)
         args.append(str(payload_path))
 
         completed = subprocess.run(
@@ -263,6 +266,8 @@ class SigstoreBundleVerifier(_CosignCommand):
         certificate_identity_regexp: Optional[str] = None,
         certificate_oidc_issuer: Optional[str] = None,
         certificate_oidc_issuer_regexp: Optional[str] = None,
+        trusted_root: Optional[str] = None,
+        extra_args: Optional[Sequence[str]] = None,
         timeout_seconds: int = 120,
     ) -> None:
         super().__init__(command, timeout_seconds=timeout_seconds)
@@ -271,6 +276,8 @@ class SigstoreBundleVerifier(_CosignCommand):
         self.certificate_identity_regexp = certificate_identity_regexp
         self.certificate_oidc_issuer = certificate_oidc_issuer
         self.certificate_oidc_issuer_regexp = certificate_oidc_issuer_regexp
+        self.trusted_root = trusted_root
+        self.extra_args = list(extra_args) if extra_args else []
 
     def _policy(self) -> Dict[str, str]:
         return {
@@ -293,6 +300,10 @@ class SigstoreBundleVerifier(_CosignCommand):
             "issuer_regexp": (
                 self.certificate_oidc_issuer_regexp
                 or os.environ.get("EBOOKAI_SIGSTORE_CERT_ISSUER_REGEXP", "")
+            ).strip(),
+            "trusted_root": (
+                self.trusted_root
+                or os.environ.get("EBOOKAI_SIGSTORE_TRUSTED_ROOT", "")
             ).strip(),
         }
 
@@ -328,6 +339,8 @@ class SigstoreBundleVerifier(_CosignCommand):
             str(bundle_path),
         ]
         mode = ""
+        if policy["trusted_root"]:
+            args.extend(["--trusted-root", policy["trusted_root"]])
         if key:
             mode = "key"
             args.extend(["--key", key])
@@ -375,6 +388,8 @@ class SigstoreBundleVerifier(_CosignCommand):
                     evidence=evidence,
                     error="Sigstore keyless verification requires OIDC issuer policy",
                 )
+
+        args.extend(self.extra_args)
 
         try:
             completed = subprocess.run(
