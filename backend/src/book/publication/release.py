@@ -23,6 +23,10 @@ from book.publication.epubcheck import EpubCheckResult, ExternalEpubCheckRunner
 from book.publication.models import PublicationReport
 from book.publication.provenance import ToolchainProvenanceBuilder
 from book.publication.qa import PublicationQAEngine
+from book.publication.sigstore import (
+    SigstoreBundleSigner,
+    SigstoreBundleVerifier,
+)
 from book.quality import QualityReport
 
 
@@ -81,10 +85,11 @@ class ReleaseManifest:
     epubcheck_status: str
     epubcheck_version: str
     signed: bool
+    signature_provider: str
     signing_key_id: str
     signing_algorithm: str
     artifacts: List[ReleaseArtifact]
-    schema_version: str = "0.2"
+    schema_version: str = "0.3"
     book_ir_version: str = BOOK_IR_VERSION
 
     def to_dict(self) -> Dict[str, Any]:
@@ -106,6 +111,7 @@ class ReleaseManifest:
             },
             "attestation": {
                 "signed": self.signed,
+                "provider": self.signature_provider,
                 "key_id": self.signing_key_id,
                 "algorithm": self.signing_algorithm,
             },
@@ -143,6 +149,12 @@ class ReleaseManifest:
                 epubcheck.get("version", "") if isinstance(epubcheck, dict) else ""
             ),
             signed=bool(attestation.get("signed", False)),
+            signature_provider=str(
+                attestation.get(
+                    "provider",
+                    "external" if attestation.get("signed", False) else "none",
+                )
+            ),
             signing_key_id=str(attestation.get("key_id", "")),
             signing_algorithm=str(attestation.get("algorithm", "")),
             artifacts=[
@@ -174,6 +186,8 @@ class ReleasePipeline:
         provenance_builder: Optional[ToolchainProvenanceBuilder] = None,
         signer: Optional[ExternalManifestSigner] = None,
         verifier: Optional[ExternalManifestVerifier] = None,
+        sigstore_signer: Optional[SigstoreBundleSigner] = None,
+        sigstore_verifier: Optional[SigstoreBundleVerifier] = None,
     ) -> None:
         self.compiler = compiler or EpubCompiler()
         self.qa_engine = qa_engine or PublicationQAEngine()
@@ -181,6 +195,8 @@ class ReleasePipeline:
         self.provenance_builder = provenance_builder or ToolchainProvenanceBuilder()
         self.signer = signer or ExternalManifestSigner()
         self.verifier = verifier or ExternalManifestVerifier()
+        self.sigstore_signer = sigstore_signer or SigstoreBundleSigner()
+        self.sigstore_verifier = sigstore_verifier or SigstoreBundleVerifier()
 
     def build(
         self,
@@ -193,15 +209,32 @@ class ReleasePipeline:
         output_dir: Path,
         require_epubcheck: bool = False,
         require_signature: bool = False,
+        signature_provider: str = "external",
     ) -> ReleaseBuildResult:
         source_path = Path(source_path)
         if not source_path.is_file():
             raise FileNotFoundError(source_path)
 
-        signer_available = self.signer.available()
+        signature_provider = signature_provider.strip().lower()
+        if signature_provider not in {"none", "external", "sigstore"}:
+            raise ValueError(
+                "signature_provider must be one of: none, external, sigstore"
+            )
+
+        if signature_provider == "external":
+            signer_available = self.signer.available()
+        elif signature_provider == "sigstore":
+            signer_available = self.sigstore_signer.available()
+            if not signer_available:
+                raise ValueError(
+                    "Sigstore signing was selected but Cosign/signing policy is unavailable"
+                )
+        else:
+            signer_available = False
+
         if require_signature and not signer_available:
             raise ValueError(
-                "Release signature is required but no signing command/key id is configured"
+                "Release signature is required but the selected signer is unavailable"
             )
 
         output_dir = Path(output_dir)
@@ -271,8 +304,15 @@ class ReleasePipeline:
                 "provenance/toolchain.json": "application/json",
             }
             artifacts = self._artifacts(staging, media_types)
-            signing_key_id = self.signer.resolve_key_id() if signer_available else ""
-            signing_algorithm = self.signer.algorithm if signer_available else ""
+            if signer_available and signature_provider == "external":
+                signing_key_id = self.signer.resolve_key_id()
+                signing_algorithm = self.signer.algorithm
+            elif signer_available and signature_provider == "sigstore":
+                signing_key_id = self.sigstore_signer.identity_hint()
+                signing_algorithm = self.sigstore_signer.algorithm
+            else:
+                signing_key_id = ""
+                signing_algorithm = ""
             release_id = self._release_id(
                 artifacts,
                 require_epubcheck=require_epubcheck,
@@ -280,6 +320,9 @@ class ReleasePipeline:
                 release_ready=release_ready,
                 epubcheck_status=epubcheck_result.status,
                 signed=signer_available,
+                signature_provider=(
+                    signature_provider if signer_available else "none"
+                ),
                 signing_key_id=signing_key_id,
                 signing_algorithm=signing_algorithm,
             )
@@ -292,6 +335,9 @@ class ReleasePipeline:
                 epubcheck_status=epubcheck_result.status,
                 epubcheck_version=epubcheck_result.version,
                 signed=signer_available,
+                signature_provider=(
+                    signature_provider if signer_available else "none"
+                ),
                 signing_key_id=signing_key_id,
                 signing_algorithm=signing_algorithm,
                 artifacts=artifacts,
@@ -300,10 +346,15 @@ class ReleasePipeline:
             (staging / "manifest.json").write_bytes(manifest_bytes)
 
             attestation: Optional[ReleaseAttestation] = None
-            if signer_available:
+            if signer_available and signature_provider == "external":
                 attestation = self.signer.sign(manifest_bytes)
                 (staging / "attestation.json").write_bytes(
                     _canonical_json(attestation.to_dict())
+                )
+            elif signer_available and signature_provider == "sigstore":
+                self.sigstore_signer.sign(
+                    staging / "manifest.json",
+                    staging / "sigstore" / "manifest.sigstore.json",
                 )
 
             bundle_path = staging / self.BUNDLE_NAME
@@ -384,13 +435,14 @@ class ReleasePipeline:
                 release_ready=manifest.release_ready,
                 epubcheck_status=manifest.epubcheck_status,
                 signed=manifest.signed,
+                signature_provider=manifest.signature_provider,
                 signing_key_id=manifest.signing_key_id,
                 signing_algorithm=manifest.signing_algorithm,
             )
             if expected_release_id != manifest.release_id:
                 errors.append("Release id does not match manifest contents")
 
-            if manifest.signed:
+            if manifest.signed and manifest.signature_provider == "external":
                 if "attestation.json" not in names:
                     errors.append("Signed release is missing attestation.json")
                 else:
@@ -411,6 +463,8 @@ class ReleasePipeline:
                             attestation,
                             trusted_key_ids=trusted_key_ids,
                         )
+                        signature_payload = signature.to_dict()
+                        signature_payload["provider"] = "external"
                         if signature.cryptographically_valid is False:
                             errors.append(
                                 signature.error or "Invalid release signature"
@@ -433,13 +487,62 @@ class ReleasePipeline:
                         json.JSONDecodeError,
                     ) as exc:
                         errors.append(f"Invalid release attestation: {exc}")
-            elif require_signature or manifest.require_signature:
-                errors.append("Release signature is required but bundle is unsigned")
+                        signature_payload = signature.to_dict()
+                        signature_payload["provider"] = "external"
+            elif manifest.signed and manifest.signature_provider == "sigstore":
+                sigstore_name = "sigstore/manifest.sigstore.json"
+                if sigstore_name not in names:
+                    errors.append("Sigstore release is missing native bundle")
+                    signature_payload = {
+                        **signature.to_dict(),
+                        "provider": "sigstore",
+                    }
+                else:
+                    with tempfile.TemporaryDirectory(
+                        prefix="ebookai-sigstore-verify-"
+                    ) as temporary:
+                        root = Path(temporary)
+                        manifest_path = root / "manifest.json"
+                        sigstore_path = root / "manifest.sigstore.json"
+                        manifest_path.write_bytes(manifest_bytes)
+                        sigstore_path.write_bytes(archive.read(sigstore_name))
+                        sigstore_result = self.sigstore_verifier.verify(
+                            manifest_path,
+                            sigstore_path,
+                        )
+                    signature_payload = sigstore_result.to_dict()
+                    if sigstore_result.cryptographically_valid is not True:
+                        errors.append(
+                            sigstore_result.error
+                            or "Sigstore verification failed"
+                        )
+                    elif not sigstore_result.trusted:
+                        errors.append(
+                            sigstore_result.error
+                            or "Sigstore signer identity is not trusted"
+                        )
+            elif manifest.signed:
+                errors.append(
+                    f"Unsupported signature provider: {manifest.signature_provider}"
+                )
+                signature_payload = {
+                    **signature.to_dict(),
+                    "provider": manifest.signature_provider,
+                }
+            else:
+                signature_payload = {
+                    **signature.to_dict(),
+                    "provider": "none",
+                }
+                if require_signature or manifest.require_signature:
+                    errors.append(
+                        "Release signature is required but bundle is unsigned"
+                    )
 
         return {
             "valid": not errors,
             "release_id": manifest.release_id,
-            "signature": signature.to_dict(),
+            "signature": signature_payload,
             "errors": errors,
         }
 
@@ -483,6 +586,7 @@ class ReleasePipeline:
         release_ready: bool,
         epubcheck_status: str,
         signed: bool,
+        signature_provider: str,
         signing_key_id: str,
         signing_algorithm: str,
     ) -> str:
@@ -496,6 +600,7 @@ class ReleasePipeline:
             "epubcheck_status": epubcheck_status,
             "attestation": {
                 "signed": signed,
+                "provider": signature_provider,
                 "key_id": signing_key_id,
                 "algorithm": signing_algorithm,
             },
