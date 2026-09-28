@@ -132,7 +132,9 @@ def test_gold_sparse_tasks_compute_only_annotated_accuracy():
 
     assert result.metrics["structures"]["tables"] is None
     assert result.metrics["structures"]["figures"] is None
-    assert result.evidence["structures"]["headings"]["pages"][0]["unmatched_predictions"]
+    assert result.evidence["structures"]["headings"]["pages"][0][
+        "unmatched_predictions"
+    ]
 
 
 def test_gold_reading_order_penalizes_reversed_parser_order():
@@ -204,9 +206,7 @@ def test_reviewed_gold_thresholds_and_baselines_gate_deterministically():
         metrics,
         thresholds={"structures.headings.f1_min": 0.9},
     )
-    assert failures == [
-        "structures.headings.f1: expected >= 0.9, got 0.8"
-    ]
+    assert failures == ["structures.headings.f1: expected >= 0.9, got 0.8"]
 
 
 def test_draft_gold_cannot_be_used_as_regression_gate():
@@ -285,4 +285,6 @@ def test_milestone_13_report_json_remains_loadable_without_gold_fields(tmp_path)
     assert report.runs[0].gold_metrics == {}
     assert report.runs[0].gold_evidence == {}
     assert report.runs[0].gold_gate_failures == []
-    assert BackendRunResult.from_dict(payload["runs"][0]).to_dict()["gold_metrics"] == {}
+    assert (
+        BackendRunResult.from_dict(payload["runs"][0]).to_dict()["gold_metrics"] == {}
+    )
