@@ -118,3 +118,14 @@ def write_reviewed_baseline(
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(snapshot.to_json() + "\n", encoding="utf-8")
     return path
+
+
+def load_baseline_leaderboard(path: Path) -> ParserLeaderboard:
+    """Load either a Milestone 15 leaderboard or Milestone 17 baseline snapshot."""
+
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError("Baseline root must be an object")
+    if "leaderboard" in payload:
+        return ReviewedBaselineSnapshot.from_dict(payload).leaderboard
+    return ParserLeaderboard.from_dict(payload)
