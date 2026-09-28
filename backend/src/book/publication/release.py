@@ -416,9 +416,8 @@ class ReleasePipeline:
                                 signature.error or "Invalid release signature"
                             )
                         if (
-                            (require_signature or manifest.require_signature)
-                            and signature.cryptographically_valid is not True
-                        ):
+                            require_signature or manifest.require_signature
+                        ) and signature.cryptographically_valid is not True:
                             errors.append(
                                 signature.error
                                 or "Required release signature could not be verified"
