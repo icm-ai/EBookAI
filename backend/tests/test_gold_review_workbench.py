@@ -5,7 +5,6 @@ from pathlib import Path
 
 import fitz
 import pytest
-
 from book.benchmark.gold import GoldAnnotation
 from book.benchmark.review_workbench import GoldReviewStore
 
