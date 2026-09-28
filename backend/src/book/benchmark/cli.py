@@ -20,6 +20,7 @@ from book.benchmark.models import BenchmarkReport, CorpusManifest
 from book.benchmark.review_plan import (
     ReviewPlan,
     render_review_plan_markdown,
+    review_plan_coverage,
     review_plan_summary,
     validate_review_plan,
 )
@@ -233,6 +234,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         plan = ReviewPlan.load(args.plan)
         validate_review_plan(plan, manifest)
         summary = review_plan_summary(plan)
+        summary["coverage"] = review_plan_coverage(
+            plan, manifest, args.manifest
+        )
         if args.output is not None:
             args.output.parent.mkdir(parents=True, exist_ok=True)
             args.output.write_text(
