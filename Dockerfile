@@ -52,6 +52,9 @@ RUN python -m pip install --no-cache-dir --upgrade pip \
 # Copy backend code
 COPY backend/ backend/
 
+# Copy source-pinned benchmark assets used by the optional Gold Review workbench
+COPY benchmark/ benchmark/
+
 # Copy frontend build artifacts
 COPY --from=frontend-builder /app/build frontend/web/build/
 
