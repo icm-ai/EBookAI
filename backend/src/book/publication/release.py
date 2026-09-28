@@ -118,8 +118,7 @@ class ReleaseManifest:
                 epubcheck.get("version", "") if isinstance(epubcheck, dict) else ""
             ),
             artifacts=[
-                ReleaseArtifact.from_dict(item)
-                for item in value.get("artifacts", [])
+                ReleaseArtifact.from_dict(item) for item in value.get("artifacts", [])
             ],
         )
 
@@ -216,9 +215,9 @@ class ReleasePipeline:
             artifacts = self._artifacts(
                 staging,
                 {
-                    source_target.relative_to(staging).as_posix(): self._source_media_type(
-                        source_suffix
-                    ),
+                    source_target.relative_to(
+                        staging
+                    ).as_posix(): self._source_media_type(source_suffix),
                     "book/bookir.json": "application/json",
                     "publication/book.epub": "application/epub+zip",
                     "reports/publication-qa.json": "application/json",
@@ -240,9 +239,7 @@ class ReleasePipeline:
                 epubcheck_version=epubcheck_result.version,
                 artifacts=artifacts,
             )
-            (staging / "manifest.json").write_bytes(
-                _canonical_json(manifest.to_dict())
-            )
+            (staging / "manifest.json").write_bytes(_canonical_json(manifest.to_dict()))
 
             bundle_path = staging / self.BUNDLE_NAME
             self._write_bundle(staging, bundle_path)
@@ -371,9 +368,7 @@ class ReleasePipeline:
     @staticmethod
     def _write_bundle(root: Path, bundle_path: Path) -> None:
         entries = sorted(
-            path
-            for path in root.rglob("*")
-            if path.is_file() and path != bundle_path
+            path for path in root.rglob("*") if path.is_file() and path != bundle_path
         )
         with zipfile.ZipFile(bundle_path, "w") as archive:
             for path in entries:
