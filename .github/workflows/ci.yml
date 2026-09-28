@@ -117,6 +117,7 @@ jobs:
         black --diff --check \
           backend/src/book \
           backend/src/api/review.py \
+          backend/src/api/gold_review.py \
           backend/src/main.py \
           backend/tests/test_book_ir.py \
           backend/tests/test_pymupdf_book_adapter.py \
@@ -142,6 +143,7 @@ jobs:
         isort --check-only --diff \
           backend/src/book \
           backend/src/api/review.py \
+          backend/src/api/gold_review.py \
           backend/src/main.py \
           backend/tests/test_book_ir.py \
           backend/tests/test_pymupdf_book_adapter.py \
