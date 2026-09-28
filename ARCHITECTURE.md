@@ -723,6 +723,97 @@ Git at runtime.
 See `docs/architecture/release-attestation.md` for configuration and verifier
 semantics.
 
+### Milestone 11 — Standalone Release Verifier and Native Sigstore
+
+- [x] Release verification is exposed as a reusable standalone library that does
+  not depend on FastAPI, review-session persistence, parser execution, or AI
+  providers.
+- [x] A portable `ebookai-verify` CLI entry module validates release ZIPs and
+  returns process exit status suitable for CI/CD policy gates.
+- [x] CLI supports JSON output, required-signature policy, generic trusted key
+  ids, external verifier commands, native Cosign configuration, key-based
+  Sigstore verification, keyless certificate identity/OIDC issuer constraints,
+  regular-expression identity policy, and custom Sigstore TrustedRoot files.
+- [x] Native Sigstore signing uses `cosign sign-blob --bundle` on the exact
+  canonical `manifest.json`.
+- [x] Native Sigstore bundles are preserved byte-for-byte at
+  `sigstore/manifest.sigstore.json`; certificate/public-key material,
+  timestamps, and transparency-log evidence are not flattened into the generic
+  M10 attestation envelope.
+- [x] Manifest schema v0.3 binds `signature_provider` into release identity,
+  distinguishing `none`, generic `external`, and native `sigstore`.
+- [x] Sigstore keyless signing is explicit rather than triggered merely because
+  Cosign exists on PATH.
+- [x] Keyless verification fails closed without an expected certificate identity
+  and OIDC issuer policy.
+- [x] Native Sigstore verification normalizes verdict/evidence for the UI while
+  retaining the untouched native bundle as the authoritative evidence.
+- [x] Evidence summary reports bundle media type, verification-material class,
+  transparency-log entry count, RFC3161 timestamp count, verification mode,
+  expected identity/issuer, and Cosign version.
+- [x] Server-side verification and standalone CLI use the same release verifier
+  semantics.
+- [x] M9 manifest v0.1 and M10 manifest v0.2 release-id formulas remain
+  verifiable; M11 does not force historical releases to be republished.
+- [x] Human Review UI allows selecting external / Sigstore / none signature
+  providers and surfaces provider, identity, issuer, and transparency-log
+  evidence in verification results.
+- [x] Focused tests cover native bundle preservation, keyless identity-policy
+  fail-closed behavior, standalone CLI parity, and historical manifest
+  compatibility.
+- [x] A dedicated Native Sigstore Release Gate pins Cosign 3.1.3 and performs
+  real local-key `sign-blob --bundle` plus `verify-blob --bundle`.
+- [x] CI does not perform public keyless signing on every pull request, avoiding
+  unnecessary public transparency-log entries while the adapter still supports
+  ambient OIDC keyless operation.
+
+#### Portable verification contract
+
+A release verifier receives only:
+
+    release-bundle.zip
+    + local trust policy
+
+It must not require the original review session, source parser, reconstruction
+pipeline, AI provider, publication server, or database.
+
+The verification order is:
+
+    ZIP + manifest parse
+      -> artifact size / SHA-256
+      -> schema-specific release_id
+      -> signature provider dispatch
+           none
+           external detached signature
+           native Sigstore bundle
+      -> cryptographic verification
+      -> identity/key trust policy
+      -> final verdict
+
+The CLI uses exit code 0 only for a valid release under the supplied policy.
+
+#### Native Sigstore boundary
+
+Sigstore is not represented as a generic base64 signature. The native bundle is
+the verification artifact:
+
+    manifest.json
+         │
+         └── cosign sign-blob --bundle
+                   │
+                   ▼
+    sigstore/manifest.sigstore.json
+
+For keyless flows the verifier requires both expected certificate identity and
+OIDC issuer (or explicit regexp variants). Cosign then verifies the signed
+manifest, Fulcio certificate semantics, signed timestamp, and transparency-log
+proof carried by the bundle according to Sigstore's own verification rules.
+
+For key/KMS flows the verifier uses the configured public key/KMS reference and
+still consumes the native bundle.
+
+See `docs/architecture/standalone-verifier-sigstore.md`.
+
 ## Legacy boundary
 
 The current services/conversion/conversion_pipeline.py is a legacy converter pipeline and should not become the foundation of BookIR. It remains operational until the new pipeline reaches functional parity.
