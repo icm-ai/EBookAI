@@ -37,6 +37,11 @@ from book.benchmark.review_plan import (
     review_plan_summary,
     validate_review_plan,
 )
+from book.benchmark.review_workbench import (
+    GoldReviewDecision,
+    GoldReviewSession,
+    GoldReviewStore,
+)
 from book.benchmark.runner import ParserBenchmarkRunner, default_parser_registry
 
 __all__ = [
@@ -54,6 +59,9 @@ __all__ = [
     "GoldEvaluation",
     "GoldPageAnnotation",
     "GoldValidationError",
+    "GoldReviewDecision",
+    "GoldReviewSession",
+    "GoldReviewStore",
     "LeaderboardPolicy",
     "ParserBenchmarkRunner",
     "ParserLeaderboard",
