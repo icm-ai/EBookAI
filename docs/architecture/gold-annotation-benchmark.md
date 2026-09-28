@@ -274,13 +274,20 @@ A human reviewer should verify:
   multi-column pages;
 - matching evidence does not reveal a systematically ambiguous annotation.
 
-## Initial seed annotation
+## Current draft seed annotations
 
-`nist-eel-sp1500-101-v1` currently contains a sparse draft annotation for PDF
-page index 8 covering heading detection/hierarchy and reading order.
+The repository currently contains two source-pinned draft seeds:
 
-It is intentionally still `draft`: it was created as a Milestone 14 seed and
-must receive explicit human review before it becomes a regression gate.
+- `nist-eel-sp1500-101-v1`, PDF page index 8: heading hierarchy and reading order;
+- `nist-ai-rmf-1-0`, PDF page index 3: the complete visible Table of Contents
+  heading hierarchy and reading order for that page.
+
+Both remain intentionally `draft`. Their purpose is to exercise the evaluator and
+support human review; neither is eligible for the formal parser leaderboard or regression
+gating until an independent reviewer verifies the labels and records `reviewed_by`.
+
+Milestone 15 tracks the broader 25-page review queue and reviewed-only leaderboard in
+[`gold-corpus-leaderboard.md`](gold-corpus-leaderboard.md).
 
 This distinction is part of the benchmark's provenance model rather than a
 documentation convention.
