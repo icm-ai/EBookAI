@@ -60,8 +60,10 @@ Configure an external signer with:
     EBOOKAI_SIGN_COMMAND="..."
     EBOOKAI_SIGN_KEY_ID="public-key-identifier"
 
-The signer receives the canonical manifest bytes on stdin and must return raw
-signature bytes on stdout. EBookAI persists only:
+By default the signer receives canonical manifest bytes on stdin. Commands that
+need a seekable file can include a `{payload}` placeholder; EBookAI writes a
+temporary manifest file and substitutes its path. In both modes the signer must
+return raw signature bytes on stdout. EBookAI persists only:
 
 - algorithm
 - public/non-secret key identifier
