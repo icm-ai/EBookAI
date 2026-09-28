@@ -4,7 +4,6 @@ from book.publication import ExternalEpubCheckRunner
 from book.regression import GoldenCaseSpec, GoldenCorpusHarness
 from book.regression.synthetic import build_fixture
 
-
 CASES = Path(__file__).parent / "golden" / "cases"
 
 
