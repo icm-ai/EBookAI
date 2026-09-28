@@ -36,6 +36,7 @@ function ReviewWorkspace() {
   const [releaseLoading, setReleaseLoading] = useState(false);
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [requireEpubcheck, setRequireEpubcheck] = useState(false);
+  const [requireSignature, setRequireSignature] = useState(false);
   const [releaseVerification, setReleaseVerification] = useState(null);
   const [aiProviders, setAiProviders] = useState([]);
   const [aiProvider, setAiProvider] = useState('');
@@ -346,7 +347,8 @@ function ReviewWorkspace() {
     try {
       const response = await api.buildReviewRelease(
         session.id,
-        requireEpubcheck
+        requireEpubcheck,
+        requireSignature
       );
       setNextSession(response.data);
     } catch (err) {
@@ -999,6 +1001,16 @@ function ReviewWorkspace() {
                   />
                   Require EPUBCheck
                 </label>
+                <label className="review-release-policy">
+                  <input
+                    type="checkbox"
+                    checked={requireSignature}
+                    onChange={(event) =>
+                      setRequireSignature(event.target.checked)
+                    }
+                  />
+                  Require signature
+                </label>
                 <button
                   className="review-qa-button"
                   onClick={buildRelease}
@@ -1030,7 +1042,8 @@ function ReviewWorkspace() {
                 <div className="review-empty-state">
                   The release bundle contains the source document, BookIR,
                   compiled EPUB, publication QA, normalized EPUBCheck report,
-                  and a SHA-256 manifest.
+                  toolchain provenance, a SHA-256 manifest, and an optional
+                  detached signature.
                 </div>
               )}
               {releaseManifest && (
@@ -1056,7 +1069,22 @@ function ReviewWorkspace() {
                         {releaseManifest.policy?.require_epubcheck
                           ? 'EPUBCheck required'
                           : 'EPUBCheck optional'}
+                        {' · '}
+                        {releaseManifest.policy?.require_signature
+                          ? 'Signature required'
+                          : 'Signature optional'}
                       </strong>
+                    </div>
+                    <div>
+                      <span>Attestation</span>
+                      <strong>
+                        {releaseManifest.attestation?.signed
+                          ? `Signed · ${releaseManifest.attestation.key_id}`
+                          : 'Unsigned'}
+                      </strong>
+                      {releaseManifest.attestation?.algorithm && (
+                        <code>{releaseManifest.attestation.algorithm}</code>
+                      )}
                     </div>
                   </div>
                   <div className="review-release-artifacts">
@@ -1088,6 +1116,21 @@ function ReviewWorkspace() {
                       : 'Bundle verification failed'}
                   </strong>
                   <span>{releaseVerification.release_id}</span>
+                  <span>
+                    Signature:{' '}
+                    {releaseVerification.signature?.signed
+                      ? releaseVerification.signature?.cryptographically_valid
+                        ? releaseVerification.signature?.trusted
+                          ? 'valid and trusted'
+                          : 'valid, trust not established'
+                        : 'invalid'
+                      : 'unsigned'}
+                  </span>
+                  {releaseVerification.signature?.key_id && (
+                    <span>
+                      Key: {releaseVerification.signature.key_id}
+                    </span>
+                  )}
                   {(releaseVerification.errors || []).map((item) => (
                     <div key={item}>{item}</div>
                   ))}
