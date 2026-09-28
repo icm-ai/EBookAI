@@ -206,7 +206,8 @@ def test_runner_records_success_skip_failure_and_report(tmp_path):
     assert (tmp_path / "output" / "benchmark-results.json").is_file()
 
     markdown = render_markdown(report)
-    assert "ground-truth-free proxies" in markdown
+    assert "Proxy metrics and Gold Accuracy" in markdown
+    assert "### Gold Accuracy" in markdown
     assert "fake-unavailable" in markdown
     assert "intentional parser failure" in markdown
 
