@@ -196,8 +196,20 @@ class ExternalManifestVerifier:
             signature_path = root / "manifest.sig"
             payload_path.write_bytes(payload)
             signature_path.write_bytes(signature)
+            if any(
+                "{payload}" in item or "{signature}" in item for item in command
+            ):
+                args = [
+                    item.replace("{payload}", str(payload_path)).replace(
+                        "{signature}",
+                        str(signature_path),
+                    )
+                    for item in command
+                ]
+            else:
+                args = [*command, str(payload_path), str(signature_path)]
             completed = subprocess.run(
-                [*command, str(payload_path), str(signature_path)],
+                args,
                 capture_output=True,
                 check=False,
                 timeout=self.timeout_seconds,
