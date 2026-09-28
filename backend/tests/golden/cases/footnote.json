@@ -37,5 +37,15 @@
     "bbox_coverage_min": 1,
     "epub_text_recall_min": 1
   },
-  "known_gaps": []
+  "known_gaps": [],
+  "baseline_metrics": {
+    "semantic_score": 1,
+    "quality_score": 1,
+    "reading_order": 1
+  },
+  "max_regression": {
+    "semantic_score": 0,
+    "quality_score": 0,
+    "reading_order": 0
+  }
 }
