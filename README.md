@@ -278,6 +278,28 @@ PYTHONPATH=backend/src python -m book.benchmark.cli leaderboard \
 详见
 [`docs/architecture/gold-corpus-leaderboard.md`](docs/architecture/gold-corpus-leaderboard.md)。
 
+### Gold Annotation Review Workbench
+
+Milestone 16 增加独立的 **Gold Review** 工作台，将 M15 的 25 页 review queue
+接到 source-pinned PDF、parser overlay、逐 element/task 人工确认和 reviewed
+promotion 流程中。
+
+核心状态机：
+
+```text
+staged draft
+  -> confirm/edit
+  -> promotion preflight
+  -> reviewed artifact + promotion audit
+  -> explicit canonical publish
+```
+
+`confirm` 不会自动 promotion，`promote` 也不会自动 publish。
+canonical publish 还会检查 session 打开后 gold 是否被其他人修改，避免覆盖并发审阅结果。
+
+详见
+[`docs/architecture/gold-review-workbench.md`](docs/architecture/gold-review-workbench.md)。
+
 ## 支持的格式
 
 | 输入格式 | 输出格式 | 说明 |
