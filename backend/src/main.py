@@ -6,6 +6,7 @@ from api import (
     batch,
     cleanup,
     conversion,
+    gold_review,
     health,
     monitoring,
     progress,
@@ -68,6 +69,7 @@ app.add_exception_handler(HTTPException, http_exception_handler)
 
 # Include API routers
 app.include_router(conversion.router, prefix="/api")
+app.include_router(gold_review.router, prefix="/api")
 app.include_router(batch.router, prefix="/api")
 app.include_router(ai.router, prefix="/api")
 app.include_router(cleanup.router, prefix="/api")
