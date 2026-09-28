@@ -1,0 +1,64 @@
+{
+  "schema_version": "1",
+  "corpus_id": "ebookai-real-pdf-v1",
+  "description": "Rights-cleared real-world PDFs for parser-level comparison. Synthetic golden fixtures remain a separate correctness/regression suite.",
+  "documents": [
+    {
+      "id": "nist-ballot-definition-prototype",
+      "title": "NIST Ballot Definition Prototype",
+      "source_url": "https://raw.githubusercontent.com/usnistgov/BallotDefinition/master/Ballot_Definition_Prototype.pdf",
+      "license_url": "https://github.com/usnistgov/BallotDefinition/blob/master/LICENSE.md",
+      "rights_basis": "The upstream NIST repository notice explicitly permits use, copy, distribution, modification, and redistribution of NIST-developed material. This exact PDF is pinned by SHA-256 and embedded only for deterministic CI.",
+      "sha256": "98649f6216af762aa9ff1290665f42dc7978d90523ae6ddd9e50c460a8e540a0",
+      "document_class": "technical-prototype",
+      "language": "en",
+      "page_count": 1,
+      "complexity_tags": [
+        "real-world",
+        "mixed-layout",
+        "form-like",
+        "vector-graphics"
+      ],
+      "expected_capabilities": [
+        "native_text",
+        "layout",
+        "reading_order",
+        "bbox"
+      ],
+      "redistributable": true,
+      "embedded_base64_path": "assets/ballot_definition_prototype.pdf.b64",
+      "notes": "Small rights-cleared real PDF kept as a checked-in base64 fixture so CI can exercise PyMuPDF without network access."
+    },
+    {
+      "id": "nist-eel-sp1500-101-v1",
+      "title": "NIST SP 1500-101 Election Event Logging Common Data Format Specification Version 1",
+      "source_url": "https://raw.githubusercontent.com/usnistgov/ElectionEventLogging/master/NIST%201500-101%20EEL%20Specification%20V1.pdf",
+      "license_url": "https://github.com/usnistgov/ElectionEventLogging/blob/master/LICENSE.md",
+      "rights_basis": "Official NIST publication distributed publicly by NIST and mirrored in its public repository. The corpus treats it as download-only rather than embedding it, avoiding any broader redistribution assertion for possible third-party contributions.",
+      "sha256": "c80d033062a52c8880eedb5fbbdcec29267f7298998f1bda78fe18e09561849c",
+      "document_class": "technical-standard",
+      "language": "en",
+      "page_count": 32,
+      "complexity_tags": [
+        "real-world",
+        "long-document",
+        "table-of-contents",
+        "hierarchical-headings",
+        "figures",
+        "uml-diagrams",
+        "appendices",
+        "dense-technical-text"
+      ],
+      "expected_capabilities": [
+        "native_text",
+        "layout",
+        "reading_order",
+        "headings",
+        "images",
+        "bbox"
+      ],
+      "redistributable": false,
+      "notes": "Primary complex corpus item. Fetched on demand and digest-verified; not required for offline CI smoke tests."
+    }
+  ]
+}
