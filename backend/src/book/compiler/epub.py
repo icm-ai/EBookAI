@@ -7,7 +7,9 @@ conversion stack to coexist during migration.
 
 from __future__ import annotations
 
+import hashlib
 import html
+import json
 import uuid
 import zipfile
 from pathlib import Path
@@ -28,25 +30,26 @@ class EpubCompiler:
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         sections = self._sections(book)
-        identifier = book.metadata.identifier or f"urn:uuid:{uuid.uuid4()}"
+        identifier = book.metadata.identifier or self._stable_identifier(book)
         language = book.metadata.language or "und"
         title = book.metadata.title or "Untitled"
 
         with zipfile.ZipFile(output_path, "w") as archive:
-            archive.writestr(
+            self._write_entry(
+                archive,
                 "mimetype",
                 self.MIMETYPE,
                 compress_type=zipfile.ZIP_STORED,
             )
-            archive.writestr(
+            self._write_entry(
+                archive,
                 "META-INF/container.xml",
                 self._container_xml(),
-                compress_type=zipfile.ZIP_DEFLATED,
             )
-            archive.writestr(
+            self._write_entry(
+                archive,
                 "EPUB/styles/book.css",
                 self._stylesheet(),
-                compress_type=zipfile.ZIP_DEFLATED,
             )
 
             manifest_items: List[str] = [
@@ -61,26 +64,27 @@ class EpubCompiler:
             for index, (section_title, nodes) in enumerate(sections, start=1):
                 item_id = f"section-{index}"
                 href = f"text/{item_id}.xhtml"
-                archive.writestr(
+                self._write_entry(
+                    archive,
                     f"EPUB/{href}",
                     self._section_xhtml(
                         title=section_title,
                         language=language,
                         nodes=nodes,
                     ),
-                    compress_type=zipfile.ZIP_DEFLATED,
                 )
                 manifest_items.append(
                     f'<item id="{item_id}" href="{href}" media-type="application/xhtml+xml"/>'
                 )
                 spine_items.append(f'<itemref idref="{item_id}"/>')
 
-            archive.writestr(
+            self._write_entry(
+                archive,
                 "EPUB/nav.xhtml",
                 self._nav_xhtml(title=title, language=language, sections=sections),
-                compress_type=zipfile.ZIP_DEFLATED,
             )
-            archive.writestr(
+            self._write_entry(
+                archive,
                 "EPUB/package.opf",
                 self._package_opf(
                     identifier=identifier,
@@ -90,10 +94,40 @@ class EpubCompiler:
                     manifest_items=manifest_items,
                     spine_items=spine_items,
                 ),
-                compress_type=zipfile.ZIP_DEFLATED,
             )
 
         return output_path
+
+    @staticmethod
+    def _stable_identifier(book: Book) -> str:
+        payload = {
+            "title": book.metadata.title,
+            "author": book.metadata.author,
+            "language": book.metadata.language,
+            "nodes": [node.to_dict() for node in book.nodes],
+        }
+        canonical = json.dumps(
+            payload,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        digest = hashlib.sha256(canonical).hexdigest()
+        return f"urn:uuid:{uuid.uuid5(uuid.NAMESPACE_URL, digest)}"
+
+    @staticmethod
+    def _write_entry(
+        archive: zipfile.ZipFile,
+        name: str,
+        content: str,
+        *,
+        compress_type: int = zipfile.ZIP_DEFLATED,
+    ) -> None:
+        info = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
+        info.compress_type = compress_type
+        info.create_system = 3
+        info.external_attr = 0o644 << 16
+        archive.writestr(info, content.encode("utf-8"))
 
     def _sections(self, book: Book) -> List[tuple[str, Sequence[BookNode]]]:
         explicit_sections: List[tuple[str, Sequence[BookNode]]] = []
