@@ -178,6 +178,38 @@ npm start
 3. 等待 AI 处理完成
 4. 查看或下载处理结果
 
+## 独立 Release 验证
+
+BookIR review pipeline 生成的 `*.release.zip` 可以脱离 EBookAI Server
+独立验证，不需要重新运行 PDF parser、AI repair 或 review session：
+
+```bash
+PYTHONPATH=backend/src python -m book.publication.verify_cli \
+  book.release.zip --json
+```
+
+要求 release 必须带可验证签名：
+
+```bash
+PYTHONPATH=backend/src python -m book.publication.verify_cli \
+  book.release.zip \
+  --require-signature
+```
+
+验证 native Sigstore/Cosign keyless bundle 时显式约束签名身份和 OIDC issuer：
+
+```bash
+PYTHONPATH=backend/src python -m book.publication.verify_cli \
+  book.release.zip \
+  --require-signature \
+  --certificate-identity "<expected identity>" \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
+```
+
+也支持 `--sigstore-key`、identity/issuer regexp、`--trusted-root`，
+以及通用 detached-signature verifier。详细信任模型与 bundle 格式见
+[`docs/architecture/standalone-verifier-sigstore.md`](docs/architecture/standalone-verifier-sigstore.md)。
+
 ## 支持的格式
 
 | 输入格式 | 输出格式 | 说明 |
