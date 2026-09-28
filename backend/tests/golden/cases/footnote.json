@@ -1,0 +1,37 @@
+{
+  "id": "footnote",
+  "category": "footnote",
+  "fixture_kind": "footnote",
+  "expectation": {
+    "minimum_node_types": {
+      "heading": 1,
+      "paragraph": 1,
+      "footnote": 1
+    },
+    "text_fragments": [
+      "This sentence cites source evidence [1] in the body.",
+      "[1] Footnote text preserved and associated."
+    ],
+    "ordered_fragments": [
+      "Chapter 1",
+      "This sentence cites source evidence",
+      "Footnote text preserved"
+    ],
+    "minimum_footnote_references": 1,
+    "forbidden_issue_codes": [
+      "empty_document",
+      "missing_provenance",
+      "orphan_footnote"
+    ],
+    "publication_ready": true
+  },
+  "thresholds": {
+    "semantic_score_min": 0.9,
+    "text_recall_min": 1,
+    "reading_order_min": 1,
+    "provenance_coverage_min": 1,
+    "bbox_coverage_min": 1,
+    "epub_text_recall_min": 1
+  },
+  "known_gaps": []
+}
