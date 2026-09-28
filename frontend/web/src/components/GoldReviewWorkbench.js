@@ -721,6 +721,9 @@ function GoldReviewWorkbench() {
                     <a href={api.getGoldReviewExportUrl(session.id)}>
                       Download reviewed gold JSON
                     </a>
+                    <a href={api.getGoldReviewAuditUrl(session.id)}>
+                      Download promotion audit JSON
+                    </a>
                     <button
                       type="button"
                       onClick={publish}
@@ -728,11 +731,13 @@ function GoldReviewWorkbench() {
                     >
                       {session.published_at
                         ? 'Published to canonical gold'
-                        : 'Explicitly publish canonical gold'}
+                        : 'Maintainer: explicitly publish canonical gold'}
                     </button>
                     <small>
                       Publish performs an optimistic concurrency check against
-                      the canonical annotation opened by this session.
+                      the canonical annotation opened by this session. It needs
+                      a writable source checkout; otherwise download both JSON
+                      artifacts and commit them manually.
                     </small>
                   </div>
                 )}
