@@ -49,9 +49,7 @@ class GoldenExpectation:
             ),
             render_xhtml_digest=str(value.get("render_xhtml_digest", "")),
             render_flow_digest=str(value.get("render_flow_digest", "")),
-            render_stylesheet_digest=str(
-                value.get("render_stylesheet_digest", "")
-            ),
+            render_stylesheet_digest=str(value.get("render_stylesheet_digest", "")),
             render_section_count=(
                 int(value["render_section_count"])
                 if "render_section_count" in value
@@ -169,9 +167,7 @@ class GoldenSuiteReport:
             ]
             return round(sum(values) / len(values), 4) if values else None
 
-        known_gaps = sorted(
-            {gap for case in self.cases for gap in case.known_gaps}
-        )
+        known_gaps = sorted({gap for case in self.cases for gap in case.known_gaps})
         return {
             "passed": self.passed,
             "summary": {
