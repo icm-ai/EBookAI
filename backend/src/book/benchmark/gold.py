@@ -59,7 +59,9 @@ class GoldElement:
             raise GoldValidationError("Gold element id must not be empty")
         if self.bbox is not None:
             if len(self.bbox) != 4:
-                raise GoldValidationError("Gold element bbox must have four coordinates")
+                raise GoldValidationError(
+                    "Gold element bbox must have four coordinates"
+                )
             left, top, right, bottom = self.bbox
             if right < left or bottom < top:
                 raise GoldValidationError("Gold element bbox is inverted")
@@ -113,16 +115,12 @@ class GoldPageAnnotation:
             raise GoldValidationError("Gold page_index must be >= 0")
         unknown = sorted(set(self.tasks) - _ALLOWED_TASKS)
         if unknown:
-            raise GoldValidationError(
-                "Unknown gold tasks: " + ", ".join(unknown)
-            )
+            raise GoldValidationError("Unknown gold tasks: " + ", ".join(unknown))
         if not self.tasks:
             raise GoldValidationError("Gold page must annotate at least one task")
         element_ids = [element.id for element in self.elements]
         if len(element_ids) != len(set(element_ids)):
-            raise GoldValidationError(
-                f"Duplicate element id on page {self.page_index}"
-            )
+            raise GoldValidationError(f"Duplicate element id on page {self.page_index}")
         if self.reading_order and "reading_order" not in self.tasks:
             raise GoldValidationError(
                 "reading_order ids require the reading_order task"
@@ -144,9 +142,7 @@ class GoldPageAnnotation:
             elements=tuple(
                 GoldElement.from_dict(item) for item in value.get("elements", [])
             ),
-            reading_order=tuple(
-                str(item) for item in value.get("reading_order", [])
-            ),
+            reading_order=tuple(str(item) for item in value.get("reading_order", [])),
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -189,9 +185,7 @@ class GoldAnnotation:
         page_indexes = [page.page_index for page in self.pages]
         if len(page_indexes) != len(set(page_indexes)):
             raise GoldValidationError("Gold annotation contains duplicate pages")
-        element_ids = [
-            element.id for page in self.pages for element in page.elements
-        ]
+        element_ids = [element.id for page in self.pages for element in page.elements]
         if len(element_ids) != len(set(element_ids)):
             raise GoldValidationError(
                 "Gold element ids must be unique across the document"
@@ -314,16 +308,8 @@ def _counter_prf(
         if predicted_total
         else (1.0 if expected_total == 0 else 0.0)
     )
-    recall = (
-        true_positive / expected_total
-        if expected_total
-        else 1.0
-    )
-    f1 = (
-        2.0 * precision * recall / (precision + recall)
-        if precision + recall
-        else 0.0
-    )
+    recall = true_positive / expected_total if expected_total else 1.0
+    f1 = 2.0 * precision * recall / (precision + recall) if precision + recall else 0.0
     return {
         "precision": round(precision, 4),
         "recall": round(recall, 4),
@@ -336,16 +322,10 @@ def _counter_prf(
 
 def _count_prf(true_positive: int, predicted: int, expected: int) -> Dict[str, Any]:
     precision = (
-        true_positive / predicted
-        if predicted
-        else (1.0 if expected == 0 else 0.0)
+        true_positive / predicted if predicted else (1.0 if expected == 0 else 0.0)
     )
     recall = true_positive / expected if expected else 1.0
-    f1 = (
-        2.0 * precision * recall / (precision + recall)
-        if precision + recall
-        else 0.0
-    )
+    f1 = 2.0 * precision * recall / (precision + recall) if precision + recall else 0.0
     return {
         "precision": round(precision, 4),
         "recall": round(recall, 4),
@@ -373,7 +353,9 @@ def _bbox_iou(
     return intersection / union if union else None
 
 
-def _node_bbox(node: BookNode, page_index: int) -> Optional[Tuple[float, float, float, float]]:
+def _node_bbox(
+    node: BookNode, page_index: int
+) -> Optional[Tuple[float, float, float, float]]:
     for source in node.source:
         if source.page_index == page_index and source.bbox is not None:
             return source.bbox
@@ -411,7 +393,9 @@ def _match_elements(
     page_index: int,
     required_types: Optional[Tuple[NodeType, ...]] = None,
 ) -> Tuple[List[Dict[str, Any]], List[str], List[str]]:
-    scored: List[Tuple[float, str, str, GoldElement, int, BookNode, float, Optional[float]]] = []
+    scored: List[
+        Tuple[float, str, str, GoldElement, int, BookNode, float, Optional[float]]
+    ] = []
     for element in elements:
         for position, node in candidates:
             if required_types is not None and node.type not in required_types:
@@ -472,9 +456,7 @@ def _match_elements(
                 "node_position": position,
                 "score": round(-negative_score, 4),
                 "text_similarity": round(text_score, 4),
-                "bbox_iou": (
-                    round(bbox_score, 4) if bbox_score is not None else None
-                ),
+                "bbox_iou": (round(bbox_score, 4) if bbox_score is not None else None),
             }
         )
 
@@ -555,8 +537,7 @@ def _reading_order_metrics(
             page_index=page.page_index,
         )
         position_by_gold = {
-            str(match["gold_id"]): int(match["node_position"])
-            for match in matches
+            str(match["gold_id"]): int(match["node_position"]) for match in matches
         }
         total_elements += len(ordered_elements)
         matched_elements += len(position_by_gold)
@@ -589,9 +570,7 @@ def _reading_order_metrics(
         if expected_pairs
         else (1.0 if total_elements <= 1 else 0.0)
     )
-    element_match_recall = (
-        matched_elements / total_elements if total_elements else 1.0
-    )
+    element_match_recall = matched_elements / total_elements if total_elements else 1.0
     return (
         {
             "pair_accuracy": round(pair_accuracy, 4),
@@ -621,14 +600,10 @@ def _structure_metrics(
     heading_level_compared = 0
     page_evidence: List[Dict[str, Any]] = []
     for page in pages:
-        elements = [
-            element for element in page.elements if element.type in node_types
-        ]
+        elements = [element for element in page.elements if element.type in node_types]
         candidates = _node_positions(book, page.page_index)
         predictions = [
-            (position, node)
-            for position, node in candidates
-            if node.type in node_types
+            (position, node) for position, node in candidates if node.type in node_types
         ]
         matches, unmatched_gold, unmatched_predictions = _match_elements(
             elements,
@@ -734,15 +709,11 @@ def evaluate_gold_gate(
     failures: List[str] = []
     for threshold_name, minimum in sorted(thresholds.items()):
         metric_path = (
-            threshold_name[:-4]
-            if threshold_name.endswith("_min")
-            else threshold_name
+            threshold_name[:-4] if threshold_name.endswith("_min") else threshold_name
         )
         value = _metric_at_path(metrics, metric_path)
         if value is None or value < float(minimum):
-            failures.append(
-                f"{metric_path}: expected >= {minimum}, got {value}"
-            )
+            failures.append(f"{metric_path}: expected >= {minimum}, got {value}")
 
     deltas: Dict[str, Optional[float]] = {}
     for metric_path, baseline in sorted(baselines.items()):
