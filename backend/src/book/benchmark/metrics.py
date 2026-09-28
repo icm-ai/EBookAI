@@ -65,11 +65,7 @@ def parser_level_metrics(
         {source.page_index for node in content_nodes for source in node.source}
     )
 
-    ordered_pages = [
-        node.source[0].page_index
-        for node in content_nodes
-        if node.source
-    ]
+    ordered_pages = [node.source[0].page_index for node in content_nodes if node.source]
     if len(ordered_pages) <= 1:
         reading_order_proxy = 1.0
     else:
