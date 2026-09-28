@@ -6,8 +6,7 @@ from pathlib import Path
 
 from book.publication import ExternalEpubCheckRunner
 from book.regression import GoldenCaseSpec, GoldenCorpusHarness, GoldenSuiteReport
-
-from fixtures import build_fixture
+from book.regression.synthetic import build_fixture
 
 
 def main() -> int:
