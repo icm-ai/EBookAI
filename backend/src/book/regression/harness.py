@@ -249,10 +249,7 @@ class GoldenCorpusHarness:
             if code in issue_codes:
                 failures.append(f"forbidden quality issue present: {code}")
 
-        if (
-            metrics["footnote_reference_count"]
-            < expected.minimum_footnote_references
-        ):
+        if metrics["footnote_reference_count"] < expected.minimum_footnote_references:
             failures.append(
                 "footnote references: expected >= "
                 f"{expected.minimum_footnote_references}, "
