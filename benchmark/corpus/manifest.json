@@ -91,7 +91,8 @@
         "bbox"
       ],
       "redistributable": false,
-      "notes": "Added in Milestone 15. Official NIST download; 1,946,127 bytes and 48 pages verified by CI probe. Selected for mixed structural content and long-document evaluation."
+      "notes": "Added in Milestone 15. Official NIST download; 1,946,127 bytes and 48 pages verified by CI probe. Includes a sparse draft TOC gold seed for PDF page index 3; human review is required before leaderboard eligibility.",
+      "gold_annotations_path": "gold/nist-ai-rmf-1-0.json"
     },
     {
       "id": "nist-sp1299-csf2-overview",
