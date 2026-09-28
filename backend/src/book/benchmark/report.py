@@ -26,6 +26,15 @@ def _mean_metric(runs: Iterable[BackendRunResult], name: str) -> Optional[float]
     return round(mean(values), 4) if values else None
 
 
+def _nested_metric(value: Dict[str, object], path: str) -> object:
+    current: object = value
+    for part in path.split("."):
+        if not isinstance(current, dict):
+            return None
+        current = current.get(part)
+    return current
+
+
 def render_markdown(report: BenchmarkReport) -> str:
     """Render a comparison report without turning proxies into truth labels."""
 
@@ -39,9 +48,9 @@ def render_markdown(report: BenchmarkReport) -> str:
         f"- Backends: {summary['backend_count']}",
         f"- Runs: {summary['run_count']}",
         "",
-        "> Metrics in this report are parser-level engineering measurements and "
-        "ground-truth-free proxies. Cross-backend agreement is not a correctness "
-        "label; add gold annotations when absolute accuracy is required.",
+        "> Proxy metrics and Gold Accuracy are intentionally separated. "
+        "Cross-backend agreement is not a correctness label; gold metrics are "
+        "computed only for explicitly annotated pages/tasks bound to exact PDF bytes.",
         "",
         "## Backend summary",
         "",
@@ -116,6 +125,77 @@ def render_markdown(report: BenchmarkReport) -> str:
                 )
                 + " |"
             )
+        gold_runs = [run for run in document_runs if run.gold_metrics]
+        if gold_runs:
+            lines.extend(
+                [
+                    "",
+                    "### Gold Accuracy",
+                    "",
+                    "| Backend | Annotation | Text P | Text R | Text F1 | "
+                    "Order pair | Heading P | Heading R | Heading F1 | "
+                    "Heading level | Gate |",
+                    "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|",
+                ]
+            )
+            for run in gold_runs:
+                lines.append(
+                    "| "
+                    + " | ".join(
+                        [
+                            run.backend,
+                            _fmt(run.gold_metrics.get("annotation_status")),
+                            _fmt(_nested_metric(run.gold_metrics, "text.precision")),
+                            _fmt(_nested_metric(run.gold_metrics, "text.recall")),
+                            _fmt(_nested_metric(run.gold_metrics, "text.f1")),
+                            _fmt(
+                                _nested_metric(
+                                    run.gold_metrics,
+                                    "reading_order.pair_accuracy",
+                                )
+                            ),
+                            _fmt(
+                                _nested_metric(
+                                    run.gold_metrics,
+                                    "structures.headings.precision",
+                                )
+                            ),
+                            _fmt(
+                                _nested_metric(
+                                    run.gold_metrics,
+                                    "structures.headings.recall",
+                                )
+                            ),
+                            _fmt(
+                                _nested_metric(
+                                    run.gold_metrics,
+                                    "structures.headings.f1",
+                                )
+                            ),
+                            _fmt(
+                                _nested_metric(
+                                    run.gold_metrics,
+                                    "structures.headings.level_accuracy",
+                                )
+                            ),
+                            (
+                                "PASS"
+                                if not run.gold_gate_failures
+                                else "FAIL: "
+                                + "; ".join(run.gold_gate_failures)
+                            ),
+                        ]
+                    )
+                    + " |"
+                )
+            lines.extend(
+                [
+                    "",
+                    "Gold values marked `—` were not annotated for that task. "
+                    "Draft annotations are informational and cannot enforce gates.",
+                ]
+            )
+
         diagnostics = [
             (run.backend, message)
             for run in document_runs
