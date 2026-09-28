@@ -32,6 +32,8 @@ class CorpusDocumentSpec:
     embedded_base64_path: str = ""
     gold_annotations_path: str = ""
     gold_thresholds: Dict[str, Dict[str, float]] = field(default_factory=dict)
+    gold_baselines: Dict[str, Dict[str, float]] = field(default_factory=dict)
+    gold_max_regression: Dict[str, Dict[str, float]] = field(default_factory=dict)
     notes: str = ""
 
     def __post_init__(self) -> None:
@@ -84,6 +86,22 @@ class CorpusDocumentSpec:
                 for backend, values in value.get("gold_thresholds", {}).items()
                 if isinstance(values, dict)
             },
+            gold_baselines={
+                str(backend): {
+                    str(metric): float(baseline)
+                    for metric, baseline in values.items()
+                }
+                for backend, values in value.get("gold_baselines", {}).items()
+                if isinstance(values, dict)
+            },
+            gold_max_regression={
+                str(backend): {
+                    str(metric): float(allowed)
+                    for metric, allowed in values.items()
+                }
+                for backend, values in value.get("gold_max_regression", {}).items()
+                if isinstance(values, dict)
+            },
             notes=str(value.get("notes", "")),
         )
 
@@ -106,6 +124,14 @@ class CorpusDocumentSpec:
             "gold_thresholds": {
                 backend: dict(sorted(values.items()))
                 for backend, values in sorted(self.gold_thresholds.items())
+            },
+            "gold_baselines": {
+                backend: dict(sorted(values.items()))
+                for backend, values in sorted(self.gold_baselines.items())
+            },
+            "gold_max_regression": {
+                backend: dict(sorted(values.items()))
+                for backend, values in sorted(self.gold_max_regression.items())
             },
             "notes": self.notes,
         }
