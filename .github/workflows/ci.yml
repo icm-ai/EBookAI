@@ -212,10 +212,7 @@ jobs:
         PYTHONPATH: ${{ github.workspace }}/backend/src
       run: |
         pytest -v \
-          backend/tests/test_release_pipeline.py \
-          backend/tests/test_golden_corpus.py \
-          backend/tests/golden/fixtures.py \
-          backend/tests/golden/run_corpus.py::test_real_epubcheck_accepts_compiler_release_epub
+          backend/tests/test_release_pipeline.py::test_real_epubcheck_accepts_compiler_release_epub
 
   test-release-attestation:
     name: Release Attestation Gate
@@ -240,10 +237,7 @@ jobs:
         EBOOKAI_BUILD_REVISION: ${{ github.sha }}
       run: |
         pytest -v \
-          backend/tests/test_release_pipeline.py \
-          backend/tests/test_golden_corpus.py \
-          backend/tests/golden/fixtures.py \
-          backend/tests/golden/run_corpus.py::test_real_openssl_detached_release_signature
+          backend/tests/test_release_pipeline.py::test_real_openssl_detached_release_signature
 
   test-sigstore-release:
     name: Native Sigstore Release Gate
@@ -273,10 +267,7 @@ jobs:
       run: |
         cosign version
         pytest -v \
-          backend/tests/test_release_pipeline.py \
-          backend/tests/test_golden_corpus.py \
-          backend/tests/golden/fixtures.py \
-          backend/tests/golden/run_corpus.py::test_real_cosign_native_bundle_with_key
+          backend/tests/test_release_pipeline.py::test_real_cosign_native_bundle_with_key
 
   test-golden-corpus:
     name: Golden Corpus Regression Gate
