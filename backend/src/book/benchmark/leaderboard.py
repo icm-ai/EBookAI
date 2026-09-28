@@ -64,9 +64,7 @@ class LeaderboardPolicy:
 
     @classmethod
     def from_dict(cls, value: Dict[str, Any]) -> "LeaderboardPolicy":
-        schema_version = str(
-            value.get("schema_version", LEADERBOARD_SCHEMA_VERSION)
-        )
+        schema_version = str(value.get("schema_version", LEADERBOARD_SCHEMA_VERSION))
         if schema_version != LEADERBOARD_SCHEMA_VERSION:
             raise ValueError(
                 f"Unsupported leaderboard policy schema: {schema_version!r}"
@@ -167,9 +165,7 @@ class ParserLeaderboard:
             entries.append(
                 BackendLeaderboardEntry(
                     backend=str(item["backend"]),
-                    rank=(
-                        int(item["rank"]) if item.get("rank") is not None else None
-                    ),
+                    rank=(int(item["rank"]) if item.get("rank") is not None else None),
                     eligible=bool(item.get("eligible", False)),
                     accuracy_macro=(
                         float(item["accuracy_macro"])
@@ -177,14 +173,10 @@ class ParserLeaderboard:
                         else None
                     ),
                     metrics={
-                        str(name): (
-                            float(metric) if metric is not None else None
-                        )
+                        str(name): (float(metric) if metric is not None else None)
                         for name, metric in dict(item.get("metrics", {})).items()
                     },
-                    annotated_documents=int(
-                        coverage.get("annotated_documents", 0)
-                    ),
+                    annotated_documents=int(coverage.get("annotated_documents", 0)),
                     annotated_pages=int(coverage.get("annotated_pages", 0)),
                     evaluated_metric_count=int(
                         coverage.get("evaluated_metric_count", 0)
@@ -204,8 +196,7 @@ class ParserLeaderboard:
                         for name, count in dict(item.get("statuses", {})).items()
                     },
                     exclusion_reasons=tuple(
-                        str(reason)
-                        for reason in item.get("exclusion_reasons", [])
+                        str(reason) for reason in item.get("exclusion_reasons", [])
                     ),
                 )
             )
@@ -240,9 +231,7 @@ def _backend_entry(
         if run.gold_metrics and _annotation_is_eligible(run, policy)
     ]
 
-    metric_values: Dict[str, List[float]] = {
-        path: [] for path in policy.accuracy_paths
-    }
+    metric_values: Dict[str, List[float]] = {path: [] for path in policy.accuracy_paths}
     annotated_documents = set()
     annotated_pages = set()
     for run in gold_runs:
@@ -254,13 +243,8 @@ def _backend_entry(
             if value is not None:
                 metric_values[path].append(value)
 
-    metrics = {
-        path: _mean(values)
-        for path, values in metric_values.items()
-    }
-    available_metrics = [
-        value for value in metrics.values() if value is not None
-    ]
+    metrics = {path: _mean(values) for path, values in metric_values.items()}
+    available_metrics = [value for value in metrics.values() if value is not None]
     accuracy_macro = _mean(available_metrics)
     exclusion_reasons: List[str] = []
     if len(annotated_documents) < policy.minimum_annotated_documents:
@@ -278,8 +262,7 @@ def _backend_entry(
 
     status_names = ("success", "skipped", "failed", "timeout")
     statuses = {
-        status: sum(run.status == status for run in runs)
-        for status in status_names
+        status: sum(run.status == status for run in runs) for status in status_names
     }
     elapsed = [run.elapsed_seconds for run in successful]
     quality = [
@@ -444,9 +427,7 @@ def render_leaderboard_markdown(leaderboard: ParserLeaderboard) -> str:
         )
         if entry.exclusion_reasons:
             lines.append(
-                f"<!-- {entry.backend}: "
-                + "; ".join(entry.exclusion_reasons)
-                + " -->"
+                f"<!-- {entry.backend}: " + "; ".join(entry.exclusion_reasons) + " -->"
             )
 
     lines.extend(
@@ -454,9 +435,7 @@ def render_leaderboard_markdown(leaderboard: ParserLeaderboard) -> str:
             "",
             "## Accuracy dimensions",
             "",
-            "| Backend | "
-            + " | ".join(leaderboard.policy.accuracy_paths)
-            + " |",
+            "| Backend | " + " | ".join(leaderboard.policy.accuracy_paths) + " |",
             "|---|" + "|".join("---:" for _ in leaderboard.policy.accuracy_paths) + "|",
         ]
     )
