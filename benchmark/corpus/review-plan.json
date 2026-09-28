@@ -267,20 +267,6 @@
       "rationale": "Appendix page broadens structural coverage beyond the main body."
     },
     {
-      "document_id": "nist-ai-rmf-1-0",
-      "page_index": 47,
-      "tasks": [
-        "text",
-        "headings",
-        "reading_order"
-      ],
-      "difficulty_tags": [
-        "end-matter"
-      ],
-      "priority": "low",
-      "rationale": "Last page verifies tail-page completeness and ordering."
-    },
-    {
       "document_id": "nist-sp1299-csf2-overview",
       "page_index": 0,
       "tasks": [
