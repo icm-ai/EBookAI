@@ -642,6 +642,12 @@ class GoldReviewStore:
     def _write_audit(self, session: GoldReviewSession) -> None:
         if session.promoted_annotation is None:
             return
+        path = self._session_dir(session.id) / "promotion-audit.json"
+        previous: Dict[str, Any] = {}
+        if path.is_file():
+            loaded = json.loads(path.read_text(encoding="utf-8"))
+            if isinstance(loaded, dict):
+                previous = loaded
         evaluation = evaluate_gold(session.book, session.annotation)
         payload = {
             "schema_version": "1",
@@ -650,24 +656,27 @@ class GoldReviewStore:
             "page_index": session.page_index,
             "backend": session.backend,
             "source_sha256": session.source_sha256,
-            "canonical_hash_at_open": session.canonical_hash_at_open,
-            "staged_annotation_hash": _annotation_hash(session.annotation),
+            "canonical_hash_at_open": previous.get(
+                "canonical_hash_at_open",
+                session.canonical_hash_at_open,
+            ),
+            "staged_annotation_hash": previous.get(
+                "staged_annotation_hash",
+                _annotation_hash(session.annotation),
+            ),
             "promoted_annotation_hash": _annotation_hash(
                 session.promoted_annotation
             ),
             "reviewed_by": session.promoted_annotation.reviewed_by,
-            "promoted_at": session.updated_at,
+            "promoted_at": previous.get("promoted_at", session.updated_at),
             "published_at": session.published_at or None,
             "decisions": [
                 session.decisions[key].to_dict()
                 for key in sorted(session.decisions)
             ],
-            "evaluation": evaluation.to_dict(),
+            "evaluation": previous.get("evaluation", evaluation.to_dict()),
         }
-        _atomic_write_json(
-            self._session_dir(session.id) / "promotion-audit.json",
-            payload,
-        )
+        _atomic_write_json(path, payload)
 
     def _spec(self, document_id: str) -> CorpusDocumentSpec:
         return self.manifest.select([document_id])[0]
