@@ -109,6 +109,7 @@ jobs:
         python -m compileall -q \
           backend/src/book \
           backend/src/api/review.py \
+          backend/src/api/gold_review.py \
           backend/src/main.py
 
     - name: Check BookIR formatting
@@ -134,6 +135,7 @@ jobs:
           backend/tests/test_benchmark_runner.py \
           backend/tests/test_benchmark_leaderboard.py \
           backend/tests/test_gold_annotations.py \
+          backend/tests/test_gold_review_workbench.py \
           backend/tests/test_review_plan.py \
           backend/tests/test_real_corpus_benchmark.py \
           backend/tests/golden/run_corpus.py
@@ -158,6 +160,7 @@ jobs:
           backend/tests/test_benchmark_runner.py \
           backend/tests/test_benchmark_leaderboard.py \
           backend/tests/test_gold_annotations.py \
+          backend/tests/test_gold_review_workbench.py \
           backend/tests/test_review_plan.py \
           backend/tests/test_real_corpus_benchmark.py \
           backend/tests/golden/run_corpus.py
@@ -184,6 +187,7 @@ jobs:
           backend/tests/test_benchmark_runner.py \
           backend/tests/test_benchmark_leaderboard.py \
           backend/tests/test_gold_annotations.py \
+          backend/tests/test_gold_review_workbench.py \
           backend/tests/test_review_plan.py \
           backend/tests/test_real_corpus_benchmark.py
 
@@ -358,6 +362,12 @@ jobs:
     - name: Check formatting
       working-directory: frontend/web
       run: npm run format:check --if-present
+
+    - name: Test Gold Review workbench
+      working-directory: frontend/web
+      env:
+        CI: true
+      run: npm test -- --watchAll=false GoldReviewWorkbench.test.js
 
   build-frontend:
     name: Frontend Build
