@@ -1,0 +1,18 @@
+{
+  "schema_version": "1",
+  "accuracy_paths": [
+    "text.f1",
+    "reading_order.pair_accuracy",
+    "structures.headings.f1",
+    "structures.lists.f1",
+    "structures.tables.f1",
+    "structures.figures.f1",
+    "structures.captions.f1",
+    "structures.footnotes.f1",
+    "structures.formulas.f1"
+  ],
+  "include_draft": false,
+  "minimum_annotated_pages": 1,
+  "minimum_annotated_documents": 1,
+  "maximum_metric_regression": 0.02
+}
