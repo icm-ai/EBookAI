@@ -14,7 +14,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import fitz
-
 from book.benchmark.corpus import CorpusStore
 from book.benchmark.gold import (
     GOLD_SCHEMA_VERSION,
