@@ -14,7 +14,7 @@ from typing import Any, Dict, List, Optional
 from book.domain.models import Book
 from book.orchestration import OrchestrationResult, ParserOrchestrator
 from book.parsers import MarkerAdapter, MinerUAdapter, ParserRegistry, PyMuPDFAdapter
-from book.publication import PublicationReport
+from book.publication import PublicationReport, ReleaseManifest, ReleasePipeline
 from book.quality import QualityEngine, QualityIssue, QualityReport
 from book.repair import AIRepairProposal, PatchEngine
 
@@ -76,6 +76,7 @@ class ReviewSession:
     decisions: Dict[str, ReviewDecision] = field(default_factory=dict)
     ai_proposals: Dict[str, AIRepairProposal] = field(default_factory=dict)
     publication_report: Optional[PublicationReport] = None
+    release_manifest: Optional[ReleaseManifest] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -97,6 +98,11 @@ class ReviewSession:
                 if self.publication_report is not None
                 else None
             ),
+            "release_manifest": (
+                self.release_manifest.to_dict()
+                if self.release_manifest is not None
+                else None
+            ),
         }
 
     @classmethod
@@ -110,6 +116,7 @@ class ReviewSession:
             for item in value.get("ai_proposals", [])
         }
         publication_report = value.get("publication_report")
+        release_manifest = value.get("release_manifest")
         return cls(
             id=str(value["id"]),
             source_filename=str(value["source_filename"]),
@@ -123,6 +130,11 @@ class ReviewSession:
             publication_report=(
                 PublicationReport.from_dict(publication_report)
                 if publication_report
+                else None
+            ),
+            release_manifest=(
+                ReleaseManifest.from_dict(release_manifest)
+                if release_manifest
                 else None
             ),
         )
@@ -217,12 +229,14 @@ class ReviewSessionStore:
         orchestrator: Optional[ParserOrchestrator] = None,
         quality_engine: Optional[QualityEngine] = None,
         patch_engine: Optional[PatchEngine] = None,
+        release_pipeline: Optional[ReleasePipeline] = None,
     ) -> None:
         self.root_dir = Path(root_dir)
         self.root_dir.mkdir(parents=True, exist_ok=True)
         self.orchestrator = orchestrator or default_review_orchestrator()
         self.quality_engine = quality_engine or QualityEngine()
         self.patch_engine = patch_engine or PatchEngine()
+        self.release_pipeline = release_pipeline or ReleasePipeline()
         self._lock = threading.RLock()
 
     def create(self, source_path: Path, source_filename: str) -> ReviewSession:
@@ -300,6 +314,7 @@ class ReviewSessionStore:
                 patch_id=issue.suggested_patch.id,
             )
             session.publication_report = None
+            session.release_manifest = None
             session.updated_at = _utc_now()
             self._attach_review_metadata(session)
             self._write(session)
@@ -323,6 +338,7 @@ class ReviewSessionStore:
                 reason=reason,
             )
             session.publication_report = None
+            session.release_manifest = None
             session.updated_at = _utc_now()
             self._attach_review_metadata(session)
             self._write(session)
@@ -343,6 +359,7 @@ class ReviewSessionStore:
             self.patch_engine.validator.validate(session.book, proposal.patch)
             session.ai_proposals[proposal.id] = proposal
             session.publication_report = None
+            session.release_manifest = None
             session.updated_at = _utc_now()
             self._attach_review_metadata(session)
             self._write(session)
@@ -381,6 +398,7 @@ class ReviewSessionStore:
                 ),
             )
             session.publication_report = None
+            session.release_manifest = None
             session.updated_at = _utc_now()
             self._attach_review_metadata(session)
             self._write(session)
@@ -398,6 +416,7 @@ class ReviewSessionStore:
                 raise ValueError(f"AI proposal {proposal_id!r} is not pending")
             session.ai_proposals[proposal_id] = proposal.with_status("rejected")
             session.publication_report = None
+            session.release_manifest = None
             session.updated_at = _utc_now()
             self._attach_review_metadata(session)
             self._write(session)
@@ -414,6 +433,7 @@ class ReviewSessionStore:
                     session.ai_proposals[proposal_id] = proposal.with_status("undone")
 
             session.publication_report = None
+            session.release_manifest = None
             session.updated_at = _utc_now()
             self._attach_review_metadata(session)
             self._write(session)
@@ -427,10 +447,42 @@ class ReviewSessionStore:
         with self._lock:
             session = self.get(session_id)
             session.publication_report = report
-            session.updated_at = _utc_now()
+            session.release_manifest = None
             self._attach_review_metadata(session)
             self._write(session)
             return session
+
+    def build_release(
+        self,
+        session_id: str,
+        *,
+        require_epubcheck: bool = False,
+    ) -> ReviewSession:
+        with self._lock:
+            session = self.get(session_id)
+            source_path = self._session_dir(session_id) / session.source_file
+            result = self.release_pipeline.build(
+                source_path=source_path,
+                source_filename=session.source_filename,
+                book=session.book,
+                quality_report=session.quality_report,
+                issue_resolutions=session.issue_resolution_map(),
+                output_dir=self.release_dir(session_id),
+                require_epubcheck=require_epubcheck,
+            )
+            session.publication_report = result.publication_report
+            session.release_manifest = result.manifest
+            self._attach_review_metadata(session)
+            self._write(session)
+            return session
+
+    def verify_release(self, session_id: str) -> Dict[str, Any]:
+        session = self.get(session_id)
+        if session.release_manifest is None:
+            raise ValueError("No current release bundle exists for this review state")
+        return self.release_pipeline.verify_bundle(
+            self.release_bundle_path(session_id)
+        )
 
     def get_issue(self, session_id: str, issue_id: str) -> QualityIssue:
         return self._find_issue(self.get(session_id), issue_id)
@@ -438,6 +490,23 @@ class ReviewSessionStore:
     def epub_path(self, session_id: str) -> Path:
         self._validate_session_id(session_id)
         return self._session_dir(session_id) / "reviewed.epub"
+
+    def release_dir(self, session_id: str) -> Path:
+        self._validate_session_id(session_id)
+        return self._session_dir(session_id) / "release"
+
+    def release_bundle_path(self, session_id: str) -> Path:
+        session = self.get(session_id)
+        if session.release_manifest is None:
+            raise FileNotFoundError(
+                f"No current release bundle exists for review session: {session_id}"
+            )
+        path = self.release_dir(session_id) / ReleasePipeline.BUNDLE_NAME
+        if not path.is_file():
+            raise FileNotFoundError(
+                f"Release bundle not found for review session: {session_id}"
+            )
+        return path
 
     def _find_issue(self, session: ReviewSession, issue_id: str) -> QualityIssue:
         for issue in session.quality_report.issues:
@@ -458,6 +527,8 @@ class ReviewSessionStore:
     def _write(self, session: ReviewSession) -> None:
         session_dir = self._session_dir(session.id)
         session_dir.mkdir(parents=True, exist_ok=True)
+        if session.release_manifest is None:
+            shutil.rmtree(session_dir / "release", ignore_errors=True)
         target = session_dir / self.SESSION_FILE
         temporary = target.with_suffix(".tmp")
         with temporary.open("w", encoding="utf-8") as handle:
