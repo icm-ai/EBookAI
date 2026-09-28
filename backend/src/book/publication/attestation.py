@@ -104,13 +104,29 @@ class ExternalManifestSigner:
         if not command or not key_id:
             raise RuntimeError("Release signing command/key id is not configured")
 
-        completed = subprocess.run(
-            command,
-            input=payload,
-            capture_output=True,
-            check=False,
-            timeout=self.timeout_seconds,
-        )
+        if any("{payload}" in item for item in command):
+            import tempfile
+
+            with tempfile.TemporaryDirectory(prefix="ebookai-sign-") as temporary:
+                payload_path = Path(temporary) / "manifest.json"
+                payload_path.write_bytes(payload)
+                args = [
+                    item.replace("{payload}", str(payload_path)) for item in command
+                ]
+                completed = subprocess.run(
+                    args,
+                    capture_output=True,
+                    check=False,
+                    timeout=self.timeout_seconds,
+                )
+        else:
+            completed = subprocess.run(
+                command,
+                input=payload,
+                capture_output=True,
+                check=False,
+                timeout=self.timeout_seconds,
+            )
         if completed.returncode != 0:
             detail = completed.stderr.decode("utf-8", errors="replace").strip()
             raise RuntimeError(detail or "External release signer failed")
