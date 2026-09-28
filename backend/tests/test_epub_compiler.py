@@ -55,3 +55,26 @@ def test_epub_compiler_requires_epub_extension(tmp_path: Path):
         assert ".epub" in str(exc)
     else:
         raise AssertionError("Compiler accepted a non-EPUB output path")
+
+
+
+def test_epub_compiler_is_byte_reproducible_without_explicit_identifier(tmp_path: Path):
+    book = Book(
+        metadata=BookMetadata(
+            title="Deterministic Book",
+            author="EBookAI",
+            language="en",
+        ),
+        nodes=[
+            BookNode(
+                id="paragraph-1",
+                type=NodeType.PARAGRAPH,
+                content="Stable output.",
+            )
+        ],
+    )
+
+    first = EpubCompiler().compile(book, tmp_path / "first.epub")
+    second = EpubCompiler().compile(book, tmp_path / "second.epub")
+
+    assert first.read_bytes() == second.read_bytes()
