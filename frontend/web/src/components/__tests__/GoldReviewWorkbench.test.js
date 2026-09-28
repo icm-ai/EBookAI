@@ -16,6 +16,7 @@ jest.mock('../../services/api', () => ({
   promoteGoldReview: jest.fn(),
   publishGoldReview: jest.fn(),
   getGoldReviewExportUrl: jest.fn(() => 'http://localhost/promoted.json'),
+  getGoldReviewAuditUrl: jest.fn(() => 'http://localhost/audit.json'),
 }));
 
 const queue = {
