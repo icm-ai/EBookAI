@@ -50,7 +50,9 @@ def _parse_worker(
         for key in ("TMPDIR", "TMP", "TEMP"):
             os.environ[key] = work_dir
         book = adapter.parse(Path(source_path))
-        result_queue.put(("success", book.to_dict()))
+        result_path = Path(work_dir) / "result.bookir.json"
+        result_path.write_text(book.to_json() + "\n", encoding="utf-8")
+        result_queue.put(("success", str(result_path)))
     except ParserBackendUnavailable as exc:
         result_queue.put(("unavailable", str(exc)))
     except BaseException as exc:
@@ -215,6 +217,13 @@ class ParserBenchmarkRunner:
             finally:
                 self._close_queue(result_queue)
 
+            if worker_status == "success":
+                try:
+                    payload = Path(str(payload)).read_text(encoding="utf-8")
+                except OSError as exc:
+                    worker_status = "failed"
+                    payload = f"Unable to read worker BookIR output: {exc}"
+
         if worker_status == "unavailable":
             return (
                 BackendRunResult(
@@ -243,7 +252,7 @@ class ParserBenchmarkRunner:
             )
 
         try:
-            book = Book.from_dict(payload)
+            book = Book.from_json(str(payload))
             metrics = parser_level_metrics(
                 book, spec, quality_engine=self.quality_engine
             )
