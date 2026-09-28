@@ -210,6 +210,31 @@ PYTHONPATH=backend/src python -m book.publication.verify_cli \
 以及通用 detached-signature verifier。详细信任模型与 bundle 格式见
 [`docs/architecture/standalone-verifier-sigstore.md`](docs/architecture/standalone-verifier-sigstore.md)。
 
+## 真实 PDF 多解析器 Benchmark
+
+除 synthetic golden corpus 外，BookIR 现在还提供 rights-cleared 的真实 PDF
+parser-level benchmark，可让 PyMuPDF / MinerU / Marker 在**同一份 SHA-256 固定的
+源文件**上做横向对照：
+
+```bash
+PYTHONPATH=backend/src python -m book.benchmark.cli fetch \
+  --manifest benchmark/corpus/manifest.json
+
+PYTHONPATH=backend/src python -m book.benchmark.cli run \
+  --manifest benchmark/corpus/manifest.json \
+  --backends pymupdf,mineru,marker \
+  --output artifacts/parser-benchmark
+
+PYTHONPATH=backend/src python -m book.benchmark.cli report \
+  artifacts/parser-benchmark/benchmark-results.json \
+  --output artifacts/parser-benchmark/report.md
+```
+
+MinerU / Marker 仍是可选依赖；未安装时 benchmark 会记录为 `skipped`，
+不会把它当成 parser failure。真实 corpus 的权利策略、指标定义、当前文档清单
+和新增语料规范见
+[`docs/architecture/real-world-parser-benchmark.md`](docs/architecture/real-world-parser-benchmark.md)。
+
 ## 支持的格式
 
 | 输入格式 | 输出格式 | 说明 |
