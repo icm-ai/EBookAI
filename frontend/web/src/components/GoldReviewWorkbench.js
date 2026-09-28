@@ -54,6 +54,10 @@ function GoldReviewWorkbench() {
   const [elementDrafts, setElementDrafts] = useState({});
   const [readingOrderDraft, setReadingOrderDraft] = useState('');
   const [promotionNote, setPromotionNote] = useState('');
+  const [consensusSessionA, setConsensusSessionA] = useState('');
+  const [consensusSessionB, setConsensusSessionB] = useState('');
+  const [consensusBundle, setConsensusBundle] = useState(null);
+  const [adjudicator, setAdjudicator] = useState('');
   const [newElement, setNewElement] = useState({
     id: '',
     type: 'heading',
@@ -272,6 +276,62 @@ function GoldReviewWorkbench() {
     );
     if (response) {
       await loadQueue();
+    }
+  };
+
+  const createConsensus = async () => {
+    if (!consensusSessionA.trim() || !consensusSessionB.trim()) {
+      setError('Consensus requires two promoted review session ids.');
+      return;
+    }
+    setBusyAction('consensus-create');
+    setError('');
+    try {
+      const response = await api.createGoldConsensus(
+        consensusSessionA.trim(),
+        consensusSessionB.trim()
+      );
+      setConsensusBundle(response.data);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusyAction('');
+    }
+  };
+
+  const adjudicateConflict = async (conflictId, choice) => {
+    if (!adjudicator.trim()) {
+      setError('Enter an independent adjudicator identity.');
+      return;
+    }
+    setBusyAction(`adjudicate:${conflictId}`);
+    setError('');
+    try {
+      const response = await api.adjudicateGoldConsensus(
+        consensusBundle.id,
+        conflictId,
+        choice,
+        adjudicator.trim()
+      );
+      setConsensusBundle(response.data);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusyAction('');
+    }
+  };
+
+  const publishConsensus = async () => {
+    setBusyAction('consensus-publish');
+    setError('');
+    try {
+      const response = await api.publishGoldConsensus(consensusBundle.id);
+      setConsensusBundle(response.data);
+      await loadQueue();
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusyAction('');
     }
   };
 
@@ -718,6 +778,16 @@ function GoldReviewWorkbench() {
                   <div className="gold-promoted-artifact">
                     <strong>Reviewed artifact generated</strong>
                     <span>reviewed_by: {promoted.reviewed_by}</span>
+                    <code>session: {session.id}</code>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!consensusSessionA) setConsensusSessionA(session.id);
+                        else setConsensusSessionB(session.id);
+                      }}
+                    >
+                      Add this session to consensus pair
+                    </button>
                     <a href={api.getGoldReviewExportUrl(session.id)}>
                       Download reviewed gold JSON
                     </a>
@@ -739,6 +809,117 @@ function GoldReviewWorkbench() {
                       a writable source checkout; otherwise download both JSON
                       artifacts and commit them manually.
                     </small>
+                  </div>
+                )}
+              </section>
+
+              <section className="gold-editor-section gold-consensus">
+                <div className="gold-panel-title">
+                  <strong>Two-reviewer consensus</strong>
+                  <span>Milestone 17</span>
+                </div>
+                <p>
+                  Pair two independently promoted sessions from the same source
+                  revision. Reviewer identities must differ.
+                </p>
+                <label>
+                  Reviewer A session
+                  <input
+                    value={consensusSessionA}
+                    onChange={(event) => setConsensusSessionA(event.target.value)}
+                    placeholder="promoted session id"
+                  />
+                </label>
+                <label>
+                  Reviewer B session
+                  <input
+                    value={consensusSessionB}
+                    onChange={(event) => setConsensusSessionB(event.target.value)}
+                    placeholder="promoted session id"
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={createConsensus}
+                  disabled={busyAction === 'consensus-create'}
+                >
+                  Compare independent reviews
+                </button>
+
+                {consensusBundle && (
+                  <div className="gold-consensus-result">
+                    <strong>Status: {consensusBundle.status}</strong>
+                    <span>
+                      {consensusBundle.reviewer_a} ↔ {consensusBundle.reviewer_b}
+                    </span>
+                    {(consensusBundle.conflicts || []).map((conflict) => {
+                      const resolved = !(consensusBundle.unresolved_conflicts || [])
+                        .includes(conflict.id);
+                      return (
+                        <article key={conflict.id} className="gold-conflict-card">
+                          <div className="gold-element-row">
+                            <code>{conflict.id}</code>
+                            <span>{resolved ? 'resolved' : 'needs adjudication'}</span>
+                          </div>
+                          <div className="gold-conflict-candidates">
+                            <pre>{JSON.stringify(conflict.candidate_a, null, 2)}</pre>
+                            <pre>{JSON.stringify(conflict.candidate_b, null, 2)}</pre>
+                          </div>
+                          {!resolved && (
+                            <div className="gold-element-actions">
+                              <button
+                                type="button"
+                                onClick={() => adjudicateConflict(conflict.id, 'a')}
+                              >
+                                Choose A
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => adjudicateConflict(conflict.id, 'b')}
+                              >
+                                Choose B
+                              </button>
+                            </div>
+                          )}
+                        </article>
+                      );
+                    })}
+                    {(consensusBundle.conflicts || []).length > 0 && (
+                      <label>
+                        Independent adjudicator
+                        <input
+                          value={adjudicator}
+                          onChange={(event) => setAdjudicator(event.target.value)}
+                          placeholder="must differ from reviewer A and B"
+                        />
+                      </label>
+                    )}
+                    {consensusBundle.consensus_annotation && (
+                      <div className="gold-promoted-artifact">
+                        <strong>Consensus gold ready</strong>
+                        <span>
+                          reviewed_by: {consensusBundle.consensus_annotation.reviewed_by}
+                        </span>
+                        <a href={api.getGoldConsensusExportUrl(consensusBundle.id)}>
+                          Download consensus gold JSON
+                        </a>
+                        <a href={api.getGoldConsensusAuditUrl(consensusBundle.id)}>
+                          Download consensus audit JSON
+                        </a>
+                        <button
+                          type="button"
+                          onClick={publishConsensus}
+                          disabled={
+                            consensusBundle.status === 'published' ||
+                            busyAction === 'consensus-publish'
+                          }
+                        >
+                          {consensusBundle.status === 'published'
+                            ? 'Consensus published'
+                            : 'Maintainer: publish consensus canonical gold'}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </section>
