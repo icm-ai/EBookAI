@@ -281,7 +281,11 @@ class GoldenCorpusHarness:
             failures.append("EPUB bytes are not reproducible for identical BookIR")
 
         for name, actual, baseline in (
-            ("render_xhtml_digest", evidence.xhtml_digest, expected.render_xhtml_digest),
+            (
+                "render_xhtml_digest",
+                evidence.xhtml_digest,
+                expected.render_xhtml_digest,
+            ),
             ("render_flow_digest", evidence.flow_digest, expected.render_flow_digest),
             (
                 "render_stylesheet_digest",
