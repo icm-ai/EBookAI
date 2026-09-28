@@ -1,7 +1,7 @@
 {
   "schema_version": "1",
   "corpus_id": "ebookai-real-pdf-v1",
-  "description": "Rights-cleared real-world PDFs for parser-level comparison. Synthetic golden fixtures remain a separate correctness/regression suite.",
+  "description": "Rights-cleared real-world PDFs for parser comparison and reviewed-gold benchmarking. Milestone 15 expands the corpus to five documents and maintains a separate human-review queue; synthetic golden fixtures remain a separate regression suite.",
   "documents": [
     {
       "id": "nist-ballot-definition-prototype",
@@ -60,6 +60,93 @@
       "redistributable": false,
       "gold_annotations_path": "gold/nist-eel-sp1500-101-v1.json",
       "notes": "Primary complex corpus item. Fetched on demand and digest-verified; includes a sparse draft gold seed for page index 8 that requires human review before it may gate regressions."
+    },
+    {
+      "id": "nist-ai-rmf-1-0",
+      "title": "NIST Artificial Intelligence Risk Management Framework (AI RMF 1.0)",
+      "source_url": "https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=936225",
+      "license_url": "https://www.nist.gov/open/copyright-fair-use-and-licensing-statements-srd-data-software-and-technical-series-publications",
+      "rights_basis": "Official NIST Technical Series publication. NIST states works authored by NIST employees are not subject to U.S. copyright and grants broad worldwide reprint rights for NIST Technical Series works, while noting some third-party material may remain protected. This corpus therefore keeps the PDF download-only and verifies the exact bytes by SHA-256.",
+      "sha256": "7576edb531d9848825814ee88e28b1795d3a84b435b4b797d3670eafdc4a89f1",
+      "document_class": "technical-framework",
+      "language": "en",
+      "page_count": 48,
+      "complexity_tags": [
+        "real-world",
+        "long-document",
+        "table-of-contents",
+        "hierarchical-headings",
+        "tables",
+        "figures",
+        "captions",
+        "dense-technical-text"
+      ],
+      "expected_capabilities": [
+        "native_text",
+        "layout",
+        "reading_order",
+        "headings",
+        "tables",
+        "images",
+        "bbox"
+      ],
+      "redistributable": false,
+      "notes": "Added in Milestone 15. Official NIST download; 1,946,127 bytes and 48 pages verified by CI probe. Selected for mixed structural content and long-document evaluation."
+    },
+    {
+      "id": "nist-sp1299-csf2-overview",
+      "title": "NIST SP 1299 Cybersecurity Framework 2.0: Resource & Overview Guide",
+      "source_url": "https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=957317",
+      "license_url": "https://www.nist.gov/open/copyright-fair-use-and-licensing-statements-srd-data-software-and-technical-series-publications",
+      "rights_basis": "Official NIST Technical Series publication. NIST Technical Series reuse policy applies, with the corpus conservatively treating the PDF as download-only because published works can contain third-party material. Exact downloaded bytes are SHA-256 pinned.",
+      "sha256": "5db59917d92013f06dfefdc62604230959ee34b93db1fd22de726f83d9345f09",
+      "document_class": "technical-guide",
+      "language": "en",
+      "page_count": 8,
+      "complexity_tags": [
+        "real-world",
+        "short-document",
+        "mixed-layout",
+        "hierarchical-headings",
+        "callouts"
+      ],
+      "expected_capabilities": [
+        "native_text",
+        "layout",
+        "reading_order",
+        "headings",
+        "bbox"
+      ],
+      "redistributable": false,
+      "notes": "Added in Milestone 15. Official NIST download; 2,235,190 bytes and 8 pages verified by CI probe."
+    },
+    {
+      "id": "nist-sp1299-csf2-overview-ja",
+      "title": "NIST SP 1299 Cybersecurity Framework 2.0: Resource & Overview Guide (Japanese translation)",
+      "source_url": "https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=959369",
+      "license_url": "https://www.nist.gov/open/copyright-fair-use-and-licensing-statements-srd-data-software-and-technical-series-publications",
+      "rights_basis": "Official NIST-hosted Japanese translation of a NIST Technical Series publication. The corpus keeps the PDF download-only and SHA-256 pinned rather than making a broader redistribution claim for translated material.",
+      "sha256": "d29c48a3a10777a43a4dc7106611d661a25fa3c3146e858bf93a8fa83d9d2d27",
+      "document_class": "technical-guide-translation",
+      "language": "ja",
+      "page_count": 8,
+      "complexity_tags": [
+        "real-world",
+        "short-document",
+        "non-latin-text",
+        "translated-document",
+        "mixed-layout",
+        "hierarchical-headings"
+      ],
+      "expected_capabilities": [
+        "native_text",
+        "layout",
+        "reading_order",
+        "headings",
+        "bbox"
+      ],
+      "redistributable": false,
+      "notes": "Added in Milestone 15. Official NIST download; 3,589,610 bytes and 8 pages verified by CI probe. Adds Japanese-script coverage to the real corpus."
     }
   ]
 }
