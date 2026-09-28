@@ -466,3 +466,60 @@ def test_toolchain_provenance_is_integrity_protected(tmp_path):
         if item["path"] == "provenance/toolchain.json"
     )
     assert artifact["sha256"]
+
+
+
+def test_signing_command_material_is_not_persisted_in_release(tmp_path):
+    source = tmp_path / "source.pdf"
+    source.write_bytes(b"%PDF-1.4\nfixture\n")
+    signer_script, _ = _write_signature_fixture(tmp_path)
+    secret_marker = "super-secret-signing-material"
+    pipeline = ReleasePipeline(
+        epubcheck_runner=StaticRunner(_passed_epubcheck()),
+        signer=ExternalManifestSigner(
+            command=[sys.executable, str(signer_script), secret_marker],
+            key_id="public-key-id",
+            algorithm="fixture-sha256",
+        ),
+    )
+
+    result = pipeline.build(
+        source_path=source,
+        source_filename="fixture.pdf",
+        book=_book(),
+        quality_report=_quality_report(),
+        issue_resolutions={},
+        output_dir=tmp_path / "signed",
+    )
+
+    assert secret_marker.encode("utf-8") not in result.bundle_path.read_bytes()
+    assert b"public-key-id" in result.bundle_path.read_bytes()
+
+
+def test_required_signature_verification_fails_without_verifier(tmp_path):
+    source = tmp_path / "source.pdf"
+    source.write_bytes(b"%PDF-1.4\nfixture\n")
+    signer_script, _ = _write_signature_fixture(tmp_path)
+    pipeline = ReleasePipeline(
+        epubcheck_runner=StaticRunner(_passed_epubcheck()),
+        signer=ExternalManifestSigner(
+            command=[sys.executable, str(signer_script)],
+            key_id="fixture-key",
+            algorithm="fixture-sha256",
+        ),
+    )
+    result = pipeline.build(
+        source_path=source,
+        source_filename="fixture.pdf",
+        book=_book(),
+        quality_report=_quality_report(),
+        issue_resolutions={},
+        output_dir=tmp_path / "signed",
+        require_signature=True,
+    )
+
+    verification = pipeline.verify_bundle(result.bundle_path)
+
+    assert verification["valid"] is False
+    assert verification["signature"]["cryptographically_valid"] is None
+    assert "verifier is not configured" in " ".join(verification["errors"])
