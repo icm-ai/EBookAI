@@ -814,6 +814,81 @@ still consumes the native bundle.
 
 See `docs/architecture/standalone-verifier-sigstore.md`.
 
+### Milestone 12 — Golden Corpus and End-to-End Regression Harness
+
+- [x] Add a reusable `book.regression` package for corpus specifications,
+  metrics, evaluation, and render-oriented evidence.
+- [x] Define JSON per-case expectations and threshold policy instead of relying
+  on ad-hoc assertions.
+- [x] Bootstrap a deterministic rights-safe synthetic corpus covering digital,
+  scanned/image-only, multi-column, table-like, and footnote-heavy sources.
+- [x] Execute the real PyMuPDF adapter, deterministic reconstruction pipeline,
+  Quality Engine, EPUB compiler, Publication QA, and optional external
+  EPUBCheck for corpus cases.
+- [x] Measure BookIR semantic expectation score, text recall, reading-order
+  conformance, provenance coverage, bbox coverage, EPUB text recall, quality
+  findings, publication readiness, and EPUB byte reproducibility.
+- [x] Record deterministic XHTML/DOM, text-flow, stylesheet, and section-count
+  render evidence for every generated EPUB.
+- [x] Model current OCR/table/multi-column limitations as explicit `known_gaps`
+  rather than silently relaxing failures.
+- [x] Require the scanned/image-only fixture to surface `empty_document` and
+  remain publication-blocked on the lightweight parser path.
+- [x] Require the table fixture to preserve text/provenance/publication
+  correctness while explicitly tracking missing table semantics.
+- [x] Add a dedicated Golden Corpus Regression Gate with EPUBCheck 5.4.0.
+- [x] Upload the complete regression report and per-case evidence even on gate
+  failure for post-mortem comparison.
+- [x] Keep metric semantics explicit: scores are regression/expectation
+  conformance, not claims of universal reconstruction accuracy.
+
+#### Regression philosophy
+
+A green golden test means:
+
+    this pipeline still satisfies the explicit expectations
+    for this declared fixture and threshold set
+
+It does not mean:
+
+    arbitrary PDFs are reconstructed with the same percentage accuracy
+
+Golden thresholds are versioned product contracts. Improvements should tighten
+expectations and remove known gaps in the same change that improves the
+pipeline.
+
+#### Initial corpus
+
+    digital-basic
+      -> headings, paragraphs, repeated header/footer suppression,
+         cross-page paragraph continuity, provenance, EPUB
+
+    footnote
+      -> footnote classification + same-page reference association
+
+    multi-column
+      -> text recovery + reading-order baseline + provenance
+         known gap: semantic column grouping
+
+    table-like
+      -> cell text recovery + reading-order baseline + provenance
+         known gap: semantic TABLE reconstruction
+
+    scanned-image
+      -> image-only source must not be falsely accepted
+         expected gap: OCR required / empty_document
+
+#### Render evidence boundary
+
+Milestone 12 captures deterministic render-tree evidence from EPUB XHTML and
+CSS. This is useful for stable CI comparison without tying the core suite to a
+specific browser/font rasterizer.
+
+Pixel-level screenshots can be added later as a renderer-versioned evidence
+layer; they should not replace semantic/provenance regression metrics.
+
+See `docs/architecture/golden-corpus.md`.
+
 ## Legacy boundary
 
 The current services/conversion/conversion_pipeline.py is a legacy converter pipeline and should not become the foundation of BookIR. It remains operational until the new pipeline reaches functional parity.
