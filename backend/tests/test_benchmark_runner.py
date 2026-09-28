@@ -147,14 +147,10 @@ def _store(tmp_path: Path) -> CorpusStore:
                         "embedded_base64_path": asset.name,
                         "gold_annotations_path": gold_path.name,
                         "gold_thresholds": {
-                            "fake-success": {
-                                "structures.headings.f1_min": 1.0
-                            }
+                            "fake-success": {"structures.headings.f1_min": 1.0}
                         },
                         "gold_baselines": {
-                            "fake-success": {
-                                "structures.headings.f1": 1.0
-                            }
+                            "fake-success": {"structures.headings.f1": 1.0}
                         },
                     }
                 ],
@@ -191,17 +187,11 @@ def test_runner_records_success_skip_failure_and_report(tmp_path):
     assert success.metrics["relative_text_coverage"] == 1.0
     assert success.metrics["text_consensus_jaccard_mean"] is None
     assert success.gold_metrics["structures"]["headings"]["f1"] == 1.0
-    assert success.gold_metrics["baseline_deltas"] == {
-        "structures.headings.f1": 0.0
-    }
+    assert success.gold_metrics["baseline_deltas"] == {"structures.headings.f1": 0.0}
     assert success.gold_gate_failures == []
     assert Path(success.bookir_path).is_file()
     assert (
-        tmp_path
-        / "output"
-        / "fixture"
-        / "fake-success"
-        / "gold-evidence.json"
+        tmp_path / "output" / "fixture" / "fake-success" / "gold-evidence.json"
     ).is_file()
     assert (tmp_path / "output" / "benchmark-results.json").is_file()
 
