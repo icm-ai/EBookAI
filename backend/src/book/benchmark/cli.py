@@ -8,15 +8,11 @@ from pathlib import Path
 from typing import List, Optional
 
 from book.benchmark.corpus import CorpusStore
-from book.benchmark.gold import (
-    evaluate_gold,
-    evaluate_gold_gate,
-    load_gold_annotation,
-)
+from book.benchmark.gold import evaluate_gold, evaluate_gold_gate, load_gold_annotation
 from book.benchmark.models import BenchmarkReport, CorpusManifest
-from book.domain.models import Book
 from book.benchmark.report import write_markdown
 from book.benchmark.runner import ParserBenchmarkRunner
+from book.domain.models import Book
 
 DEFAULT_MANIFEST = Path("benchmark/corpus/manifest.json")
 DEFAULT_CACHE = Path(".cache/ebookai/corpus")
