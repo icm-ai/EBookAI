@@ -639,6 +639,90 @@ This verifies release integrity and provenance binding. It does not re-prove the
 semantic correctness of the source reconstruction; that evidence remains in the
 BookIR, review history, QA report, and external conformance report.
 
+### Milestone 10 — Signed Provenance and Release Attestation
+
+- [x] Release bundles include integrity-protected deterministic toolchain
+  provenance under `provenance/toolchain.json`.
+- [x] Provenance records runtime/package versions, parser route, BookIR/
+  reconstruction identity, AI repair provider/model metadata, compiler identity,
+  EPUBCheck status/version, and optional build revision.
+- [x] Secret material, signing commands, private keys, tokens, runtime paths, and
+  timestamps are excluded from provenance and release identity.
+- [x] External detached signing is optional and policy-controlled.
+- [x] Required signing fails closed when no signer/key id is configured.
+- [x] A configured signer failure aborts release creation instead of silently
+  degrading to unsigned output.
+- [x] `attestation.json` signs the exact canonical `manifest.json` bytes and
+  remains outside the manifest artifact hash list to avoid circular signing.
+- [x] Manifest schema v0.2 declares signed/unsigned state, public key id,
+  algorithm, and `require_signature` policy.
+- [x] External verification supports command templates with `{payload}` and
+  `{signature}` placeholders for OpenSSL/GPG/SSH/KMS-style integrations.
+- [x] Verification distinguishes integrity, cryptographic validity, and trust.
+- [x] Trusted signer policy uses an explicit non-secret key-id allowlist.
+- [x] A release requiring signatures cannot verify successfully without an
+  available cryptographic verifier.
+- [x] Review API and UI expose signature policy, signing identity, algorithm,
+  cryptographic verification, and trust state.
+- [x] Focused tests prove signing command/private material is not persisted.
+- [x] CI exercises a real ephemeral Ed25519 detached signature through OpenSSL.
+- [x] Sigstore is documented as a future native adapter rather than falsely
+  claiming Rekor/Fulcio semantics through the generic signature envelope.
+
+#### Trust model
+
+Milestone 9 answers:
+
+    Do these bundle bytes match the declared release?
+
+Milestone 10 additionally answers:
+
+    Was this exact manifest cryptographically authorized?
+    Do I trust the identity that authorized it?
+
+These are independent checks. Artifact hashes and `release_id` establish
+content integrity. The detached signature establishes cryptographic
+authenticity. Local trust policy decides whether the public `key_id` is an
+accepted signer.
+
+A valid signature from an untrusted key is therefore reported as
+cryptographically valid but not trusted.
+
+#### Detached signing boundary
+
+The signed payload is the exact canonical byte representation of
+`manifest.json`. The signature envelope is stored separately:
+
+    manifest.json
+         │
+         ├── SHA-256 payload binding
+         │
+         ▼
+    attestation.json
+         ├── algorithm
+         ├── key_id
+         ├── signature
+         └── payload_sha256
+
+The private key never enters EBookAI's persisted domain model.
+
+This boundary allows signing to be delegated to operating-system key stores,
+HSMs, KMS wrappers, OpenSSL, GPG, SSH signing, or future dedicated signing
+adapters without coupling BookIR to a cryptographic provider.
+
+#### Provenance boundary
+
+`provenance/toolchain.json` is itself a normal release artifact and is covered
+by `release_id`. It describes how the release was produced without trying to
+capture secrets or unstable machine-local state.
+
+The optional `EBOOKAI_BUILD_REVISION` allows deployment pipelines to bind a
+release to a source revision without requiring the application to shell out to
+Git at runtime.
+
+See `docs/architecture/release-attestation.md` for configuration and verifier
+semantics.
+
 ## Legacy boundary
 
 The current services/conversion/conversion_pipeline.py is a legacy converter pipeline and should not become the foundation of BookIR. It remains operational until the new pipeline reaches functional parity.
