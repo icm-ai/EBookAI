@@ -23,7 +23,11 @@
       "missing_provenance",
       "orphan_footnote"
     ],
-    "publication_ready": true
+    "publication_ready": true,
+    "render_xhtml_digest": "5012ff772a27578a9875fe2afcd6d7c2e29f95cb20fdc8e4b9b22341daeb48d2",
+    "render_flow_digest": "514773e207c6c9810e412ce87530d3956879ce182ae03c64b3b6f511481ed421",
+    "render_stylesheet_digest": "1852c87bc123bcad6928e048b95398730ab38e4386fcd11cd29d76550c6fe8ac",
+    "render_section_count": 1
   },
   "thresholds": {
     "semantic_score_min": 0.9,
