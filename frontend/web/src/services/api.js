@@ -260,6 +260,51 @@ const apiService = {
     return `${API_BASE}/api/gold-review/sessions/${encodeURIComponent(sessionId)}/export/audit`;
   },
 
+  async createGoldConsensus(sessionAId, sessionBId) {
+    return await api.post('/api/gold-review/consensus', {
+      session_a_id: sessionAId,
+      session_b_id: sessionBId,
+    });
+  },
+
+  async getGoldConsensus(bundleId) {
+    return await api.get(
+      `/api/gold-review/consensus/${encodeURIComponent(bundleId)}`
+    );
+  },
+
+  async adjudicateGoldConsensus(
+    bundleId,
+    conflictId,
+    choice,
+    adjudicator,
+    note = ''
+  ) {
+    return await api.post(
+      `/api/gold-review/consensus/${encodeURIComponent(bundleId)}/adjudicate`,
+      {
+        conflict_id: conflictId,
+        choice,
+        adjudicator,
+        note,
+      }
+    );
+  },
+
+  async publishGoldConsensus(bundleId) {
+    return await api.post(
+      `/api/gold-review/consensus/${encodeURIComponent(bundleId)}/publish`
+    );
+  },
+
+  getGoldConsensusExportUrl(bundleId) {
+    return `${API_BASE}/api/gold-review/consensus/${encodeURIComponent(bundleId)}/export/gold`;
+  },
+
+  getGoldConsensusAuditUrl(bundleId) {
+    return `${API_BASE}/api/gold-review/consensus/${encodeURIComponent(bundleId)}/export/audit`;
+  },
+
   // Batch operations
   async batchConvertFiles(files, targetFormat) {
     const formData = new FormData();
