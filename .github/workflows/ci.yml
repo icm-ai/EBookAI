@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop, milestone-18-benchmark-governance ]
+    branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
 
