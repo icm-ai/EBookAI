@@ -11,5 +11,6 @@
   "maximum_coverage_drop_documents": 0,
   "maximum_coverage_drop_pages": 0,
   "require_consensus_provenance": true,
-  "require_active_baseline_after_review": true
+  "require_active_baseline_after_review": true,
+  "require_full_reviewed_coverage": true
 }
