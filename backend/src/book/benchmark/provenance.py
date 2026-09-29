@@ -209,6 +209,7 @@ def record_consensus_publish(
         page_index,
         bundle_id,
     )
+    previous_audit = audit_path.read_bytes() if audit_path.is_file() else None
     _atomic_write_json(audit_path, audit_payload)
     audit_sha256 = sha256_file(audit_path)
     gold_sha256 = sha256_file(canonical_gold_path)
@@ -254,5 +255,12 @@ def record_consensus_publish(
             reviews=reviews,
         )
     )
-    registry.save(registry_path)
+    try:
+        registry.save(registry_path)
+    except Exception:
+        if previous_audit is None:
+            audit_path.unlink(missing_ok=True)
+        else:
+            audit_path.write_bytes(previous_audit)
+        raise
     return audit_path, registry_path
