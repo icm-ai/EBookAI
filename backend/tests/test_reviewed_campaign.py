@@ -7,6 +7,7 @@ import fitz
 import pytest
 from book.benchmark.baseline import ReviewedBaselineRegistry
 from book.benchmark.campaign import (
+    CampaignTarget,
     ReviewedGoldCampaign,
     activate_strict_baseline,
     create_campaign_batch,
@@ -168,10 +169,7 @@ def _fixture(tmp_path: Path):
         campaign_id="first-reviewed-fixture",
         corpus_id="campaign-fixture",
         targets=(
-            __import__(
-                "book.benchmark.campaign",
-                fromlist=["CampaignTarget"],
-            ).CampaignTarget(
+            CampaignTarget(
                 document_id="fixture",
                 page_index=0,
             ),
