@@ -6,6 +6,7 @@ import hashlib
 import json
 import subprocess
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence, Tuple
 
@@ -14,6 +15,7 @@ CHANGE_CONTROL_SCHEMA_VERSION = "1"
 GOVERNED_PREFIXES: Tuple[str, ...] = (
     "benchmark/corpus/gold/",
     "benchmark/corpus/provenance/",
+    "benchmark/governance/history/",
     "benchmark/leaderboard/baselines/",
     "benchmark/review-batches/",
 )
@@ -67,6 +69,11 @@ def classify_governed_path(path: str) -> Optional[str]:
         return "governance_policy"
     if normalized == "benchmark/governance/change-control.json":
         return "change_control_policy"
+    if (
+        normalized.startswith("benchmark/governance/history/")
+        and normalized.endswith(".json")
+    ):
+        return "change_history"
     if normalized.startswith("benchmark/review-batches/") and normalized.endswith(".json"):
         return "review_batch"
     return None
@@ -187,6 +194,38 @@ class ChangeControlReport:
             "changes": [item.to_dict() for item in self.changes],
             "failures": list(self.failures),
             "warnings": list(self.warnings),
+        }
+
+
+@dataclass(frozen=True)
+class ChangeHistoryRecord:
+    change_id: str
+    merged_commit: str
+    base_ref: str
+    head_ref: str
+    report_sha256: str
+    governance_release_sha256: Optional[str]
+    governed_paths: Tuple[str, ...]
+    categories: Tuple[str, ...]
+    approvers: Tuple[str, ...]
+    recorded_by: str
+    recorded_at: str
+    schema_version: str = CHANGE_CONTROL_SCHEMA_VERSION
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "schema_version": self.schema_version,
+            "change_id": self.change_id,
+            "merged_commit": self.merged_commit,
+            "base_ref": self.base_ref,
+            "head_ref": self.head_ref,
+            "report_sha256": self.report_sha256,
+            "governance_release_sha256": self.governance_release_sha256,
+            "governed_paths": list(self.governed_paths),
+            "categories": list(self.categories),
+            "approvers": list(self.approvers),
+            "recorded_by": self.recorded_by,
+            "recorded_at": self.recorded_at,
         }
 
 
@@ -662,3 +701,58 @@ def write_change_control_report(
         encoding="utf-8",
     )
     return json_path, markdown_path
+
+
+def build_change_history_record(
+    *,
+    report: ChangeControlReport,
+    approval: ApprovalCheck,
+    report_bytes: bytes,
+    merged_commit: str,
+    recorded_by: str,
+    governance_release_bytes: Optional[bytes] = None,
+) -> ChangeHistoryRecord:
+    if not report.ok:
+        raise ValueError("Cannot record change history for a structurally invalid report")
+    if not approval.ok:
+        raise ValueError("Cannot record change history without required approvals")
+    if not merged_commit.strip():
+        raise ValueError("Merged commit must not be empty")
+    if not recorded_by.strip():
+        raise ValueError("History recorded_by must not be empty")
+    report_sha = hashlib.sha256(report_bytes).hexdigest()
+    governance_sha = (
+        hashlib.sha256(governance_release_bytes).hexdigest()
+        if governance_release_bytes is not None
+        else None
+    )
+    change_id = f"{merged_commit[:12]}-{report_sha[:12]}"
+    return ChangeHistoryRecord(
+        change_id=change_id,
+        merged_commit=merged_commit,
+        base_ref=report.base_ref,
+        head_ref=report.head_ref,
+        report_sha256=report_sha,
+        governance_release_sha256=governance_sha,
+        governed_paths=tuple(change.path for change in report.changes),
+        categories=tuple(sorted({change.category for change in report.changes})),
+        approvers=approval.approvers,
+        recorded_by=recorded_by,
+        recorded_at=datetime.now(timezone.utc).isoformat(),
+    )
+
+
+def write_change_history_record(
+    record: ChangeHistoryRecord,
+    path: Path,
+) -> Path:
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    content = json.dumps(record.to_dict(), ensure_ascii=False, indent=2) + "\n"
+    if path.is_file():
+        existing = path.read_text(encoding="utf-8")
+        if existing != content:
+            raise ValueError(f"Change history record is immutable: {path}")
+        return path
+    path.write_text(content, encoding="utf-8")
+    return path
