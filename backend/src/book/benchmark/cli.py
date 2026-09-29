@@ -7,6 +7,12 @@ import json
 from pathlib import Path
 from typing import List, Optional
 
+from book.benchmark.baseline import (
+    build_reviewed_baseline,
+    load_baseline_leaderboard,
+    register_reviewed_baseline,
+    write_reviewed_baseline,
+)
 from book.benchmark.change_control import (
     ChangeControlPolicy,
     ChangeControlReport,
@@ -17,12 +23,6 @@ from book.benchmark.change_control import (
     render_change_control_markdown,
     write_change_control_report,
     write_change_history_record,
-)
-from book.benchmark.baseline import (
-    build_reviewed_baseline,
-    load_baseline_leaderboard,
-    register_reviewed_baseline,
-    write_reviewed_baseline,
 )
 from book.benchmark.corpus import CorpusStore
 from book.benchmark.gold import evaluate_gold, evaluate_gold_gate, load_gold_annotation
@@ -41,8 +41,8 @@ from book.benchmark.leaderboard import (
     write_leaderboard,
 )
 from book.benchmark.models import BenchmarkReport, CorpusManifest
-from book.benchmark.report import write_markdown
 from book.benchmark.provenance import ConsensusProvenanceRegistry
+from book.benchmark.report import write_markdown
 from book.benchmark.review_batch import (
     ReviewBatch,
     create_review_batch,
