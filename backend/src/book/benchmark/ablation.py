@@ -6,7 +6,6 @@ import json
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from statistics import mean
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
 from book.benchmark.gold import load_gold_annotation
@@ -812,14 +811,16 @@ def _decision(
     before: Optional[VariantAggregate],
     after: Optional[VariantAggregate],
     component: str,
+    from_variant_id: str,
+    to_variant_id: str,
 ) -> AblationDecision:
     policy = spec.decision_policy
     reasons: List[str] = []
 
     if before is None or after is None:
         return AblationDecision(
-            from_variant=before.variant_id if before else "?",
-            to_variant=after.variant_id if after else "?",
+            from_variant=from_variant_id,
+            to_variant=to_variant_id,
             component=component,
             verdict="insufficient_evidence",
             confidence="provisional",
@@ -1002,6 +1003,8 @@ def analyze_ablation(
                 by_variant.get(left.id),
                 by_variant.get(right.id),
                 right.added_component,
+                left.id,
+                right.id,
             )
         )
 
