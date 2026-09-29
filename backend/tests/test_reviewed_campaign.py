@@ -352,9 +352,7 @@ def test_review_packages_create_independent_sessions_without_promoting_gold(tmp_
         (tmp_path / "gold" / "fixture.json").read_text(encoding="utf-8")
     )
     assert canonical["status"] == "draft"
-    assert ConsensusProvenanceRegistry.load(
-        fixture["provenance_path"]
-    ).records == []
+    assert ConsensusProvenanceRegistry.load(fixture["provenance_path"]).records == []
 
 
 def test_campaign_status_becomes_ready_only_after_real_consensus_publish(tmp_path):
@@ -471,8 +469,7 @@ def test_campaign_activation_creates_first_strict_reviewed_baseline(tmp_path):
     registry = ReviewedBaselineRegistry.load(fixture["baseline_registry_path"])
     assert registry.active_baseline_id == fixture["campaign"].baseline_id
     assert (
-        fixture["baseline_registry_path"].parent
-        / fixture["campaign"].baseline_filename
+        fixture["baseline_registry_path"].parent / fixture["campaign"].baseline_filename
     ).is_file()
 
     status = inspect_campaign(
@@ -535,6 +532,5 @@ def test_campaign_activation_rolls_back_if_strict_governance_rejects_baseline(
 
     assert fixture["baseline_registry_path"].read_bytes() == registry_before
     assert (
-        fixture["baseline_registry_path"].parent
-        / fixture["campaign"].baseline_filename
+        fixture["baseline_registry_path"].parent / fixture["campaign"].baseline_filename
     ).exists() is False
