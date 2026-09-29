@@ -392,6 +392,28 @@ reviewed。真实状态应保持 `planned / 0 reviewed targets / no active basel
 详见
 [`docs/architecture/first-reviewed-campaign.md`](docs/architecture/first-reviewed-campaign.md)。
 
+### Runtime Ablation Pilot & Architecture Simplification
+
+Milestone 21 暂停继续堆 runtime feature，按 Occam's razor 比较四个累积版本：
+
+```text
+A  PyMuPDF + deterministic reconstruction
+B  A + quality-aware parser routing
+C  B + deterministic patch repair
+D  C + source-grounded AI repair
+```
+
+实验固定 10 个真实 review-plan 页面和 8 个 difficulty bucket；至少 8 页且所有
+bucket 都有 canonical reviewed gold 才允许形成架构结论。失败样本按 0 质量计入，
+fallback 依赖缺失则标记 invalid evidence，AI variant 必须由真实 provider/model/cost
+artifact 提供。没有人工 review minutes 时结论只能是 provisional。
+
+当前仓库仍是 0 reviewed pilot page，因此正确输出是
+`waiting_for_review / conclusion_ready=false`，不是为了 milestone 人为生成结果。
+
+详见
+[`docs/architecture/runtime-ablation-occam.md`](docs/architecture/runtime-ablation-occam.md)。
+
 ## 支持的格式
 
 | 输入格式 | 输出格式 | 说明 |
