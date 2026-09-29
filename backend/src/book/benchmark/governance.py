@@ -82,9 +82,7 @@ class BenchmarkGovernancePolicy:
         return cls(
             schema_version=str(value.get("schema_version", "")),
             ci_backends=tuple(str(item) for item in value.get("ci_backends", [])),
-            minimum_reviewed_documents=int(
-                value.get("minimum_reviewed_documents", 1)
-            ),
+            minimum_reviewed_documents=int(value.get("minimum_reviewed_documents", 1)),
             minimum_reviewed_pages=int(value.get("minimum_reviewed_pages", 1)),
             minimum_eligible_ci_backends=int(
                 value.get("minimum_eligible_ci_backends", 1)
@@ -376,7 +374,9 @@ def evaluate_governance(
 
     if reviewed_document_count == 0:
         if active_snapshot is not None:
-            failures.append("active baseline exists but canonical reviewed gold is empty")
+            failures.append(
+                "active baseline exists but canonical reviewed gold is empty"
+            )
         warnings.append(
             "bootstrap: no canonical reviewed gold exists yet; accuracy execution is dormant"
         )
@@ -391,10 +391,7 @@ def evaluate_governance(
                 f"reviewed page coverage {reviewed_page_count} < "
                 f"{policy.minimum_reviewed_pages}"
             )
-        if (
-            policy.require_active_baseline_after_review
-            and active_snapshot is None
-        ):
+        if policy.require_active_baseline_after_review and active_snapshot is None:
             failures.append(
                 "canonical reviewed gold exists but no active reviewed baseline is registered"
             )
@@ -499,9 +496,7 @@ def evaluate_governance(
         failures=tuple(sorted(set(failures))),
         warnings=tuple(sorted(set(warnings))),
         current_leaderboard=(
-            current_leaderboard.to_dict()
-            if current_leaderboard is not None
-            else None
+            current_leaderboard.to_dict() if current_leaderboard is not None else None
         ),
     )
 
