@@ -62,7 +62,7 @@ jobs:
         BASE_SHA: ${{ github.event.pull_request.base.sha }}
         HEAD_SHA: ${{ github.event.pull_request.head.sha }}
       run: |
-        changed="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" --           .github/workflows/benchmark-change-control.yml           .github/workflows/ci.yml           backend/src/book/benchmark/baseline.py           backend/src/book/benchmark/campaign.py           backend/src/book/benchmark/change_control.py           backend/src/book/benchmark/consensus.py           backend/src/book/benchmark/governance.py           backend/src/book/benchmark/provenance.py)"
+        changed="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" --           .github/workflows/benchmark-change-control.yml           .github/workflows/ci.yml           backend/src/book/benchmark/ablation.py           backend/src/book/benchmark/ablation_runner.py           backend/src/book/benchmark/baseline.py           backend/src/book/benchmark/campaign.py           backend/src/book/benchmark/change_control.py           backend/src/book/benchmark/consensus.py           backend/src/book/benchmark/governance.py           backend/src/book/benchmark/provenance.py)"
         if [ -n "$changed" ]; then
           echo "changed=true" >> "$GITHUB_OUTPUT"
           printf '%s\n' "$changed" > artifacts/benchmark-change-control/governance-engine-changes.txt
