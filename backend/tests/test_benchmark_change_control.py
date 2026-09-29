@@ -1,5 +1,6 @@
 import json
 import subprocess
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -7,9 +8,11 @@ from book.benchmark.change_control import (
     ChangeControlPolicy,
     ChangeInput,
     build_change_control_report,
+    build_change_history_record,
     build_git_change_control_report,
     check_pr_approvals,
     classify_governed_path,
+    write_change_history_record,
 )
 from book.benchmark.models import CorpusManifest
 from book.benchmark.provenance import (
@@ -436,6 +439,62 @@ def test_latest_review_state_controls_approval_and_author_is_excluded():
     assert approval.ok is False
     assert approval.approvers == ()
     assert "0 < required 1" in approval.failures[0]
+
+
+def test_change_history_requires_approved_report_and_is_immutable(tmp_path):
+    report = build_change_control_report(
+        [
+            ChangeInput(
+                path="benchmark/review-batches/batch.json",
+                status="added",
+                before=None,
+                after=b"{}",
+            )
+        ],
+        policy=_policy(),
+        base_ref="base",
+        head_ref="head",
+    )
+    rejected = check_pr_approvals(
+        report,
+        reviews=[],
+        pr_author="author",
+    )
+    with pytest.raises(ValueError, match="required approvals"):
+        build_change_history_record(
+            report=report,
+            approval=rejected,
+            report_bytes=b"report",
+            merged_commit="a" * 40,
+            recorded_by="maintainer",
+        )
+
+    approved = check_pr_approvals(
+        report,
+        reviews=[
+            {"id": 1, "state": "APPROVED", "user": {"login": "alice"}},
+        ],
+        pr_author="author",
+    )
+    record = build_change_history_record(
+        report=report,
+        approval=approved,
+        report_bytes=b"report",
+        governance_release_bytes=b"governance",
+        merged_commit="a" * 40,
+        recorded_by="maintainer",
+    )
+    path = tmp_path / "history.json"
+    write_change_history_record(record, path)
+    write_change_history_record(record, path)
+
+    assert record.approvers == ("alice",)
+    assert record.governance_release_sha256 is not None
+    with pytest.raises(ValueError, match="immutable"):
+        write_change_history_record(
+            replace(record, recorded_by="different"),
+            path,
+        )
 
 
 def test_git_change_report_reads_exact_base_and_head_bytes(tmp_path):
