@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -169,12 +169,8 @@ class ReviewedBaselineVersion:
 @dataclass
 class ReviewedBaselineRegistry:
     active_baseline_id: Optional[str] = None
-    baselines: List[ReviewedBaselineVersion] = None
+    baselines: List[ReviewedBaselineVersion] = field(default_factory=list)
     schema_version: str = BASELINE_REGISTRY_SCHEMA_VERSION
-
-    def __post_init__(self) -> None:
-        if self.baselines is None:
-            self.baselines = []
 
     @classmethod
     def load(cls, path: Path) -> "ReviewedBaselineRegistry":
@@ -243,7 +239,12 @@ def register_reviewed_baseline(
     digest = _sha256(baseline_path)
     registry = ReviewedBaselineRegistry.load(registry_path)
 
-    relative_path = baseline_path.relative_to(registry_path.parent).as_posix()
+    try:
+        relative_path = baseline_path.relative_to(registry_path.parent).as_posix()
+    except ValueError as exc:
+        raise ValueError(
+            "Reviewed baseline must be stored inside the baseline registry directory"
+        ) from exc
     existing = None
     for item in registry.baselines:
         if item.baseline_id == baseline_id:
@@ -278,7 +279,12 @@ def load_active_reviewed_baseline(
     if registry.active_baseline_id is None:
         return None
     version = registry.get(registry.active_baseline_id)
-    path = (registry_path.parent / version.path).resolve()
+    root = registry_path.parent
+    path = (root / version.path).resolve()
+    try:
+        path.relative_to(root)
+    except ValueError as exc:
+        raise ValueError("Active reviewed baseline path escapes registry directory") from exc
     if not path.is_file():
         raise ValueError(f"Active reviewed baseline file is missing: {path}")
     if _sha256(path) != version.sha256:
