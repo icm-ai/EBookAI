@@ -58,6 +58,21 @@ def _atomic_write_json(path: Path, value: Dict[str, Any]) -> None:
             os.unlink(temporary)
 
 
+def _atomic_write_bytes(path: Path, value: bytes) -> None:
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, temporary = tempfile.mkstemp(prefix=f".{path.name}.", dir=str(path.parent))
+    try:
+        with os.fdopen(fd, "wb") as handle:
+            handle.write(value)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+
+
 @dataclass(frozen=True)
 class ConsensusConflict:
     """One semantic disagreement between two independently reviewed candidates."""
@@ -414,18 +429,22 @@ class GoldConsensusStore:
                 )
             validate_gold_against_spec(bundle.consensus_annotation, spec)
             path = self._canonical_gold_path(spec)
+            previous_bytes = path.read_bytes() if path.is_file() else None
+            previous_published_at = bundle.published_at
+            previous_updated_at = bundle.updated_at
             try:
                 _atomic_write_json(path, bundle.consensus_annotation.to_dict())
             except OSError as exc:
                 raise GoldValidationError(
                     "Canonical gold is not writable in this environment"
                 ) from exc
-            bundle.published_at = _utc_now()
-            bundle.updated_at = bundle.published_at
-            self._write(bundle)
-            audit_payload = self._audit_payload(bundle)
-            self._write_audit(bundle, payload=audit_payload)
+
             try:
+                bundle.published_at = _utc_now()
+                bundle.updated_at = bundle.published_at
+                self._write(bundle)
+                audit_payload = self._audit_payload(bundle)
+                self._write_audit(bundle, payload=audit_payload)
                 record_consensus_publish(
                     manifest_path=self.manifest_path,
                     document_id=bundle.document_id,
@@ -433,10 +452,26 @@ class GoldConsensusStore:
                     canonical_gold_path=path,
                     audit_payload=audit_payload,
                 )
-            except (OSError, ValueError) as exc:
+            except Exception as exc:
+                rollback_error: Optional[Exception] = None
+                try:
+                    if previous_bytes is None:
+                        path.unlink(missing_ok=True)
+                    else:
+                        _atomic_write_bytes(path, previous_bytes)
+                    bundle.published_at = previous_published_at
+                    bundle.updated_at = previous_updated_at
+                    self._write(bundle)
+                except Exception as rollback_exc:
+                    rollback_error = rollback_exc
+                if rollback_error is not None:
+                    raise GoldValidationError(
+                        "Consensus publish failed and rollback could not restore "
+                        "canonical benchmark state"
+                    ) from rollback_error
                 raise GoldValidationError(
-                    "Consensus gold was published but provenance registry update failed; "
-                    "governance will fail closed until provenance is repaired"
+                    "Consensus publish failed while recording governance provenance; "
+                    "canonical benchmark state was rolled back"
                 ) from exc
             return bundle
 
