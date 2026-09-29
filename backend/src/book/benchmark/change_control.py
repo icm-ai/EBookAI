@@ -404,6 +404,12 @@ def build_change_control_report(
                         f"baseline registry entry {baseline_id!r} is incomplete"
                     )
                     continue
+                relative = Path(path)
+                if relative.is_absolute() or ".." in relative.parts:
+                    failures.append(
+                        f"baseline registry entry {baseline_id!r} escapes baseline directory"
+                    )
+                    continue
                 full_path = f"benchmark/leaderboard/baselines/{path}"
                 payload = head_loader(full_path)
                 if payload is None:
