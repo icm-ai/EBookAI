@@ -13,6 +13,14 @@ from book.benchmark.baseline import (
     register_reviewed_baseline,
     write_reviewed_baseline,
 )
+from book.benchmark.campaign import (
+    ReviewedGoldCampaign,
+    activate_strict_baseline,
+    create_campaign_batch,
+    generate_review_packages,
+    inspect_campaign,
+    write_campaign_status,
+)
 from book.benchmark.change_control import (
     ChangeControlPolicy,
     ChangeControlReport,
@@ -57,6 +65,7 @@ from book.benchmark.review_plan import (
     review_plan_summary,
     validate_review_plan,
 )
+from book.benchmark.review_workbench import GoldReviewStore
 from book.benchmark.runner import ParserBenchmarkRunner
 from book.domain.models import Book
 
@@ -70,6 +79,8 @@ DEFAULT_PROVENANCE_REGISTRY = Path("benchmark/corpus/provenance/registry.json")
 DEFAULT_CHANGE_CONTROL_POLICY = Path("benchmark/governance/change-control.json")
 DEFAULT_REVIEW_BATCH_DIR = Path("benchmark/review-batches")
 DEFAULT_CHANGE_HISTORY_DIR = Path("benchmark/governance/history")
+DEFAULT_CAMPAIGN = Path("benchmark/campaigns/first-reviewed-v1.json")
+DEFAULT_GOLD_REVIEW_WORKSPACE = Path(".cache/ebookai/gold-review")
 
 
 def _csv(value: Optional[str]) -> Optional[List[str]]:
@@ -249,6 +260,113 @@ def build_parser() -> argparse.ArgumentParser:
     governance_ci.add_argument("--cache", type=Path, default=DEFAULT_CACHE)
     governance_ci.add_argument("--output", type=Path, required=True)
     governance_ci.add_argument("--timeout", type=float, default=300.0)
+
+    campaign_status = subparsers.add_parser(
+        "campaign-status",
+        help="Inspect a reviewed-gold campaign without fabricating human completion",
+    )
+    campaign_status.add_argument(
+        "campaign",
+        type=Path,
+        nargs="?",
+        default=DEFAULT_CAMPAIGN,
+    )
+    campaign_status.add_argument("--batch", type=Path)
+    campaign_status.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    campaign_status.add_argument("--plan", type=Path, default=DEFAULT_REVIEW_PLAN)
+    campaign_status.add_argument(
+        "--provenance-registry",
+        type=Path,
+        default=DEFAULT_PROVENANCE_REGISTRY,
+    )
+    campaign_status.add_argument(
+        "--baseline-registry",
+        type=Path,
+        default=DEFAULT_BASELINE_REGISTRY,
+    )
+    campaign_status.add_argument(
+        "--governance-policy",
+        type=Path,
+        default=DEFAULT_GOVERNANCE_POLICY,
+    )
+    campaign_status.add_argument("--output", type=Path)
+
+    campaign_assign = subparsers.add_parser(
+        "campaign-assign",
+        help="Assign real independent reviewers to the exact campaign targets",
+    )
+    campaign_assign.add_argument(
+        "campaign",
+        type=Path,
+        nargs="?",
+        default=DEFAULT_CAMPAIGN,
+    )
+    campaign_assign.add_argument("--created-by", required=True)
+    campaign_assign.add_argument("--reviewer-a", required=True)
+    campaign_assign.add_argument("--reviewer-b", required=True)
+    campaign_assign.add_argument("--adjudicator", default="")
+    campaign_assign.add_argument("--description", default="")
+    campaign_assign.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    campaign_assign.add_argument("--plan", type=Path, default=DEFAULT_REVIEW_PLAN)
+    campaign_assign.add_argument("--output", type=Path)
+
+    campaign_packages = subparsers.add_parser(
+        "campaign-packages",
+        help="Generate independent source-grounded review packages and sessions",
+    )
+    campaign_packages.add_argument(
+        "campaign",
+        type=Path,
+        nargs="?",
+        default=DEFAULT_CAMPAIGN,
+    )
+    campaign_packages.add_argument("batch", type=Path)
+    campaign_packages.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    campaign_packages.add_argument("--plan", type=Path, default=DEFAULT_REVIEW_PLAN)
+    campaign_packages.add_argument("--cache", type=Path, default=DEFAULT_CACHE)
+    campaign_packages.add_argument(
+        "--workspace",
+        type=Path,
+        default=DEFAULT_GOLD_REVIEW_WORKSPACE,
+    )
+    campaign_packages.add_argument("--output", type=Path, required=True)
+
+    campaign_activate = subparsers.add_parser(
+        "campaign-activate",
+        help="Create and activate a provenance-pinned strict reviewed baseline",
+    )
+    campaign_activate.add_argument(
+        "campaign",
+        type=Path,
+        nargs="?",
+        default=DEFAULT_CAMPAIGN,
+    )
+    campaign_activate.add_argument("batch", type=Path)
+    campaign_activate.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    campaign_activate.add_argument("--plan", type=Path, default=DEFAULT_REVIEW_PLAN)
+    campaign_activate.add_argument(
+        "--provenance-registry",
+        type=Path,
+        default=DEFAULT_PROVENANCE_REGISTRY,
+    )
+    campaign_activate.add_argument(
+        "--baseline-registry",
+        type=Path,
+        default=DEFAULT_BASELINE_REGISTRY,
+    )
+    campaign_activate.add_argument(
+        "--leaderboard-policy",
+        type=Path,
+        default=DEFAULT_LEADERBOARD_POLICY,
+    )
+    campaign_activate.add_argument(
+        "--governance-policy",
+        type=Path,
+        default=DEFAULT_GOVERNANCE_POLICY,
+    )
+    campaign_activate.add_argument("--cache", type=Path, default=DEFAULT_CACHE)
+    campaign_activate.add_argument("--output", type=Path, required=True)
+    campaign_activate.add_argument("--timeout", type=float, default=300.0)
 
     review_batch_create = subparsers.add_parser(
         "review-batch-create",
@@ -504,6 +622,89 @@ def main(argv: Optional[List[str]] = None) -> int:
         )
         print(json.dumps(result.to_dict(), indent=2))
         return 0 if result.ok else 1
+    if args.command == "campaign-status":
+        campaign = ReviewedGoldCampaign.load(args.campaign)
+        batch_path = args.batch or (
+            DEFAULT_REVIEW_BATCH_DIR / f"{campaign.campaign_id}.json"
+        )
+        batch = ReviewBatch.load(batch_path) if batch_path.is_file() else None
+        status = inspect_campaign(
+            campaign,
+            manifest_path=args.manifest,
+            review_plan_path=args.plan,
+            provenance_registry_path=args.provenance_registry,
+            baseline_registry_path=args.baseline_registry,
+            governance_policy_path=args.governance_policy,
+            batch=batch,
+        )
+        artifacts = []
+        if args.output is not None:
+            artifacts = [
+                str(path)
+                for path in write_campaign_status(status, args.output)
+            ]
+        print(
+            json.dumps(
+                {"status": status.to_dict(), "artifacts": artifacts},
+                indent=2,
+            )
+        )
+        return 0 if status.ok else 1
+    if args.command == "campaign-assign":
+        campaign = ReviewedGoldCampaign.load(args.campaign)
+        manifest = CorpusManifest.load(args.manifest)
+        plan = ReviewPlan.load(args.plan)
+        batch = create_campaign_batch(
+            campaign,
+            manifest=manifest,
+            plan=plan,
+            created_by=args.created_by,
+            reviewer_a=args.reviewer_a,
+            reviewer_b=args.reviewer_b,
+            adjudicator=args.adjudicator,
+            description=args.description,
+        )
+        output = args.output or (
+            DEFAULT_REVIEW_BATCH_DIR / f"{campaign.campaign_id}.json"
+        )
+        batch.save(output)
+        print(json.dumps({"batch": str(output), **batch.to_dict()}, indent=2))
+        return 0
+    if args.command == "campaign-packages":
+        campaign = ReviewedGoldCampaign.load(args.campaign)
+        batch = ReviewBatch.load(args.batch)
+        store = GoldReviewStore(
+            args.manifest,
+            args.plan,
+            args.cache,
+            args.workspace,
+        )
+        result = generate_review_packages(
+            campaign,
+            batch,
+            store=store,
+            output_dir=args.output,
+        )
+        print(json.dumps(result, indent=2))
+        return 0
+    if args.command == "campaign-activate":
+        campaign = ReviewedGoldCampaign.load(args.campaign)
+        batch = ReviewBatch.load(args.batch)
+        result = activate_strict_baseline(
+            campaign,
+            batch,
+            manifest_path=args.manifest,
+            review_plan_path=args.plan,
+            provenance_registry_path=args.provenance_registry,
+            baseline_registry_path=args.baseline_registry,
+            leaderboard_policy_path=args.leaderboard_policy,
+            governance_policy_path=args.governance_policy,
+            cache_dir=args.cache,
+            output_dir=args.output,
+            timeout=args.timeout,
+        )
+        print(json.dumps(result.to_dict(), indent=2))
+        return 0
     if args.command == "review-batch-create":
         manifest = CorpusManifest.load(args.manifest)
         plan = ReviewPlan.load(args.plan)
