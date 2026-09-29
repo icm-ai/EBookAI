@@ -10,10 +10,18 @@ from typing import List, Optional
 from book.benchmark.baseline import (
     build_reviewed_baseline,
     load_baseline_leaderboard,
+    register_reviewed_baseline,
     write_reviewed_baseline,
 )
 from book.benchmark.corpus import CorpusStore
 from book.benchmark.gold import evaluate_gold, evaluate_gold_gate, load_gold_annotation
+from book.benchmark.governance import (
+    BenchmarkGovernancePolicy,
+    build_governance_release_manifest,
+    evaluate_governance,
+    run_governed_accuracy_ci,
+    write_governance_outputs,
+)
 from book.benchmark.leaderboard import (
     LeaderboardPolicy,
     ParserLeaderboard,
@@ -37,6 +45,9 @@ DEFAULT_MANIFEST = Path("benchmark/corpus/manifest.json")
 DEFAULT_CACHE = Path(".cache/ebookai/corpus")
 DEFAULT_LEADERBOARD_POLICY = Path("benchmark/leaderboard/policy.json")
 DEFAULT_REVIEW_PLAN = Path("benchmark/corpus/review-plan.json")
+DEFAULT_GOVERNANCE_POLICY = Path("benchmark/governance/policy.json")
+DEFAULT_BASELINE_REGISTRY = Path("benchmark/leaderboard/baselines/registry.json")
+DEFAULT_PROVENANCE_REGISTRY = Path("benchmark/corpus/provenance/registry.json")
 
 
 def _csv(value: Optional[str]) -> Optional[List[str]]:
@@ -127,6 +138,69 @@ def build_parser() -> argparse.ArgumentParser:
     baseline_create.add_argument("leaderboard", type=Path)
     baseline_create.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     baseline_create.add_argument("--output", type=Path, required=True)
+
+    baseline_register = subparsers.add_parser(
+        "baseline-register",
+        help="Register an immutable reviewed baseline version and optionally activate it",
+    )
+    baseline_register.add_argument("baseline", type=Path)
+    baseline_register.add_argument("--id", required=True)
+    baseline_register.add_argument(
+        "--registry",
+        type=Path,
+        default=DEFAULT_BASELINE_REGISTRY,
+    )
+    baseline_register.add_argument(
+        "--no-activate",
+        action="store_true",
+        help="Register the version without making it active",
+    )
+
+    governance_check = subparsers.add_parser(
+        "governance-check",
+        help="Validate reviewed gold, consensus provenance and active baseline state",
+    )
+    governance_check.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    governance_check.add_argument(
+        "--policy",
+        type=Path,
+        default=DEFAULT_GOVERNANCE_POLICY,
+    )
+    governance_check.add_argument(
+        "--baseline-registry",
+        type=Path,
+        default=DEFAULT_BASELINE_REGISTRY,
+    )
+    governance_check.add_argument(
+        "--provenance-registry",
+        type=Path,
+        default=DEFAULT_PROVENANCE_REGISTRY,
+    )
+    governance_check.add_argument("--output", type=Path, required=True)
+
+    governance_ci = subparsers.add_parser(
+        "governance-ci",
+        help="Run bootstrap governance or strict reviewed-gold accuracy regression",
+    )
+    governance_ci.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    governance_ci.add_argument(
+        "--policy",
+        type=Path,
+        default=DEFAULT_GOVERNANCE_POLICY,
+    )
+    governance_ci.add_argument(
+        "--baseline-registry",
+        type=Path,
+        default=DEFAULT_BASELINE_REGISTRY,
+    )
+    governance_ci.add_argument(
+        "--provenance-registry",
+        type=Path,
+        default=DEFAULT_PROVENANCE_REGISTRY,
+    )
+    governance_ci.add_argument("--cache", type=Path, default=DEFAULT_CACHE)
+    governance_ci.add_argument("--output", type=Path, required=True)
+    governance_ci.add_argument("--timeout", type=float, default=300.0)
 
     review_plan = subparsers.add_parser(
         "review-plan", help="Validate and summarize the gold human-review queue"
@@ -255,6 +329,53 @@ def main(argv: Optional[List[str]] = None) -> int:
             )
         )
         return 0
+    if args.command == "baseline-register":
+        registry = register_reviewed_baseline(
+            args.registry,
+            args.baseline,
+            args.id,
+            activate=not args.no_activate,
+        )
+        print(json.dumps(registry.to_dict(), indent=2))
+        return 0
+    if args.command == "governance-check":
+        policy = BenchmarkGovernancePolicy.load(args.policy)
+        result = evaluate_governance(
+            args.manifest,
+            policy,
+            args.baseline_registry,
+            provenance_registry_path=args.provenance_registry,
+        )
+        release = build_governance_release_manifest(
+            result,
+            manifest_path=args.manifest,
+            policy_path=args.policy,
+            baseline_registry_path=args.baseline_registry,
+            provenance_registry_path=args.provenance_registry,
+        )
+        paths = write_governance_outputs(result, release, args.output)
+        print(
+            json.dumps(
+                {
+                    "report": result.to_dict(),
+                    "artifacts": [str(path) for path in paths],
+                },
+                indent=2,
+            )
+        )
+        return 0 if result.ok else 1
+    if args.command == "governance-ci":
+        result = run_governed_accuracy_ci(
+            manifest_path=args.manifest,
+            policy_path=args.policy,
+            baseline_registry_path=args.baseline_registry,
+            provenance_registry_path=args.provenance_registry,
+            output_dir=args.output,
+            cache_dir=args.cache,
+            timeout=args.timeout,
+        )
+        print(json.dumps(result.to_dict(), indent=2))
+        return 0 if result.ok else 1
     if args.command == "review-plan":
         manifest = CorpusManifest.load(args.manifest)
         plan = ReviewPlan.load(args.plan)
