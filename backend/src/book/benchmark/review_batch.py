@@ -72,7 +72,9 @@ class ReviewBatch:
 
     def __post_init__(self) -> None:
         if self.schema_version != REVIEW_BATCH_SCHEMA_VERSION:
-            raise ValueError(f"Unsupported review batch schema: {self.schema_version!r}")
+            raise ValueError(
+                f"Unsupported review batch schema: {self.schema_version!r}"
+            )
         if not self.batch_id.strip():
             raise ValueError("Review batch id must not be empty")
         if not self.corpus_id.strip():
@@ -86,7 +88,9 @@ class ReviewBatch:
             for assignment in self.assignments
         ]
         if len(keys) != len(set(keys)):
-            raise ValueError("Review batch contains duplicate document/page assignments")
+            raise ValueError(
+                "Review batch contains duplicate document/page assignments"
+            )
 
     @classmethod
     def from_dict(cls, value: Dict[str, Any]) -> "ReviewBatch":
@@ -177,14 +181,8 @@ def create_review_batch(
     targets: List[ReviewTarget] = [
         target
         for target in plan.targets
-        if (
-            priority_filter is None
-            or target.priority in priority_filter
-        )
-        and (
-            document_filter is None
-            or target.document_id in document_filter
-        )
+        if (priority_filter is None or target.priority in priority_filter)
+        and (document_filter is None or target.document_id in document_filter)
     ]
     priority_order = {"high": 0, "medium": 1, "low": 2}
     targets.sort(
@@ -304,11 +302,7 @@ def render_review_batch_markdown(
                     str(assignment.page_index),
                     f"`{assignment.reviewer_a}`",
                     f"`{assignment.reviewer_b}`",
-                    (
-                        f"`{assignment.adjudicator}`"
-                        if assignment.adjudicator
-                        else "—"
-                    ),
+                    (f"`{assignment.adjudicator}`" if assignment.adjudicator else "—"),
                 ]
             )
             + " |"
