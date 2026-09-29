@@ -52,9 +52,7 @@ def _selected_gold(
     if len(selected) != len(set(page_indexes)):
         found = {page.page_index for page in selected}
         missing = sorted(set(page_indexes) - found)
-        raise ValueError(
-            f"Reviewed gold is missing selected pages: {missing}"
-        )
+        raise ValueError(f"Reviewed gold is missing selected pages: {missing}")
     return GoldAnnotation(
         schema_version=annotation.schema_version,
         document_id=annotation.document_id,
@@ -168,9 +166,7 @@ def _variant_worker(
         elif variant_id in {"B", "C"}:
             result = ParserOrchestrator(_default_registry()).run(source)
             if result.book is None:
-                raise RuntimeError(
-                    "Parser orchestrator produced no BookIR result"
-                )
+                raise RuntimeError("Parser orchestrator produced no BookIR result")
             book = result.book
             metadata["selected_parser"] = result.selected_parser
             metadata["parser_attempts"] = len(result.attempts)
@@ -185,9 +181,13 @@ def _variant_worker(
                 for attempt in result.attempts
                 if attempt.parser_name in {"mineru", "marker"}
             ]
-            if rejected_pymupdf and fallback_attempts and all(
-                attempt.status == AttemptStatus.UNAVAILABLE
-                for attempt in fallback_attempts
+            if (
+                rejected_pymupdf
+                and fallback_attempts
+                and all(
+                    attempt.status == AttemptStatus.UNAVAILABLE
+                    for attempt in fallback_attempts
+                )
             ):
                 metadata["valid_for_decision"] = False
                 metadata["invalid_reason"] = (
@@ -200,9 +200,7 @@ def _variant_worker(
                 metadata["intervention_count"] = applied
                 metadata["rejected_patch_count"] = rejected
         else:
-            raise ValueError(
-                "Local ablation runner supports only variants A, B, and C"
-            )
+            raise ValueError("Local ablation runner supports only variants A, B, and C")
 
         payload = {
             "status": "success",
@@ -404,18 +402,14 @@ def run_local_ablation(
                     review_issue_count=review_issue_count,
                     manual_review_minutes=None,
                     ai_cost_usd=0.0,
-                    intervention_count=int(
-                        metadata.get("intervention_count", 0)
-                    ),
+                    intervention_count=int(metadata.get("intervention_count", 0)),
                     selected_parser=(
                         str(metadata["selected_parser"])
                         if metadata.get("selected_parser") is not None
                         else None
                     ),
                     parser_attempts=int(metadata.get("parser_attempts", 0)),
-                    valid_for_decision=bool(
-                        metadata.get("valid_for_decision", True)
-                    ),
+                    valid_for_decision=bool(metadata.get("valid_for_decision", True)),
                     invalid_reason=str(metadata.get("invalid_reason", "")),
                     error=error,
                 )
