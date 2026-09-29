@@ -136,6 +136,7 @@ jobs:
           backend/tests/test_benchmark_runner.py \
           backend/tests/test_benchmark_leaderboard.py \
           backend/tests/test_benchmark_governance.py \
+          backend/tests/test_benchmark_change_control.py \
           backend/tests/test_gold_annotations.py \
           backend/tests/test_gold_consensus.py \
           backend/tests/test_gold_review_workbench.py \
@@ -164,6 +165,7 @@ jobs:
           backend/tests/test_benchmark_runner.py \
           backend/tests/test_benchmark_leaderboard.py \
           backend/tests/test_benchmark_governance.py \
+          backend/tests/test_benchmark_change_control.py \
           backend/tests/test_gold_annotations.py \
           backend/tests/test_gold_consensus.py \
           backend/tests/test_gold_review_workbench.py \
@@ -193,6 +195,7 @@ jobs:
           backend/tests/test_benchmark_runner.py \
           backend/tests/test_benchmark_leaderboard.py \
           backend/tests/test_benchmark_governance.py \
+          backend/tests/test_benchmark_change_control.py \
           backend/tests/test_gold_annotations.py \
           backend/tests/test_gold_consensus.py \
           backend/tests/test_gold_review_workbench.py \
