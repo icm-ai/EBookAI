@@ -640,8 +640,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         artifacts = []
         if args.output is not None:
             artifacts = [
-                str(path)
-                for path in write_campaign_status(status, args.output)
+                str(path) for path in write_campaign_status(status, args.output)
             ]
         print(
             json.dumps(
