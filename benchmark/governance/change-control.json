@@ -1,0 +1,18 @@
+{
+  "schema_version": "1",
+  "required_approvals": {
+    "corpus_manifest": 1,
+    "review_plan": 1,
+    "gold": 1,
+    "provenance_registry": 1,
+    "provenance_audit": 1,
+    "baseline_registry": 1,
+    "baseline_snapshot": 1,
+    "governance_policy": 2,
+    "change_control_policy": 2,
+    "review_batch": 1
+  },
+  "require_provenance_for_reviewed_gold": true,
+  "require_baseline_registry_for_snapshot": true,
+  "exclude_pr_author_approval": true
+}
