@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, milestone-21-runtime-ablation-pilot ]
   pull_request:
     branches: [ main, develop ]
 
