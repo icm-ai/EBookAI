@@ -284,7 +284,9 @@ def load_active_reviewed_baseline(
     try:
         path.relative_to(root)
     except ValueError as exc:
-        raise ValueError("Active reviewed baseline path escapes registry directory") from exc
+        raise ValueError(
+            "Active reviewed baseline path escapes registry directory"
+        ) from exc
     if not path.is_file():
         raise ValueError(f"Active reviewed baseline file is missing: {path}")
     if _sha256(path) != version.sha256:
