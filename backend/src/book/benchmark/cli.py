@@ -7,6 +7,15 @@ import json
 from pathlib import Path
 from typing import List, Optional
 
+from book.benchmark.change_control import (
+    ChangeControlPolicy,
+    ChangeControlReport,
+    GovernedChange,
+    build_git_change_control_report,
+    check_pr_approvals,
+    render_change_control_markdown,
+    write_change_control_report,
+)
 from book.benchmark.baseline import (
     build_reviewed_baseline,
     load_baseline_leaderboard,
@@ -31,6 +40,14 @@ from book.benchmark.leaderboard import (
 )
 from book.benchmark.models import BenchmarkReport, CorpusManifest
 from book.benchmark.report import write_markdown
+from book.benchmark.provenance import ConsensusProvenanceRegistry
+from book.benchmark.review_batch import (
+    ReviewBatch,
+    create_review_batch,
+    render_review_batch_markdown,
+    review_batch_progress,
+    validate_review_batch,
+)
 from book.benchmark.review_plan import (
     ReviewPlan,
     render_review_plan_markdown,
@@ -48,6 +65,8 @@ DEFAULT_REVIEW_PLAN = Path("benchmark/corpus/review-plan.json")
 DEFAULT_GOVERNANCE_POLICY = Path("benchmark/governance/policy.json")
 DEFAULT_BASELINE_REGISTRY = Path("benchmark/leaderboard/baselines/registry.json")
 DEFAULT_PROVENANCE_REGISTRY = Path("benchmark/corpus/provenance/registry.json")
+DEFAULT_CHANGE_CONTROL_POLICY = Path("benchmark/governance/change-control.json")
+DEFAULT_REVIEW_BATCH_DIR = Path("benchmark/review-batches")
 
 
 def _csv(value: Optional[str]) -> Optional[List[str]]:
@@ -201,6 +220,69 @@ def build_parser() -> argparse.ArgumentParser:
     governance_ci.add_argument("--cache", type=Path, default=DEFAULT_CACHE)
     governance_ci.add_argument("--output", type=Path, required=True)
     governance_ci.add_argument("--timeout", type=float, default=300.0)
+
+    review_batch_create = subparsers.add_parser(
+        "review-batch-create",
+        help="Create a two-reviewer assignment batch from the gold review plan",
+    )
+    review_batch_create.add_argument("--id", required=True)
+    review_batch_create.add_argument("--created-by", required=True)
+    review_batch_create.add_argument("--reviewer-a", required=True)
+    review_batch_create.add_argument("--reviewer-b", required=True)
+    review_batch_create.add_argument("--adjudicator", default="")
+    review_batch_create.add_argument("--description", default="")
+    review_batch_create.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    review_batch_create.add_argument("--plan", type=Path, default=DEFAULT_REVIEW_PLAN)
+    review_batch_create.add_argument("--documents")
+    review_batch_create.add_argument("--priorities")
+    review_batch_create.add_argument("--limit", type=int)
+    review_batch_create.add_argument(
+        "--output",
+        type=Path,
+        help="Defaults to benchmark/review-batches/<id>.json",
+    )
+
+    review_batch_report = subparsers.add_parser(
+        "review-batch-report",
+        help="Report review-batch progress from canonical consensus provenance",
+    )
+    review_batch_report.add_argument("batch", type=Path)
+    review_batch_report.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    review_batch_report.add_argument("--plan", type=Path, default=DEFAULT_REVIEW_PLAN)
+    review_batch_report.add_argument(
+        "--provenance-registry",
+        type=Path,
+        default=DEFAULT_PROVENANCE_REGISTRY,
+    )
+    review_batch_report.add_argument("--output", type=Path)
+
+    change_report = subparsers.add_parser(
+        "change-control-report",
+        help="Generate PR-friendly governed benchmark change analysis",
+    )
+    change_report.add_argument("--repo", type=Path, default=Path("."))
+    change_report.add_argument("--base-ref", required=True)
+    change_report.add_argument("--head-ref", default="HEAD")
+    change_report.add_argument(
+        "--policy",
+        type=Path,
+        default=DEFAULT_CHANGE_CONTROL_POLICY,
+    )
+    change_report.add_argument("--output", type=Path, required=True)
+
+    change_approvals = subparsers.add_parser(
+        "change-control-approvals",
+        help="Check independent GitHub PR approvals against a change report",
+    )
+    change_approvals.add_argument("report", type=Path)
+    change_approvals.add_argument("reviews", type=Path)
+    change_approvals.add_argument("--author", required=True)
+    change_approvals.add_argument(
+        "--policy",
+        type=Path,
+        default=DEFAULT_CHANGE_CONTROL_POLICY,
+    )
+    change_approvals.add_argument("--output", type=Path)
 
     review_plan = subparsers.add_parser(
         "review-plan", help="Validate and summarize the gold human-review queue"
@@ -376,6 +458,100 @@ def main(argv: Optional[List[str]] = None) -> int:
         )
         print(json.dumps(result.to_dict(), indent=2))
         return 0 if result.ok else 1
+    if args.command == "review-batch-create":
+        manifest = CorpusManifest.load(args.manifest)
+        plan = ReviewPlan.load(args.plan)
+        batch = create_review_batch(
+            batch_id=args.id,
+            created_by=args.created_by,
+            reviewer_a=args.reviewer_a,
+            reviewer_b=args.reviewer_b,
+            adjudicator=args.adjudicator,
+            description=args.description,
+            plan=plan,
+            manifest=manifest,
+            priorities=_csv(args.priorities),
+            document_ids=_csv(args.documents),
+            limit=args.limit,
+        )
+        output = args.output or (DEFAULT_REVIEW_BATCH_DIR / f"{args.id}.json")
+        batch.save(output)
+        print(json.dumps({"batch": str(output), **batch.to_dict()}, indent=2))
+        return 0
+    if args.command == "review-batch-report":
+        manifest = CorpusManifest.load(args.manifest)
+        plan = ReviewPlan.load(args.plan)
+        batch = ReviewBatch.load(args.batch)
+        validate_review_batch(batch, plan, manifest)
+        provenance = ConsensusProvenanceRegistry.load(args.provenance_registry)
+        progress = review_batch_progress(batch, provenance_registry=provenance)
+        if args.output is not None:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            args.output.write_text(
+                render_review_batch_markdown(batch, progress=progress),
+                encoding="utf-8",
+            )
+        print(json.dumps(progress, indent=2))
+        return 0
+    if args.command == "change-control-report":
+        policy = ChangeControlPolicy.load(args.policy)
+        report = build_git_change_control_report(
+            args.repo,
+            base_ref=args.base_ref,
+            head_ref=args.head_ref,
+            policy=policy,
+        )
+        paths = write_change_control_report(report, args.output)
+        print(
+            json.dumps(
+                {
+                    "report": report.to_dict(),
+                    "artifacts": [str(path) for path in paths],
+                },
+                indent=2,
+            )
+        )
+        return 0 if report.ok else 1
+    if args.command == "change-control-approvals":
+        payload = json.loads(args.report.read_text(encoding="utf-8"))
+        changes = tuple(
+            GovernedChange(
+                path=str(item["path"]),
+                status=str(item["status"]),
+                category=str(item["category"]),
+                before_sha256=item.get("before_sha256"),
+                after_sha256=item.get("after_sha256"),
+                required_approvals=int(item.get("required_approvals", 0)),
+                details=dict(item.get("details", {})),
+            )
+            for item in payload.get("changes", [])
+        )
+        report = ChangeControlReport(
+            base_ref=str(payload["base_ref"]),
+            head_ref=str(payload["head_ref"]),
+            changes=changes,
+            required_approvals=int(payload.get("required_approvals", 0)),
+            failures=tuple(str(item) for item in payload.get("failures", [])),
+            warnings=tuple(str(item) for item in payload.get("warnings", [])),
+        )
+        reviews = json.loads(args.reviews.read_text(encoding="utf-8"))
+        if not isinstance(reviews, list):
+            raise ValueError("PR reviews JSON must be a list")
+        policy = ChangeControlPolicy.load(args.policy)
+        approval = check_pr_approvals(
+            report,
+            reviews=reviews,
+            pr_author=args.author,
+            exclude_pr_author=policy.exclude_pr_author_approval,
+        )
+        if args.output is not None:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            args.output.write_text(
+                render_change_control_markdown(report, approval=approval),
+                encoding="utf-8",
+            )
+        print(json.dumps(approval.to_dict(), indent=2))
+        return 0 if report.ok and approval.ok else 1
     if args.command == "review-plan":
         manifest = CorpusManifest.load(args.manifest)
         plan = ReviewPlan.load(args.plan)
