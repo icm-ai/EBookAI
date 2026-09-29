@@ -11,7 +11,8 @@
     "governance_policy": 2,
     "change_control_policy": 2,
     "review_batch": 1,
-    "governance_engine": 2
+    "governance_engine": 2,
+    "change_history": 1
   },
   "require_provenance_for_reviewed_gold": true,
   "require_baseline_registry_for_snapshot": true,
