@@ -433,7 +433,7 @@ class GoldConsensusStore:
                     canonical_gold_path=path,
                     audit_payload=audit_payload,
                 )
-            except OSError as exc:
+            except (OSError, ValueError) as exc:
                 raise GoldValidationError(
                     "Consensus gold was published but provenance registry update failed; "
                     "governance will fail closed until provenance is repaired"
