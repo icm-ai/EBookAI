@@ -168,15 +168,27 @@ def _canonical_audit_path(
     bundle_id: str,
 ) -> Path:
     root = Path(manifest_path).resolve().parent
+    safe_document = "".join(
+        character
+        for character in document_id
+        if character.isalnum() or character in "-_"
+    )
     safe_bundle = "".join(
         character for character in bundle_id if character.isalnum() or character in "-_"
     )
-    return (
+    if not safe_document or not safe_bundle:
+        raise ValueError("Consensus provenance identifiers are not path-safe")
+    path = (
         root
         / "provenance"
-        / document_id
+        / safe_document
         / f"page-{page_index:04d}-{safe_bundle}.consensus-audit.json"
-    )
+    ).resolve()
+    try:
+        path.relative_to(root)
+    except ValueError as exc:
+        raise ValueError("Consensus audit path escapes corpus directory") from exc
+    return path
 
 
 def record_consensus_publish(
