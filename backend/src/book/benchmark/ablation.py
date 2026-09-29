@@ -132,9 +132,7 @@ class AblationDecisionPolicy:
             minimum_quality_gain_to_keep=float(
                 value.get("minimum_quality_gain_to_keep", 0.01)
             ),
-            negligible_quality_gain=float(
-                value.get("negligible_quality_gain", 0.002)
-            ),
+            negligible_quality_gain=float(value.get("negligible_quality_gain", 0.002)),
             maximum_latency_multiplier=float(
                 value.get("maximum_latency_multiplier", 1.5)
             ),
@@ -619,12 +617,8 @@ def inspect_ablation_readiness(
             and target.page_index in page_indexes
         )
         record = provenance.document(target.document_id)
-        has_provenance = (
-            record is not None
-            and any(
-                item.page_index == target.page_index
-                for item in record.reviews
-            )
+        has_provenance = record is not None and any(
+            item.page_index == target.page_index for item in record.reviews
         )
         if canonical_reviewed != has_provenance:
             failures.append(
@@ -640,8 +634,10 @@ def inspect_ablation_readiness(
     required_buckets = set(spec.decision_policy.required_buckets)
     enough_pages = len(ready) >= spec.decision_policy.minimum_reviewed_pages
     enough_buckets = required_buckets.issubset(reviewed_buckets)
-    state = "ready" if enough_pages and enough_buckets and not failures else (
-        "blocked" if failures else "waiting_for_review"
+    state = (
+        "ready"
+        if enough_pages and enough_buckets and not failures
+        else ("blocked" if failures else "waiting_for_review")
     )
     return AblationReadiness(
         pilot_id=spec.pilot_id,
@@ -694,7 +690,9 @@ def aggregate_variant(
     )
     quality = _weighted_mean(
         (
-            item.quality_macro if item.status == "success" and item.quality_macro is not None else 0.0,
+            item.quality_macro
+            if item.status == "success" and item.quality_macro is not None
+            else 0.0,
             len(item.page_indexes),
         )
         for item in selected
@@ -713,21 +711,13 @@ def aggregate_variant(
         len(item.page_indexes) for item in selected if item.status == "success"
     )
     review_issues = (
-        sum(
-            item.review_issue_count
-            for item in selected
-            if item.status == "success"
-        )
+        sum(item.review_issue_count for item in selected if item.status == "success")
         / successful_pages
         if successful_pages
         else None
     )
     interventions = (
-        sum(
-            item.intervention_count
-            for item in selected
-            if item.status == "success"
-        )
+        sum(item.intervention_count for item in selected if item.status == "success")
         / successful_pages
         if successful_pages
         else None
@@ -748,9 +738,7 @@ def aggregate_variant(
         else None
     )
     cost_available = all(
-        item.ai_cost_usd is not None
-        for item in selected
-        if item.status == "success"
+        item.ai_cost_usd is not None for item in selected if item.status == "success"
     )
     cost = (
         sum(
@@ -897,9 +885,7 @@ def _decision(
 
     proxy_reduction = review_reduction or 0.0
     workload_reduction = (
-        minutes_reduction
-        if minutes_reduction is not None
-        else proxy_reduction
+        minutes_reduction if minutes_reduction is not None else proxy_reduction
     )
     meaningful_workload_reduction = (
         workload_reduction >= policy.minimum_review_burden_reduction
@@ -933,9 +919,7 @@ def _decision(
         else "provisional"
     )
     if confidence == "provisional":
-        reasons.append(
-            "manual review minutes are incomplete; verdict is provisional"
-        )
+        reasons.append("manual review minutes are incomplete; verdict is provisional")
 
     return AblationDecision(
         from_variant=before.variant_id,
@@ -945,18 +929,14 @@ def _decision(
         confidence=confidence,
         quality_gain=round(quality_gain, 6),
         latency_multiplier=(
-            round(latency_multiplier, 6)
-            if latency_multiplier != float("inf")
-            else None
+            round(latency_multiplier, 6) if latency_multiplier != float("inf") else None
         ),
         failure_rate_delta=round(failure_delta, 6),
         review_burden_reduction=(
             round(review_reduction, 6) if review_reduction is not None else None
         ),
         manual_minutes_reduction=(
-            round(minutes_reduction, 6)
-            if minutes_reduction is not None
-            else None
+            round(minutes_reduction, 6) if minutes_reduction is not None else None
         ),
         ai_cost_delta_per_page=round(cost_delta, 6),
         reasons=tuple(reasons),
@@ -1087,10 +1067,7 @@ def render_ablation_markdown(report: AblationReport) -> str:
     for item in report.decisions:
         lines.extend(
             [
-                (
-                    f"### {item.from_variant} → {item.to_variant}: "
-                    f"{item.component}"
-                ),
+                (f"### {item.from_variant} → {item.to_variant}: " f"{item.component}"),
                 "",
                 f"- Verdict: **{item.verdict}**",
                 f"- Confidence: **{item.confidence}**",
