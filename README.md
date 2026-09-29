@@ -325,6 +325,27 @@ Reviewer B promoted candidate ─┘
 详见
 [`docs/architecture/multi-reviewer-consensus.md`](docs/architecture/multi-reviewer-consensus.md)。
 
+### Benchmark Governance & CI Accuracy Gate
+
+Milestone 18 把 reviewed gold 与 baseline 纳入自动治理：
+
+```text
+0 reviewed gold
+  -> bootstrap governance
+  -> consensus-reviewed gold
+  -> provenance required
+  -> active baseline required
+  -> strict CI parser accuracy regression
+```
+
+新增 canonical consensus provenance registry、不可变 baseline registry、
+coverage floor、metric regression budget，以及 GitHub Actions 的
+`Reviewed Accuracy Governance Gate`。当前真实 corpus 仍是 0 reviewed page，
+因此 CI 明确处于 bootstrap，而不会伪造 accuracy 通过。
+
+详见
+[`docs/architecture/benchmark-governance-ci.md`](docs/architecture/benchmark-governance-ci.md)。
+
 ## 支持的格式
 
 | 输入格式 | 输出格式 | 说明 |
