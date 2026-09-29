@@ -21,6 +21,7 @@ from book.benchmark.gold import (
     validate_gold_against_spec,
 )
 from book.benchmark.models import CorpusDocumentSpec, CorpusManifest
+from book.benchmark.provenance import record_consensus_publish
 from book.benchmark.review_workbench import GoldReviewSession, GoldReviewStore
 
 CONSENSUS_SCHEMA_VERSION = "1"
@@ -422,7 +423,21 @@ class GoldConsensusStore:
             bundle.published_at = _utc_now()
             bundle.updated_at = bundle.published_at
             self._write(bundle)
-            self._write_audit(bundle)
+            audit_payload = self._audit_payload(bundle)
+            self._write_audit(bundle, payload=audit_payload)
+            try:
+                record_consensus_publish(
+                    manifest_path=self.manifest_path,
+                    document_id=bundle.document_id,
+                    source_sha256=bundle.source_sha256,
+                    canonical_gold_path=path,
+                    audit_payload=audit_payload,
+                )
+            except OSError as exc:
+                raise GoldValidationError(
+                    "Consensus gold was published but provenance registry update failed; "
+                    "governance will fail closed until provenance is repaired"
+                ) from exc
             return bundle
 
     def consensus_path(self, bundle_id: str) -> Path:
@@ -540,10 +555,10 @@ class GoldConsensusStore:
         validate_gold_against_spec(result, self._spec(bundle.document_id))
         return result
 
-    def _write_audit(self, bundle: GoldConsensusBundle) -> None:
+    def _audit_payload(self, bundle: GoldConsensusBundle) -> Dict[str, Any]:
         if bundle.consensus_annotation is None:
-            return
-        payload = {
+            raise GoldValidationError("Consensus annotation is not ready")
+        return {
             "schema_version": CONSENSUS_SCHEMA_VERSION,
             "bundle_id": bundle.id,
             "document_id": bundle.document_id,
@@ -563,9 +578,19 @@ class GoldConsensusStore:
             "consensus_hash": _annotation_hash(bundle.consensus_annotation),
             "published_at": bundle.published_at or None,
         }
+
+    def _write_audit(
+        self,
+        bundle: GoldConsensusBundle,
+        *,
+        payload: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        if bundle.consensus_annotation is None:
+            return
+        resolved = payload or self._audit_payload(bundle)
         _atomic_write_json(
             self._bundle_dir(bundle.id) / "consensus-audit.json",
-            payload,
+            resolved,
         )
 
     def _spec(self, document_id: str) -> CorpusDocumentSpec:
