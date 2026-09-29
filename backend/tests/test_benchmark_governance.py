@@ -20,7 +20,10 @@ from book.benchmark.governance import (
 )
 from book.benchmark.leaderboard import LeaderboardPolicy, build_leaderboard
 from book.benchmark.models import BackendRunResult, BenchmarkReport
-from book.benchmark.provenance import ConsensusProvenanceRegistry
+from book.benchmark.provenance import (
+    ConsensusProvenanceRegistry,
+    registry_path_for_manifest,
+)
 from book.benchmark.review_workbench import GoldReviewStore
 
 
@@ -286,6 +289,49 @@ def test_consensus_publish_creates_canonical_provenance_and_requires_baseline(tm
     assert report.failures == (
         "canonical reviewed gold exists but no active reviewed baseline is registered",
     )
+
+
+def test_consensus_publish_rolls_back_when_provenance_registry_write_fails(
+    tmp_path,
+    monkeypatch,
+):
+    store, _, _ = _fixture(tmp_path)
+    first = store.create("fixture", 0)
+    second = store.create("fixture", 0)
+    _confirm_all(store, first.id, "alice")
+    _confirm_all(store, second.id, "bob")
+    store.promote(first.id, reviewer="alice")
+    store.promote(second.id, reviewer="bob")
+    consensus = GoldConsensusStore(
+        store.manifest_path,
+        store,
+        store.workspace_dir,
+    )
+    bundle = consensus.create(first.id, second.id)
+    canonical = tmp_path / "gold" / "fixture.json"
+    before = canonical.read_bytes()
+
+    def fail_save(self, path):
+        raise OSError("simulated registry write failure")
+
+    monkeypatch.setattr(ConsensusProvenanceRegistry, "save", fail_save)
+
+    with pytest.raises(ValueError, match="rolled back"):
+        consensus.publish(bundle.id)
+
+    assert canonical.read_bytes() == before
+    restored = consensus.get(bundle.id)
+    assert restored.status == "consensus"
+    assert restored.published_at == ""
+    provenance_path = registry_path_for_manifest(store.manifest_path)
+    assert ConsensusProvenanceRegistry.load(provenance_path).records == []
+    canonical_audit = (
+        tmp_path
+        / "provenance"
+        / "fixture"
+        / f"page-0000-{bundle.id}.consensus-audit.json"
+    )
+    assert canonical_audit.exists() is False
 
 
 def test_reviewed_gold_without_consensus_provenance_fails_closed(tmp_path):
