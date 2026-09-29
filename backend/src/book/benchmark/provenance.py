@@ -57,9 +57,7 @@ class ConsensusReviewRecord:
             audit_sha256=str(value["audit_sha256"]),
             reviewer_a=str(value["reviewer_a"]),
             reviewer_b=str(value["reviewer_b"]),
-            adjudicators=tuple(
-                str(item) for item in value.get("adjudicators", [])
-            ),
+            adjudicators=tuple(str(item) for item in value.get("adjudicators", [])),
             published_at=str(value["published_at"]),
         )
 
@@ -222,10 +220,7 @@ def record_consensus_publish(
     reviews = [
         item
         for item in reviews
-        if not (
-            item.page_index == page_index
-            and item.consensus_bundle_id == bundle_id
-        )
+        if not (item.page_index == page_index and item.consensus_bundle_id == bundle_id)
     ]
     decisions = list(audit_payload.get("decisions", []))
     adjudicators = tuple(
