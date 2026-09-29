@@ -35,6 +35,7 @@ The initial policy governs:
 - zero reviewed-document coverage loss;
 - zero reviewed-page coverage loss;
 - consensus provenance required;
+- every governed baseline backend must cover the full canonical reviewed corpus;
 - active baseline required as soon as canonical reviewed gold exists.
 
 The coverage floors are intentionally low at bootstrap. They can be raised as
