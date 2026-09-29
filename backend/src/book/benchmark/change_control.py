@@ -60,21 +60,21 @@ def classify_governed_path(path: str) -> Optional[str]:
         return "provenance_audit"
     if normalized == "benchmark/leaderboard/baselines/registry.json":
         return "baseline_registry"
-    if (
-        normalized.startswith("benchmark/leaderboard/baselines/")
-        and normalized.endswith(".json")
-    ):
+    if normalized.startswith(
+        "benchmark/leaderboard/baselines/"
+    ) and normalized.endswith(".json"):
         return "baseline_snapshot"
     if normalized == "benchmark/governance/policy.json":
         return "governance_policy"
     if normalized == "benchmark/governance/change-control.json":
         return "change_control_policy"
-    if (
-        normalized.startswith("benchmark/governance/history/")
-        and normalized.endswith(".json")
+    if normalized.startswith("benchmark/governance/history/") and normalized.endswith(
+        ".json"
     ):
         return "change_history"
-    if normalized.startswith("benchmark/review-batches/") and normalized.endswith(".json"):
+    if normalized.startswith("benchmark/review-batches/") and normalized.endswith(
+        ".json"
+    ):
         return "review_batch"
     return None
 
@@ -257,7 +257,9 @@ def _json(value: Optional[bytes]) -> Optional[Dict[str, Any]]:
     return payload if isinstance(payload, dict) else None
 
 
-def _semantic_details(category: str, before: Optional[bytes], after: Optional[bytes]) -> Dict[str, Any]:
+def _semantic_details(
+    category: str, before: Optional[bytes], after: Optional[bytes]
+) -> Dict[str, Any]:
     left = _json(before)
     right = _json(after)
     if category == "gold":
@@ -286,9 +288,7 @@ def _semantic_details(category: str, before: Optional[bytes], after: Optional[by
         right = right or {}
         keys = sorted(set(left) | set(right))
         return {
-            "changed_keys": [
-                key for key in keys if left.get(key) != right.get(key)
-            ]
+            "changed_keys": [key for key in keys if left.get(key) != right.get(key)]
         }
     if category == "review_plan":
         return {
@@ -314,7 +314,9 @@ def _reviewed_gold_document(change: ChangeInput) -> Optional[str]:
     after = _json(change.after) or {}
     if before.get("status") != "reviewed" and after.get("status") != "reviewed":
         return None
-    return str(after.get("document_id") or before.get("document_id") or "").strip() or None
+    return (
+        str(after.get("document_id") or before.get("document_id") or "").strip() or None
+    )
 
 
 def build_change_control_report(
@@ -566,9 +568,7 @@ def collect_git_change_inputs(
                 path=path,
                 status=status,
                 before=(
-                    None
-                    if status == "added"
-                    else _git_show(repo_root, base_ref, path)
+                    None if status == "added" else _git_show(repo_root, base_ref, path)
                 ),
                 after=(
                     None
@@ -621,9 +621,7 @@ def render_change_control_markdown(
         f"- Required independent approvals: **{report.required_approvals}**",
     ]
     if approval is not None:
-        approver_text = ", ".join(
-            f"`{item}`" for item in approval.approvers
-        ) or "none"
+        approver_text = ", ".join(f"`{item}`" for item in approval.approvers) or "none"
         lines.extend(
             [
                 f"- Current approvers: {approver_text}",
@@ -713,7 +711,9 @@ def build_change_history_record(
     governance_release_bytes: Optional[bytes] = None,
 ) -> ChangeHistoryRecord:
     if not report.ok:
-        raise ValueError("Cannot record change history for a structurally invalid report")
+        raise ValueError(
+            "Cannot record change history for a structurally invalid report"
+        )
     if not approval.ok:
         raise ValueError("Cannot record change history without required approvals")
     if not merged_commit.strip():
