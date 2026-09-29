@@ -76,6 +76,11 @@ outputs/gold-review-workspace/consensus/<bundle-id>/
   consensus-audit.json
 ```
 
+Milestone 18 additionally promotes the final published consensus audit into
+`benchmark/corpus/provenance/` and updates a canonical provenance registry.
+Workspace audits remain useful session evidence, while the corpus provenance
+record is what the governance gate trusts.
+
 The audit records:
 
 - both source session ids;
