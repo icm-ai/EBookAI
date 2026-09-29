@@ -1,0 +1,18 @@
+{
+  "schema_version": "1",
+  "campaign_id": "first-reviewed-v1",
+  "corpus_id": "ebookai-real-pdf-v1",
+  "description": "Milestone 20 first real human-reviewed campaign. The single target is the existing NIST EEL page-index-8 draft seed because its review-plan tasks exactly match the seed (headings + reading_order). This campaign remains planned until real independent reviewer identities are assigned.",
+  "targets": [
+    {
+      "document_id": "nist-eel-sp1500-101-v1",
+      "page_index": 8
+    }
+  ],
+  "review_backend": "pymupdf",
+  "benchmark_backends": [
+    "pymupdf"
+  ],
+  "baseline_id": "first-reviewed-v1",
+  "baseline_filename": "first-reviewed-v1.json"
+}
