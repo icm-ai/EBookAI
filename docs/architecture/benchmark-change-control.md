@@ -194,6 +194,7 @@ Default independent approval requirements:
 | provenance | 1 |
 | baseline snapshot/registry | 1 |
 | review batch | 1 |
+| change history | 1 |
 | governance policy | 2 |
 | change-control policy | 2 |
 | governance engine | 2 |
