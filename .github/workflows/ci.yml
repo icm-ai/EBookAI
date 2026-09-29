@@ -135,6 +135,7 @@ jobs:
           backend/tests/test_benchmark_corpus.py \
           backend/tests/test_benchmark_runner.py \
           backend/tests/test_benchmark_leaderboard.py \
+          backend/tests/test_benchmark_governance.py \
           backend/tests/test_gold_annotations.py \
           backend/tests/test_gold_consensus.py \
           backend/tests/test_gold_review_workbench.py \
@@ -162,6 +163,7 @@ jobs:
           backend/tests/test_benchmark_corpus.py \
           backend/tests/test_benchmark_runner.py \
           backend/tests/test_benchmark_leaderboard.py \
+          backend/tests/test_benchmark_governance.py \
           backend/tests/test_gold_annotations.py \
           backend/tests/test_gold_consensus.py \
           backend/tests/test_gold_review_workbench.py \
@@ -190,6 +192,7 @@ jobs:
           backend/tests/test_benchmark_corpus.py \
           backend/tests/test_benchmark_runner.py \
           backend/tests/test_benchmark_leaderboard.py \
+          backend/tests/test_benchmark_governance.py \
           backend/tests/test_gold_annotations.py \
           backend/tests/test_gold_consensus.py \
           backend/tests/test_gold_review_workbench.py \
@@ -340,6 +343,43 @@ jobs:
       with:
         name: golden-regression-evidence
         path: artifacts/golden-regression/
+        retention-days: 30
+
+  test-reviewed-accuracy-governance:
+    name: Reviewed Accuracy Governance Gate
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install governed parser dependency
+      run: |
+        python -m pip install --upgrade pip
+        pip install PyMuPDF==1.23.8
+
+    - name: Run reviewed accuracy governance
+      env:
+        PYTHONPATH: ${{ github.workspace }}/backend/src
+      run: |
+        python -m book.benchmark.cli governance-ci \
+          --manifest benchmark/corpus/manifest.json \
+          --policy benchmark/governance/policy.json \
+          --baseline-registry benchmark/leaderboard/baselines/registry.json \
+          --provenance-registry benchmark/corpus/provenance/registry.json \
+          --cache .cache/ebookai/governance-corpus \
+          --output artifacts/reviewed-accuracy-governance
+
+    - name: Upload reviewed accuracy governance evidence
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: reviewed-accuracy-governance
+        path: artifacts/reviewed-accuracy-governance/
         retention-days: 30
 
   lint-frontend:
