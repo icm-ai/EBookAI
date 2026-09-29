@@ -40,6 +40,7 @@ def _policy() -> ChangeControlPolicy:
             "baseline_registry": 1,
             "governance_policy": 2,
             "change_control_policy": 2,
+            "ablation_spec": 1,
             "campaign": 1,
             "change_history": 1,
             "governance_engine": 2,
@@ -221,6 +222,7 @@ def test_review_batch_rejects_target_outside_review_plan(tmp_path):
 @pytest.mark.parametrize(
     ("path", "category"),
     [
+        ("benchmark/ablation/runtime-occam-v1.json", "ablation_spec"),
         ("benchmark/campaigns/first-reviewed-v1.json", "campaign"),
         ("benchmark/corpus/gold/doc.json", "gold"),
         ("benchmark/corpus/provenance/registry.json", "provenance_registry"),
@@ -240,6 +242,8 @@ def test_review_batch_rejects_target_outside_review_plan(tmp_path):
         ("benchmark/governance/change-control.json", "change_control_policy"),
         ("benchmark/review-batches/batch-1.json", "review_batch"),
         ("benchmark/governance/history/abc.json", "change_history"),
+        ("backend/src/book/benchmark/ablation.py", "governance_engine"),
+        ("backend/src/book/benchmark/ablation_runner.py", "governance_engine"),
         ("backend/src/book/benchmark/campaign.py", "governance_engine"),
         ("backend/src/book/benchmark/change_control.py", "governance_engine"),
         (".github/workflows/benchmark-change-control.yml", "governance_engine"),
@@ -247,6 +251,55 @@ def test_review_batch_rejects_target_outside_review_plan(tmp_path):
 )
 def test_governed_path_classification(path, category):
     assert classify_governed_path(path) == category
+
+
+def test_ablation_spec_change_exposes_target_and_evidence_floor_changes():
+    before = json.dumps(
+        {
+            "schema_version": "1",
+            "pilot_id": "runtime-occam-v1",
+            "targets": [],
+            "decision_policy": {"minimum_reviewed_pages": 8},
+        }
+    ).encode()
+    after = json.dumps(
+        {
+            "schema_version": "1",
+            "pilot_id": "runtime-occam-v1",
+            "targets": [
+                {
+                    "document_id": "nist-eel-sp1500-101-v1",
+                    "page_index": 8,
+                    "bucket": "hierarchy",
+                }
+            ],
+            "decision_policy": {"minimum_reviewed_pages": 6},
+        }
+    ).encode()
+
+    report = build_change_control_report(
+        [
+            ChangeInput(
+                path="benchmark/ablation/runtime-occam-v1.json",
+                status="modified",
+                before=before,
+                after=after,
+            )
+        ],
+        policy=_policy(),
+        base_ref="base",
+        head_ref="head",
+    )
+
+    assert report.ok is True
+    assert report.required_approvals == 1
+    assert report.changes[0].details == {
+        "pilot_id": "runtime-occam-v1",
+        "before_targets": 0,
+        "after_targets": 1,
+        "before_minimum_reviewed_pages": 8,
+        "after_minimum_reviewed_pages": 6,
+    }
 
 
 def test_campaign_change_has_semantic_summary_and_requires_approval():
