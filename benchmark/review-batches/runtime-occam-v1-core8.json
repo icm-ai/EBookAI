@@ -1,0 +1,74 @@
+{
+  "schema_version": "1",
+  "batch_id": "runtime-occam-v1-core8",
+  "corpus_id": "ebookai-real-pdf-v1",
+  "created_by": "陈明",
+  "created_at": "2026-09-29T13:54:00+00:00",
+  "description": "Occam runtime ablation core-8 double-review batch. Review EEL page index 8 first as the calibration page, reconcile task interpretation only after both independent passes are complete, then continue with the remaining seven pages. Reviewer A and Reviewer B must work independently before promotion. No adjudicator is assigned unless an actual consensus conflict requires one.",
+  "assignments": [
+    {
+      "document_id": "nist-eel-sp1500-101-v1",
+      "page_index": 8,
+      "reviewer_a": "陈明",
+      "reviewer_b": "PDP",
+      "adjudicator": "",
+      "note": "Calibration page first. Tasks: headings, reading_order. Complete both reviews independently before comparing."
+    },
+    {
+      "document_id": "nist-ballot-definition-prototype",
+      "page_index": 0,
+      "reviewer_a": "陈明",
+      "reviewer_b": "PDP",
+      "adjudicator": "",
+      "note": "Bucket=form. Tasks: text, reading_order."
+    },
+    {
+      "document_id": "nist-eel-sp1500-101-v1",
+      "page_index": 12,
+      "reviewer_a": "陈明",
+      "reviewer_b": "PDP",
+      "adjudicator": "",
+      "note": "Bucket=figure. Tasks: text, headings, figures, captions, reading_order."
+    },
+    {
+      "document_id": "nist-eel-sp1500-101-v1",
+      "page_index": 24,
+      "reviewer_a": "陈明",
+      "reviewer_b": "PDP",
+      "adjudicator": "",
+      "note": "Bucket=dense_text. Tasks: text, headings, reading_order."
+    },
+    {
+      "document_id": "nist-ai-rmf-1-0",
+      "page_index": 25,
+      "reviewer_a": "陈明",
+      "reviewer_b": "PDP",
+      "adjudicator": "",
+      "note": "Bucket=table. Tasks: text, tables, headings, reading_order."
+    },
+    {
+      "document_id": "nist-sp1299-csf2-overview",
+      "page_index": 4,
+      "reviewer_a": "陈明",
+      "reviewer_b": "PDP",
+      "adjudicator": "",
+      "note": "Bucket=list. Tasks: text, headings, lists, reading_order."
+    },
+    {
+      "document_id": "nist-sp1299-csf2-overview",
+      "page_index": 2,
+      "reviewer_a": "陈明",
+      "reviewer_b": "PDP",
+      "adjudicator": "",
+      "note": "Bucket=mixed_layout. Tasks: text, headings, reading_order."
+    },
+    {
+      "document_id": "nist-sp1299-csf2-overview-ja",
+      "page_index": 2,
+      "reviewer_a": "陈明",
+      "reviewer_b": "PDP",
+      "adjudicator": "",
+      "note": "Bucket=multilingual. Tasks: text, headings, reading_order."
+    }
+  ]
+}
