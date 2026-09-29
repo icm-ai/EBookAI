@@ -133,6 +133,7 @@ jobs:
 
     - name: Publish PR change-control report
       if: always()
+      continue-on-error: true
       uses: actions/github-script@v7
       with:
         script: |
