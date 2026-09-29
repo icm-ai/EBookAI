@@ -96,20 +96,14 @@ def _spec(*, minimum_pages=8, require_human=True):
 
 
 def _readiness(spec):
-    keys = tuple(
-        (target.document_id, target.page_index) for target in spec.targets
-    )
+    keys = tuple((target.document_id, target.page_index) for target in spec.targets)
     return AblationReadiness(
         pilot_id=spec.pilot_id,
         state="ready",
         reviewed_pages=len(keys),
         target_pages=len(keys),
-        reviewed_buckets=tuple(
-            sorted({target.bucket for target in spec.targets})
-        ),
-        required_buckets=tuple(
-            sorted(spec.decision_policy.required_buckets)
-        ),
+        reviewed_buckets=tuple(sorted({target.bucket for target in spec.targets})),
+        required_buckets=tuple(sorted(spec.decision_policy.required_buckets)),
         ready_targets=keys,
         pending_targets=(),
     )
@@ -201,9 +195,7 @@ def test_occam_policy_keeps_routing_removes_noop_repair_and_makes_ai_optional():
     assert report.decisions[1].verdict == "remove_candidate"
     assert report.decisions[2].verdict == "optional"
     assert report.decisions[2].latency_multiplier > 1.5
-    assert any(
-        "latency" in reason for reason in report.decisions[2].reasons
-    )
+    assert any("latency" in reason for reason in report.decisions[2].reasons)
 
 
 def test_missing_human_minutes_keeps_verdict_provisional():
