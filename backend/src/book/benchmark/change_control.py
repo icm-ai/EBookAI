@@ -17,11 +17,22 @@ GOVERNED_PREFIXES: Tuple[str, ...] = (
     "benchmark/leaderboard/baselines/",
     "benchmark/review-batches/",
 )
+GOVERNANCE_ENGINE_FILES: Tuple[str, ...] = (
+    ".github/workflows/benchmark-change-control.yml",
+    ".github/workflows/ci.yml",
+    "backend/src/book/benchmark/baseline.py",
+    "backend/src/book/benchmark/change_control.py",
+    "backend/src/book/benchmark/consensus.py",
+    "backend/src/book/benchmark/governance.py",
+    "backend/src/book/benchmark/provenance.py",
+)
+
 GOVERNED_FILES: Tuple[str, ...] = (
     "benchmark/corpus/manifest.json",
     "benchmark/corpus/review-plan.json",
     "benchmark/governance/policy.json",
     "benchmark/governance/change-control.json",
+    *GOVERNANCE_ENGINE_FILES,
 )
 
 
@@ -33,6 +44,8 @@ def _sha256(value: Optional[bytes]) -> Optional[str]:
 
 def classify_governed_path(path: str) -> Optional[str]:
     normalized = path.replace("\\", "/")
+    if normalized in GOVERNANCE_ENGINE_FILES:
+        return "governance_engine"
     if normalized == "benchmark/corpus/manifest.json":
         return "corpus_manifest"
     if normalized == "benchmark/corpus/review-plan.json":
