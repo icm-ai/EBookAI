@@ -346,6 +346,29 @@ coverage floor、metric regression budget，以及 GitHub Actions 的
 详见
 [`docs/architecture/benchmark-governance-ci.md`](docs/architecture/benchmark-governance-ci.md)。
 
+### Benchmark Change Control & Reviewer Operations
+
+Milestone 19 在 M18 治理之上增加 reviewer assignment、review batch、
+baseline proposal、PR semantic diff、独立审批和 post-merge history：
+
+```text
+review plan
+  -> review batch (A/B reviewers)
+  -> consensus gold
+  -> baseline candidate (--no-activate)
+  -> governed PR semantic diff
+  -> independent approvals
+  -> merge
+  -> immutable change history
+```
+
+`.github/workflows/benchmark-change-control.yml` 会在 PR 和 review 状态变化时
+重跑，使用 **base revision** 的 change-control policy，防止 PR 自己降低审批门槛。
+governance policy / change-control policy / governance engine 默认需要 2 个独立审批。
+
+详见
+[`docs/architecture/benchmark-change-control.md`](docs/architecture/benchmark-change-control.md)。
+
 ## 支持的格式
 
 | 输入格式 | 输出格式 | 说明 |
