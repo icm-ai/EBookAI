@@ -312,6 +312,8 @@ class AblationObservation:
     intervention_count: int = 0
     selected_parser: Optional[str] = None
     parser_attempts: int = 0
+    valid_for_decision: bool = True
+    invalid_reason: str = ""
     error: str = ""
 
     def __post_init__(self) -> None:
@@ -373,6 +375,8 @@ class AblationObservation:
                 else None
             ),
             parser_attempts=int(value.get("parser_attempts", 0)),
+            valid_for_decision=bool(value.get("valid_for_decision", True)),
+            invalid_reason=str(value.get("invalid_reason", "")),
             error=str(value.get("error", "")),
         )
 
@@ -394,6 +398,8 @@ class AblationObservation:
             "intervention_count": self.intervention_count,
             "selected_parser": self.selected_parser,
             "parser_attempts": self.parser_attempts,
+            "valid_for_decision": self.valid_for_decision,
+            "invalid_reason": self.invalid_reason,
             "error": self.error,
         }
 
@@ -461,6 +467,7 @@ class VariantAggregate:
     variant_id: str
     attempted_pages: int
     failed_pages: int
+    invalid_pages: int
     quality_macro: float
     failure_rate: float
     elapsed_seconds_per_page: float
@@ -476,6 +483,7 @@ class VariantAggregate:
             "variant_id": self.variant_id,
             "attempted_pages": self.attempted_pages,
             "failed_pages": self.failed_pages,
+            "invalid_pages": self.invalid_pages,
             "quality_macro": self.quality_macro,
             "failure_rate": self.failure_rate,
             "elapsed_seconds_per_page": self.elapsed_seconds_per_page,
@@ -680,6 +688,11 @@ def aggregate_variant(
         for item in selected
         if item.status in {"failed", "timeout"}
     )
+    invalid_pages = sum(
+        len(item.page_indexes)
+        for item in selected
+        if item.status == "skipped" or not item.valid_for_decision
+    )
     quality = _weighted_mean(
         (
             item.quality_macro if item.status == "success" and item.quality_macro is not None else 0.0,
@@ -754,6 +767,7 @@ def aggregate_variant(
         variant_id=variant_id,
         attempted_pages=attempted_pages,
         failed_pages=failed_pages,
+        invalid_pages=invalid_pages,
         quality_macro=round(float(quality or 0.0), 6),
         failure_rate=(
             round(failed_pages / attempted_non_skipped, 6)
@@ -825,9 +839,12 @@ def _decision(
         not readiness.ready
         or before_pages != expected_pages
         or after_pages != expected_pages
+        or before.invalid_pages > 0
+        or after.invalid_pages > 0
     ):
         reasons.append(
-            "paired variants do not cover the complete evidence-ready pilot target set"
+            "paired variants do not provide a complete valid observation set "
+            "for the evidence-ready pilot targets"
         )
         return AblationDecision(
             from_variant=before.variant_id,
@@ -1028,8 +1045,8 @@ def render_ablation_markdown(report: AblationReport) -> str:
             [
                 "## Variant evidence",
                 "",
-                "| Variant | Quality | Failure rate | Seconds/page | Issues/page | Human min/page | AI $/page |",
-                "|---|---:|---:|---:|---:|---:|---:|",
+                "| Variant | Quality | Failure rate | Invalid pages | Seconds/page | Issues/page | Human min/page | AI $/page |",
+                "|---|---:|---:|---:|---:|---:|---:|---:|",
             ]
         )
         for item in report.aggregates:
@@ -1040,6 +1057,7 @@ def render_ablation_markdown(report: AblationReport) -> str:
                         item.variant_id,
                         f"{item.quality_macro:.4f}",
                         f"{item.failure_rate:.4f}",
+                        str(item.invalid_pages),
                         f"{item.elapsed_seconds_per_page:.4f}",
                         (
                             f"{item.review_issues_per_page:.4f}"
