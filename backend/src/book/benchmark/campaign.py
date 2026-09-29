@@ -67,10 +67,7 @@ def _atomic_write_bytes(path: Path, value: bytes) -> None:
 
 def _safe_slug(value: str) -> str:
     slug = "".join(
-        character.lower()
-        if character.isalnum()
-        else "-"
-        for character in value.strip()
+        character.lower() if character.isalnum() else "-" for character in value.strip()
     )
     slug = "-".join(part for part in slug.split("-") if part)
     return slug or "reviewer"
@@ -139,7 +136,9 @@ class ReviewedGoldCampaign:
             or baseline_path.name != self.baseline_filename
             or baseline_path.suffix != ".json"
         ):
-            raise ValueError("Campaign baseline_filename must be a plain .json filename")
+            raise ValueError(
+                "Campaign baseline_filename must be a plain .json filename"
+            )
 
     @classmethod
     def from_dict(cls, value: Dict[str, Any]) -> "ReviewedGoldCampaign":
@@ -326,9 +325,7 @@ def _campaign_batch_failures(
         validate_review_batch(batch, plan, manifest)
     except ValueError as exc:
         return [str(exc)]
-    expected = {
-        (target.document_id, target.page_index) for target in campaign.targets
-    }
+    expected = {(target.document_id, target.page_index) for target in campaign.targets}
     actual = {
         (assignment.document_id, assignment.page_index)
         for assignment in batch.assignments
@@ -375,8 +372,7 @@ def inspect_campaign(
             )
         )
         assignments = {
-            (item.document_id, item.page_index): item
-            for item in batch.assignments
+            (item.document_id, item.page_index): item for item in batch.assignments
         }
 
     provenance = ConsensusProvenanceRegistry.load(provenance_registry_path)
@@ -431,10 +427,9 @@ def inspect_campaign(
                     "do not match campaign assignment"
                 )
             if review.adjudicators:
-                if (
-                    not assignment.adjudicator
-                    or set(review.adjudicators) != {assignment.adjudicator}
-                ):
+                if not assignment.adjudicator or set(review.adjudicators) != {
+                    assignment.adjudicator
+                }:
                     failures.append(
                         f"{target.document_id} page {target.page_index}: consensus "
                         "adjudicator does not match campaign assignment"
@@ -487,9 +482,7 @@ def inspect_campaign(
                 state = "strict"
     elif all_reviewed and batch is not None:
         state = "ready_for_activation"
-        pending.append(
-            f"strict baseline {campaign.baseline_id!r} is not active yet"
-        )
+        pending.append(f"strict baseline {campaign.baseline_id!r} is not active yet")
     elif batch is None:
         state = "planned"
     elif reviewed_count:
@@ -722,7 +715,9 @@ def activate_strict_baseline(
     if status.state == "strict":
         raise ValueError(f"Campaign {campaign.campaign_id!r} is already strict")
     if not status.ok:
-        raise ValueError("Campaign has blocking failures: " + "; ".join(status.failures))
+        raise ValueError(
+            "Campaign has blocking failures: " + "; ".join(status.failures)
+        )
     if not status.ready_for_activation:
         raise ValueError(
             "Campaign is not ready for strict activation: " + "; ".join(status.pending)
@@ -753,7 +748,9 @@ def activate_strict_baseline(
     )
     leaderboard_policy = LeaderboardPolicy.load(leaderboard_policy_path)
     if leaderboard_policy.include_draft:
-        raise ValueError("Strict campaign activation requires reviewed-only leaderboard")
+        raise ValueError(
+            "Strict campaign activation requires reviewed-only leaderboard"
+        )
     leaderboard = build_leaderboard(report, policy=leaderboard_policy)
     leaderboard_json, _ = write_leaderboard(
         leaderboard,
