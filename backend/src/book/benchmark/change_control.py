@@ -13,6 +13,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence, Tupl
 CHANGE_CONTROL_SCHEMA_VERSION = "1"
 
 GOVERNED_PREFIXES: Tuple[str, ...] = (
+    "benchmark/campaigns/",
     "benchmark/corpus/gold/",
     "benchmark/corpus/provenance/",
     "benchmark/governance/history/",
@@ -23,6 +24,7 @@ GOVERNANCE_ENGINE_FILES: Tuple[str, ...] = (
     ".github/workflows/benchmark-change-control.yml",
     ".github/workflows/ci.yml",
     "backend/src/book/benchmark/baseline.py",
+    "backend/src/book/benchmark/campaign.py",
     "backend/src/book/benchmark/change_control.py",
     "backend/src/book/benchmark/consensus.py",
     "backend/src/book/benchmark/governance.py",
@@ -48,6 +50,8 @@ def classify_governed_path(path: str) -> Optional[str]:
     normalized = path.replace("\\", "/")
     if normalized in GOVERNANCE_ENGINE_FILES:
         return "governance_engine"
+    if normalized.startswith("benchmark/campaigns/") and normalized.endswith(".json"):
+        return "campaign"
     if normalized == "benchmark/corpus/manifest.json":
         return "corpus_manifest"
     if normalized == "benchmark/corpus/review-plan.json":
@@ -294,6 +298,14 @@ def _semantic_details(
         return {
             "before_targets": len((left or {}).get("targets", [])),
             "after_targets": len((right or {}).get("targets", [])),
+        }
+    if category == "campaign":
+        return {
+            "campaign_id": (right or left or {}).get("campaign_id"),
+            "before_targets": len((left or {}).get("targets", [])),
+            "after_targets": len((right or {}).get("targets", [])),
+            "before_baseline_id": (left or {}).get("baseline_id"),
+            "after_baseline_id": (right or {}).get("baseline_id"),
         }
     if category == "review_batch":
         return {
