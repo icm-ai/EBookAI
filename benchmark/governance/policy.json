@@ -1,0 +1,15 @@
+{
+  "schema_version": "1",
+  "ci_backends": [
+    "pymupdf"
+  ],
+  "minimum_reviewed_documents": 1,
+  "minimum_reviewed_pages": 1,
+  "minimum_eligible_ci_backends": 1,
+  "minimum_metrics_per_backend": 1,
+  "maximum_metric_regression": 0.02,
+  "maximum_coverage_drop_documents": 0,
+  "maximum_coverage_drop_pages": 0,
+  "require_consensus_provenance": true,
+  "require_active_baseline_after_review": true
+}
