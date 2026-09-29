@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop, milestone-20-first-reviewed-campaign ]
+    branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
 
