@@ -37,6 +37,7 @@ def _policy() -> ChangeControlPolicy:
             "baseline_registry": 1,
             "governance_policy": 2,
             "change_control_policy": 2,
+            "governance_engine": 2,
             "review_batch": 1,
         }
     )
@@ -232,6 +233,8 @@ def test_review_batch_rejects_target_outside_review_plan(tmp_path):
         ("benchmark/governance/policy.json", "governance_policy"),
         ("benchmark/governance/change-control.json", "change_control_policy"),
         ("benchmark/review-batches/batch-1.json", "review_batch"),
+        ("backend/src/book/benchmark/change_control.py", "governance_engine"),
+        (".github/workflows/benchmark-change-control.yml", "governance_engine"),
     ],
 )
 def test_governed_path_classification(path, category):
