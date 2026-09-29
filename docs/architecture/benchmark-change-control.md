@@ -105,6 +105,7 @@ Governed asset categories include:
 - consensus provenance registry and audits;
 - reviewed baseline snapshots and registry;
 - reviewed-gold campaign specs;
+- runtime ablation pilot specs;
 - governance policy;
 - change-control policy;
 - review batches.
@@ -113,6 +114,7 @@ The governance-engine category additionally includes:
 
 - benchmark change-control workflow;
 - main CI workflow;
+- ablation decision/runner implementation;
 - baseline implementation;
 - campaign orchestration implementation;
 - consensus implementation;
@@ -197,6 +199,7 @@ Default independent approval requirements:
 | baseline snapshot/registry | 1 |
 | review batch | 1 |
 | campaign | 1 |
+| ablation spec | 1 |
 | change history | 1 |
 | governance policy | 2 |
 | change-control policy | 2 |
