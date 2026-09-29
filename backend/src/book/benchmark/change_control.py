@@ -569,9 +569,12 @@ def render_change_control_markdown(
         f"- Required independent approvals: **{report.required_approvals}**",
     ]
     if approval is not None:
+        approver_text = ", ".join(
+            f"`{item}`" for item in approval.approvers
+        ) or "none"
         lines.extend(
             [
-                f"- Current approvers: {', '.join(f'`{item}`' for item in approval.approvers) or 'none'}",
+                f"- Current approvers: {approver_text}",
                 f"- Approval status: **{'pass' if approval.ok else 'fail'}**",
             ]
         )
