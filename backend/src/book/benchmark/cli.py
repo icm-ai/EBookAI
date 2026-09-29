@@ -11,10 +11,12 @@ from book.benchmark.change_control import (
     ChangeControlPolicy,
     ChangeControlReport,
     GovernedChange,
+    build_change_history_record,
     build_git_change_control_report,
     check_pr_approvals,
     render_change_control_markdown,
     write_change_control_report,
+    write_change_history_record,
 )
 from book.benchmark.baseline import (
     build_reviewed_baseline,
@@ -67,6 +69,7 @@ DEFAULT_BASELINE_REGISTRY = Path("benchmark/leaderboard/baselines/registry.json"
 DEFAULT_PROVENANCE_REGISTRY = Path("benchmark/corpus/provenance/registry.json")
 DEFAULT_CHANGE_CONTROL_POLICY = Path("benchmark/governance/change-control.json")
 DEFAULT_REVIEW_BATCH_DIR = Path("benchmark/review-batches")
+DEFAULT_CHANGE_HISTORY_DIR = Path("benchmark/governance/history")
 
 
 def _csv(value: Optional[str]) -> Optional[List[str]]:
@@ -77,6 +80,32 @@ def _csv(value: Optional[str]) -> Optional[List[str]]:
 
 def _store(args: argparse.Namespace) -> CorpusStore:
     return CorpusStore(args.manifest, args.cache)
+
+
+def _load_change_report(path: Path) -> ChangeControlReport:
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError("Change-control report root must be an object")
+    changes = tuple(
+        GovernedChange(
+            path=str(item["path"]),
+            status=str(item["status"]),
+            category=str(item["category"]),
+            before_sha256=item.get("before_sha256"),
+            after_sha256=item.get("after_sha256"),
+            required_approvals=int(item.get("required_approvals", 0)),
+            details=dict(item.get("details", {})),
+        )
+        for item in payload.get("changes", [])
+    )
+    return ChangeControlReport(
+        base_ref=str(payload["base_ref"]),
+        head_ref=str(payload["head_ref"]),
+        changes=changes,
+        required_approvals=int(payload.get("required_approvals", 0)),
+        failures=tuple(str(item) for item in payload.get("failures", [])),
+        warnings=tuple(str(item) for item in payload.get("warnings", [])),
+    )
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -283,6 +312,23 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_CHANGE_CONTROL_POLICY,
     )
     change_approvals.add_argument("--output", type=Path)
+
+    change_history = subparsers.add_parser(
+        "change-control-record",
+        help="Write an immutable post-merge benchmark change history record",
+    )
+    change_history.add_argument("report", type=Path)
+    change_history.add_argument("reviews", type=Path)
+    change_history.add_argument("--author", required=True)
+    change_history.add_argument("--merged-commit", required=True)
+    change_history.add_argument("--recorded-by", required=True)
+    change_history.add_argument(
+        "--policy",
+        type=Path,
+        default=DEFAULT_CHANGE_CONTROL_POLICY,
+    )
+    change_history.add_argument("--governance-release", type=Path)
+    change_history.add_argument("--output", type=Path)
 
     review_plan = subparsers.add_parser(
         "review-plan", help="Validate and summarize the gold human-review queue"
@@ -513,27 +559,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         )
         return 0 if report.ok else 1
     if args.command == "change-control-approvals":
-        payload = json.loads(args.report.read_text(encoding="utf-8"))
-        changes = tuple(
-            GovernedChange(
-                path=str(item["path"]),
-                status=str(item["status"]),
-                category=str(item["category"]),
-                before_sha256=item.get("before_sha256"),
-                after_sha256=item.get("after_sha256"),
-                required_approvals=int(item.get("required_approvals", 0)),
-                details=dict(item.get("details", {})),
-            )
-            for item in payload.get("changes", [])
-        )
-        report = ChangeControlReport(
-            base_ref=str(payload["base_ref"]),
-            head_ref=str(payload["head_ref"]),
-            changes=changes,
-            required_approvals=int(payload.get("required_approvals", 0)),
-            failures=tuple(str(item) for item in payload.get("failures", [])),
-            warnings=tuple(str(item) for item in payload.get("warnings", [])),
-        )
+        report = _load_change_report(args.report)
         reviews = json.loads(args.reviews.read_text(encoding="utf-8"))
         if not isinstance(reviews, list):
             raise ValueError("PR reviews JSON must be a list")
@@ -552,6 +578,37 @@ def main(argv: Optional[List[str]] = None) -> int:
             )
         print(json.dumps(approval.to_dict(), indent=2))
         return 0 if report.ok and approval.ok else 1
+    if args.command == "change-control-record":
+        report = _load_change_report(args.report)
+        reviews = json.loads(args.reviews.read_text(encoding="utf-8"))
+        if not isinstance(reviews, list):
+            raise ValueError("PR reviews JSON must be a list")
+        policy = ChangeControlPolicy.load(args.policy)
+        approval = check_pr_approvals(
+            report,
+            reviews=reviews,
+            pr_author=args.author,
+            exclude_pr_author=policy.exclude_pr_author_approval,
+        )
+        governance_bytes = (
+            args.governance_release.read_bytes()
+            if args.governance_release is not None
+            else None
+        )
+        record = build_change_history_record(
+            report=report,
+            approval=approval,
+            report_bytes=args.report.read_bytes(),
+            governance_release_bytes=governance_bytes,
+            merged_commit=args.merged_commit,
+            recorded_by=args.recorded_by,
+        )
+        output = args.output or (
+            DEFAULT_CHANGE_HISTORY_DIR / f"{record.change_id}.json"
+        )
+        path = write_change_history_record(record, output)
+        print(json.dumps({"history": str(path), **record.to_dict()}, indent=2))
+        return 0
     if args.command == "review-plan":
         manifest = CorpusManifest.load(args.manifest)
         plan = ReviewPlan.load(args.plan)
