@@ -1,9 +1,13 @@
 """Rights-cleared real-world parser benchmark utilities."""
 
 from book.benchmark.baseline import (
+    ReviewedBaselineRegistry,
     ReviewedBaselineSnapshot,
+    ReviewedBaselineVersion,
     build_reviewed_baseline,
+    load_active_reviewed_baseline,
     load_baseline_leaderboard,
+    register_reviewed_baseline,
     write_reviewed_baseline,
 )
 from book.benchmark.consensus import (
@@ -25,6 +29,16 @@ from book.benchmark.gold import (
     load_gold_annotation,
     validate_gold_against_spec,
 )
+from book.benchmark.governance import (
+    BenchmarkGovernancePolicy,
+    BenchmarkGovernanceReport,
+    GovernanceReleaseManifest,
+    build_governance_release_manifest,
+    evaluate_governance,
+    render_governance_markdown,
+    run_governed_accuracy_ci,
+    write_governance_outputs,
+)
 from book.benchmark.leaderboard import (
     BackendLeaderboardEntry,
     LeaderboardPolicy,
@@ -40,6 +54,13 @@ from book.benchmark.models import (
     CorpusDocumentSpec,
     CorpusManifest,
     CorpusMaterialization,
+)
+from book.benchmark.provenance import (
+    ConsensusProvenanceRegistry,
+    ConsensusReviewRecord,
+    DocumentProvenanceRecord,
+    record_consensus_publish,
+    registry_path_for_manifest,
 )
 from book.benchmark.report import render_markdown, write_markdown
 from book.benchmark.review_plan import (
@@ -61,6 +82,8 @@ __all__ = [
     "AdjudicationDecision",
     "BackendRunResult",
     "BackendLeaderboardEntry",
+    "BenchmarkGovernancePolicy",
+    "BenchmarkGovernanceReport",
     "BenchmarkReport",
     "CorpusDocumentSpec",
     "CorpusDownloadError",
@@ -68,6 +91,9 @@ __all__ = [
     "CorpusManifest",
     "CorpusMaterialization",
     "CorpusStore",
+    "ConsensusProvenanceRegistry",
+    "ConsensusReviewRecord",
+    "DocumentProvenanceRecord",
     "ConsensusConflict",
     "GoldAnnotation",
     "GoldConsensusBundle",
@@ -79,12 +105,16 @@ __all__ = [
     "GoldReviewDecision",
     "GoldReviewSession",
     "GoldReviewStore",
+    "GovernanceReleaseManifest",
     "LeaderboardPolicy",
     "ParserBenchmarkRunner",
     "ParserLeaderboard",
     "ReviewPlan",
     "ReviewTarget",
+    "ReviewedBaselineRegistry",
     "ReviewedBaselineSnapshot",
+    "ReviewedBaselineVersion",
+    "build_governance_release_manifest",
     "build_leaderboard",
     "build_reviewed_baseline",
     "compare_leaderboards",
@@ -92,15 +122,23 @@ __all__ = [
     "default_parser_registry",
     "evaluate_gold",
     "evaluate_gold_gate",
+    "evaluate_governance",
+    "load_active_reviewed_baseline",
     "load_baseline_leaderboard",
     "load_gold_annotation",
+    "record_consensus_publish",
+    "register_reviewed_baseline",
+    "registry_path_for_manifest",
+    "render_governance_markdown",
     "render_leaderboard_markdown",
     "render_markdown",
     "render_review_plan_markdown",
     "review_plan_coverage",
     "review_plan_summary",
+    "run_governed_accuracy_ci",
     "validate_gold_against_spec",
     "validate_review_plan",
+    "write_governance_outputs",
     "write_leaderboard",
     "write_markdown",
     "write_reviewed_baseline",
