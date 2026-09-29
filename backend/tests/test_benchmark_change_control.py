@@ -379,6 +379,43 @@ def test_baseline_registry_validates_active_snapshot_hash():
     assert report.ok is True
 
 
+def test_baseline_registry_rejects_path_escape():
+    registry = json.dumps(
+        {
+            "schema_version": "1",
+            "active_baseline_id": "v1",
+            "baselines": [
+                {
+                    "baseline_id": "v1",
+                    "path": "../outside.json",
+                    "sha256": "a" * 64,
+                    "created_at": "2026-09-29T00:00:00+00:00",
+                    "manifest_sha256": "m",
+                    "gold_sha256": {},
+                }
+            ],
+        }
+    ).encode()
+
+    report = build_change_control_report(
+        [
+            ChangeInput(
+                path="benchmark/leaderboard/baselines/registry.json",
+                status="modified",
+                before=b"{}",
+                after=registry,
+            )
+        ],
+        policy=_policy(),
+        base_ref="base",
+        head_ref="head",
+        head_loader=lambda path: registry if path.endswith("registry.json") else None,
+    )
+
+    assert report.ok is False
+    assert "escapes baseline directory" in report.failures[0]
+
+
 def test_governance_policy_change_requires_two_independent_approvals():
     report = build_change_control_report(
         [
