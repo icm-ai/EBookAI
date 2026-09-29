@@ -369,6 +369,29 @@ governance policy / change-control policy / governance engine 默认需要 2 个
 详见
 [`docs/architecture/benchmark-change-control.md`](docs/architecture/benchmark-change-control.md)。
 
+### First Real Reviewed Gold Campaign & Strict Baseline Activation
+
+Milestone 20 首次把 M14–M19 的 review / consensus / governance 链用于一个真实
+campaign：
+
+```text
+nist-eel-sp1500-101-v1 / PDF page index 8
+draft seed
+  -> real reviewer A/B assignment
+  -> independent review packages
+  -> consensus publish
+  -> reviewed-only benchmark
+  -> first-reviewed-v1 baseline
+  -> strict governance
+```
+
+仓库当前只提交 campaign 定义，不提交虚构 reviewer，也不把 draft seed 提升为
+reviewed。真实状态应保持 `planned / 0 reviewed targets / no active baseline`，
+直到实际两名 reviewer 完成独立审核。
+
+详见
+[`docs/architecture/first-reviewed-campaign.md`](docs/architecture/first-reviewed-campaign.md)。
+
 ## 支持的格式
 
 | 输入格式 | 输出格式 | 说明 |
