@@ -258,6 +258,31 @@ required approvals, current approvers, and blocking failures.
 Review submission or dismissal reruns the workflow, so approval status in the
 comment follows the current GitHub review state.
 
+## Post-merge change history
+
+A successful PR report can be converted into an immutable repository history
+record after merge:
+
+```bash
+PYTHONPATH=backend/src python -m book.benchmark.cli change-control-record \
+  artifacts/benchmark-change-control/change-report.json \
+  artifacts/benchmark-change-control/reviews.json \
+  --author <pr-author> \
+  --merged-commit <merge-commit-sha> \
+  --recorded-by <maintainer> \
+  --governance-release artifacts/reviewed-accuracy-governance/governance-release.json
+```
+
+The record is written under `benchmark/governance/history/` by default.
+
+History creation is refused if the original change report had structural
+failures or if the preserved GitHub reviews do not satisfy the required
+independent approval count.
+
+Each record pins the report SHA-256, optional Milestone 18 governance-release
+SHA-256, merge commit, governed paths/categories and approver identities.
+History files are immutable once written.
+
 ## Relationship to Milestone 18
 
 Milestone 18 answers:
