@@ -13,6 +13,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence, Tupl
 CHANGE_CONTROL_SCHEMA_VERSION = "1"
 
 GOVERNED_PREFIXES: Tuple[str, ...] = (
+    "benchmark/ablation/",
     "benchmark/campaigns/",
     "benchmark/corpus/gold/",
     "benchmark/corpus/provenance/",
@@ -23,6 +24,8 @@ GOVERNED_PREFIXES: Tuple[str, ...] = (
 GOVERNANCE_ENGINE_FILES: Tuple[str, ...] = (
     ".github/workflows/benchmark-change-control.yml",
     ".github/workflows/ci.yml",
+    "backend/src/book/benchmark/ablation.py",
+    "backend/src/book/benchmark/ablation_runner.py",
     "backend/src/book/benchmark/baseline.py",
     "backend/src/book/benchmark/campaign.py",
     "backend/src/book/benchmark/change_control.py",
@@ -50,6 +53,8 @@ def classify_governed_path(path: str) -> Optional[str]:
     normalized = path.replace("\\", "/")
     if normalized in GOVERNANCE_ENGINE_FILES:
         return "governance_engine"
+    if normalized.startswith("benchmark/ablation/") and normalized.endswith(".json"):
+        return "ablation_spec"
     if normalized.startswith("benchmark/campaigns/") and normalized.endswith(".json"):
         return "campaign"
     if normalized == "benchmark/corpus/manifest.json":
@@ -298,6 +303,18 @@ def _semantic_details(
         return {
             "before_targets": len((left or {}).get("targets", [])),
             "after_targets": len((right or {}).get("targets", [])),
+        }
+    if category == "ablation_spec":
+        return {
+            "pilot_id": (right or left or {}).get("pilot_id"),
+            "before_targets": len((left or {}).get("targets", [])),
+            "after_targets": len((right or {}).get("targets", [])),
+            "before_minimum_reviewed_pages": (
+                (left or {}).get("decision_policy", {}).get("minimum_reviewed_pages")
+            ),
+            "after_minimum_reviewed_pages": (
+                (right or {}).get("decision_policy", {}).get("minimum_reviewed_pages")
+            ),
         }
     if category == "campaign":
         return {
