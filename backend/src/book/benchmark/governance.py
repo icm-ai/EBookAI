@@ -55,6 +55,7 @@ class BenchmarkGovernancePolicy:
     maximum_coverage_drop_pages: int = 0
     require_consensus_provenance: bool = True
     require_active_baseline_after_review: bool = True
+    require_full_reviewed_coverage: bool = True
     schema_version: str = GOVERNANCE_SCHEMA_VERSION
 
     def __post_init__(self) -> None:
@@ -105,6 +106,9 @@ class BenchmarkGovernancePolicy:
             require_active_baseline_after_review=bool(
                 value.get("require_active_baseline_after_review", True)
             ),
+            require_full_reviewed_coverage=bool(
+                value.get("require_full_reviewed_coverage", True)
+            ),
         )
 
     @classmethod
@@ -129,6 +133,7 @@ class BenchmarkGovernancePolicy:
             "require_active_baseline_after_review": (
                 self.require_active_baseline_after_review
             ),
+            "require_full_reviewed_coverage": self.require_full_reviewed_coverage,
         }
 
 
@@ -311,6 +316,8 @@ def _validate_provenance(
                 "source_sha256": spec.sha256,
                 "bundle_id": review.consensus_bundle_id,
                 "published_at": review.published_at,
+                "reviewer_a": review.reviewer_a,
+                "reviewer_b": review.reviewer_b,
             }
             for key, expected in checks.items():
                 if audit.get(key) != expected:
@@ -320,6 +327,19 @@ def _validate_provenance(
             if audit.get("reviewer_a") == audit.get("reviewer_b"):
                 failures.append(
                     f"{document_id} page {page_index}: provenance reviewers are not independent"
+                )
+            audit_adjudicators = tuple(
+                sorted(
+                    {
+                        str(item.get("adjudicator", "")).strip()
+                        for item in audit.get("decisions", [])
+                        if str(item.get("adjudicator", "")).strip()
+                    }
+                )
+            )
+            if audit_adjudicators != tuple(sorted(review.adjudicators)):
+                failures.append(
+                    f"{document_id} page {page_index}: provenance adjudicator set mismatch"
                 )
     return failures
 
@@ -435,6 +455,17 @@ def evaluate_governance(
                     f"{entry.evaluated_metric_count} < "
                     f"{policy.minimum_metrics_per_backend}"
                 )
+            if policy.require_full_reviewed_coverage:
+                if entry.annotated_documents < reviewed_document_count:
+                    failures.append(
+                        f"{backend}: baseline covers {entry.annotated_documents} reviewed "
+                        f"documents but corpus has {reviewed_document_count}"
+                    )
+                if entry.annotated_pages < reviewed_page_count:
+                    failures.append(
+                        f"{backend}: baseline covers {entry.annotated_pages} reviewed pages "
+                        f"but corpus has {reviewed_page_count}"
+                    )
 
         if current_leaderboard is None:
             warnings.append(
