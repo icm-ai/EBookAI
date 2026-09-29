@@ -1,0 +1,142 @@
+{
+  "schema_version": "1",
+  "pilot_id": "runtime-occam-v1",
+  "corpus_id": "ebookai-real-pdf-v1",
+  "description": "Milestone 21 minimal runtime ablation pilot. The pilot exists to remove unjustified runtime complexity, not to reward the full pipeline. Conclusions require reviewed gold across all required difficulty buckets and paired evidence from the compared variants.",
+  "targets": [
+    {
+      "document_id": "nist-ballot-definition-prototype",
+      "page_index": 0,
+      "bucket": "form"
+    },
+    {
+      "document_id": "nist-eel-sp1500-101-v1",
+      "page_index": 8,
+      "bucket": "hierarchy"
+    },
+    {
+      "document_id": "nist-eel-sp1500-101-v1",
+      "page_index": 12,
+      "bucket": "figure"
+    },
+    {
+      "document_id": "nist-eel-sp1500-101-v1",
+      "page_index": 24,
+      "bucket": "dense_text"
+    },
+    {
+      "document_id": "nist-ai-rmf-1-0",
+      "page_index": 3,
+      "bucket": "list"
+    },
+    {
+      "document_id": "nist-ai-rmf-1-0",
+      "page_index": 25,
+      "bucket": "table"
+    },
+    {
+      "document_id": "nist-sp1299-csf2-overview",
+      "page_index": 2,
+      "bucket": "mixed_layout"
+    },
+    {
+      "document_id": "nist-sp1299-csf2-overview",
+      "page_index": 4,
+      "bucket": "list"
+    },
+    {
+      "document_id": "nist-sp1299-csf2-overview-ja",
+      "page_index": 2,
+      "bucket": "multilingual"
+    },
+    {
+      "document_id": "nist-sp1299-csf2-overview-ja",
+      "page_index": 4,
+      "bucket": "multilingual"
+    }
+  ],
+  "variants": [
+    {
+      "id": "A",
+      "label": "Simple baseline",
+      "added_component": "direct PyMuPDF baseline",
+      "components": [
+        "pymupdf",
+        "deterministic_reconstruction"
+      ],
+      "complexity_rank": 1
+    },
+    {
+      "id": "B",
+      "label": "Quality-aware routing",
+      "added_component": "quality-aware parser routing",
+      "components": [
+        "pymupdf",
+        "deterministic_reconstruction",
+        "quality_engine",
+        "parser_orchestrator",
+        "semantic_parser_fallback"
+      ],
+      "complexity_rank": 2
+    },
+    {
+      "id": "C",
+      "label": "Deterministic repair",
+      "added_component": "deterministic patch repair",
+      "components": [
+        "pymupdf",
+        "deterministic_reconstruction",
+        "quality_engine",
+        "parser_orchestrator",
+        "semantic_parser_fallback",
+        "patch_engine"
+      ],
+      "complexity_rank": 3
+    },
+    {
+      "id": "D",
+      "label": "AI-assisted repair",
+      "added_component": "source-grounded AI repair",
+      "components": [
+        "pymupdf",
+        "deterministic_reconstruction",
+        "quality_engine",
+        "parser_orchestrator",
+        "semantic_parser_fallback",
+        "patch_engine",
+        "source_grounded_ai_repair"
+      ],
+      "complexity_rank": 4
+    }
+  ],
+  "quality_metric_paths": [
+    "text.f1",
+    "reading_order.pair_accuracy",
+    "structures.headings.f1",
+    "structures.lists.f1",
+    "structures.tables.f1",
+    "structures.figures.f1",
+    "structures.captions.f1",
+    "structures.footnotes.f1",
+    "structures.formulas.f1"
+  ],
+  "decision_policy": {
+    "minimum_reviewed_pages": 8,
+    "required_buckets": [
+      "form",
+      "hierarchy",
+      "figure",
+      "dense_text",
+      "table",
+      "list",
+      "mixed_layout",
+      "multilingual"
+    ],
+    "minimum_quality_gain_to_keep": 0.01,
+    "negligible_quality_gain": 0.002,
+    "maximum_latency_multiplier": 1.5,
+    "maximum_failure_rate_increase": 0,
+    "minimum_review_burden_reduction": 0.1,
+    "require_human_minutes_for_final": true
+  }
+}
