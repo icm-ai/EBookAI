@@ -7,6 +7,14 @@ import json
 from pathlib import Path
 from typing import List, Optional
 
+from book.benchmark.ablation import (
+    AblationPilotSpec,
+    AblationRunArtifact,
+    analyze_ablation,
+    inspect_ablation_readiness,
+    write_ablation_report,
+)
+from book.benchmark.ablation_runner import run_local_ablation
 from book.benchmark.baseline import (
     build_reviewed_baseline,
     load_baseline_leaderboard,
@@ -81,6 +89,7 @@ DEFAULT_REVIEW_BATCH_DIR = Path("benchmark/review-batches")
 DEFAULT_CHANGE_HISTORY_DIR = Path("benchmark/governance/history")
 DEFAULT_CAMPAIGN = Path("benchmark/campaigns/first-reviewed-v1.json")
 DEFAULT_GOLD_REVIEW_WORKSPACE = Path(".cache/ebookai/gold-review")
+DEFAULT_ABLATION_PILOT = Path("benchmark/ablation/runtime-occam-v1.json")
 
 
 def _csv(value: Optional[str]) -> Optional[List[str]]:
@@ -260,6 +269,73 @@ def build_parser() -> argparse.ArgumentParser:
     governance_ci.add_argument("--cache", type=Path, default=DEFAULT_CACHE)
     governance_ci.add_argument("--output", type=Path, required=True)
     governance_ci.add_argument("--timeout", type=float, default=300.0)
+
+    ablation_status = subparsers.add_parser(
+        "ablation-status",
+        help="Inspect whether the Occam runtime pilot has enough reviewed evidence",
+    )
+    ablation_status.add_argument(
+        "pilot",
+        type=Path,
+        nargs="?",
+        default=DEFAULT_ABLATION_PILOT,
+    )
+    ablation_status.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    ablation_status.add_argument("--plan", type=Path, default=DEFAULT_REVIEW_PLAN)
+    ablation_status.add_argument(
+        "--provenance-registry",
+        type=Path,
+        default=DEFAULT_PROVENANCE_REGISTRY,
+    )
+    ablation_status.add_argument("--output", type=Path)
+
+    ablation_run = subparsers.add_parser(
+        "ablation-run-local",
+        help="Run local non-AI variants A/B/C on evidence-ready reviewed targets",
+    )
+    ablation_run.add_argument(
+        "pilot",
+        type=Path,
+        nargs="?",
+        default=DEFAULT_ABLATION_PILOT,
+    )
+    ablation_run.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    ablation_run.add_argument("--plan", type=Path, default=DEFAULT_REVIEW_PLAN)
+    ablation_run.add_argument(
+        "--provenance-registry",
+        type=Path,
+        default=DEFAULT_PROVENANCE_REGISTRY,
+    )
+    ablation_run.add_argument("--cache", type=Path, default=DEFAULT_CACHE)
+    ablation_run.add_argument("--variants", default="A,B,C")
+    ablation_run.add_argument("--timeout", type=float, default=300.0)
+    ablation_run.add_argument("--output", type=Path, required=True)
+
+    ablation_analyze = subparsers.add_parser(
+        "ablation-analyze",
+        help="Compare paired A/B/C/D evidence and apply Occam decision rules",
+    )
+    ablation_analyze.add_argument(
+        "pilot",
+        type=Path,
+        nargs="?",
+        default=DEFAULT_ABLATION_PILOT,
+    )
+    ablation_analyze.add_argument(
+        "--runs",
+        type=Path,
+        nargs="*",
+        default=[],
+        help="Ablation run artifacts; D may be supplied by an external AI run",
+    )
+    ablation_analyze.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    ablation_analyze.add_argument("--plan", type=Path, default=DEFAULT_REVIEW_PLAN)
+    ablation_analyze.add_argument(
+        "--provenance-registry",
+        type=Path,
+        default=DEFAULT_PROVENANCE_REGISTRY,
+    )
+    ablation_analyze.add_argument("--output", type=Path, required=True)
 
     campaign_status = subparsers.add_parser(
         "campaign-status",
@@ -622,6 +698,71 @@ def main(argv: Optional[List[str]] = None) -> int:
         )
         print(json.dumps(result.to_dict(), indent=2))
         return 0 if result.ok else 1
+    if args.command == "ablation-status":
+        pilot = AblationPilotSpec.load(args.pilot)
+        readiness = inspect_ablation_readiness(
+            pilot,
+            manifest_path=args.manifest,
+            review_plan_path=args.plan,
+            provenance_registry_path=args.provenance_registry,
+        )
+        artifacts = []
+        if args.output is not None:
+            args.output.mkdir(parents=True, exist_ok=True)
+            path = args.output / "ablation-readiness.json"
+            path.write_text(
+                json.dumps(readiness.to_dict(), indent=2) + "\n",
+                encoding="utf-8",
+            )
+            artifacts.append(str(path))
+        print(
+            json.dumps(
+                {"readiness": readiness.to_dict(), "artifacts": artifacts},
+                indent=2,
+            )
+        )
+        return 0 if readiness.ok else 1
+    if args.command == "ablation-run-local":
+        pilot = AblationPilotSpec.load(args.pilot)
+        readiness = inspect_ablation_readiness(
+            pilot,
+            manifest_path=args.manifest,
+            review_plan_path=args.plan,
+            provenance_registry_path=args.provenance_registry,
+        )
+        variants = tuple(_csv(args.variants) or [])
+        artifact = run_local_ablation(
+            pilot,
+            readiness,
+            manifest_path=args.manifest,
+            cache_dir=args.cache,
+            output_dir=args.output,
+            variants=variants,
+            timeout=args.timeout,
+        )
+        print(json.dumps(artifact.to_dict(), indent=2))
+        return 0
+    if args.command == "ablation-analyze":
+        pilot = AblationPilotSpec.load(args.pilot)
+        readiness = inspect_ablation_readiness(
+            pilot,
+            manifest_path=args.manifest,
+            review_plan_path=args.plan,
+            provenance_registry_path=args.provenance_registry,
+        )
+        runs = [AblationRunArtifact.load(path) for path in args.runs]
+        report = analyze_ablation(pilot, readiness, runs)
+        paths = write_ablation_report(report, args.output)
+        print(
+            json.dumps(
+                {
+                    "report": report.to_dict(),
+                    "artifacts": [str(path) for path in paths],
+                },
+                indent=2,
+            )
+        )
+        return 0 if readiness.ok else 1
     if args.command == "campaign-status":
         campaign = ReviewedGoldCampaign.load(args.campaign)
         batch_path = args.batch or (
