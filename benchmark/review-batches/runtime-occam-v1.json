@@ -1,0 +1,74 @@
+{
+  "schema_version": "1",
+  "batch_id": "runtime-occam-v1",
+  "corpus_id": "ebookai-real-pdf-v1",
+  "created_by": "陈明",
+  "created_at": "2026-09-30T00:36:00+00:00",
+  "description": "Milestone 21 minimal evidence batch: 8 pages covering all required Occam pilot difficulty buckets. Independent reviewers: 陈明 and PDP. The remaining two pilot pages are reserves and are intentionally excluded to minimize review workload.",
+  "assignments": [
+    {
+      "document_id": "nist-ballot-definition-prototype",
+      "page_index": 0,
+      "reviewer_a": "陈明",
+      "reviewer_b": "PDP",
+      "adjudicator": "",
+      "note": "bucket=form"
+    },
+    {
+      "document_id": "nist-eel-sp1500-101-v1",
+      "page_index": 8,
+      "reviewer_a": "陈明",
+      "reviewer_b": "PDP",
+      "adjudicator": "",
+      "note": "bucket=hierarchy"
+    },
+    {
+      "document_id": "nist-eel-sp1500-101-v1",
+      "page_index": 12,
+      "reviewer_a": "陈明",
+      "reviewer_b": "PDP",
+      "adjudicator": "",
+      "note": "bucket=figure"
+    },
+    {
+      "document_id": "nist-eel-sp1500-101-v1",
+      "page_index": 24,
+      "reviewer_a": "陈明",
+      "reviewer_b": "PDP",
+      "adjudicator": "",
+      "note": "bucket=dense_text"
+    },
+    {
+      "document_id": "nist-ai-rmf-1-0",
+      "page_index": 25,
+      "reviewer_a": "陈明",
+      "reviewer_b": "PDP",
+      "adjudicator": "",
+      "note": "bucket=table"
+    },
+    {
+      "document_id": "nist-sp1299-csf2-overview",
+      "page_index": 4,
+      "reviewer_a": "陈明",
+      "reviewer_b": "PDP",
+      "adjudicator": "",
+      "note": "bucket=list"
+    },
+    {
+      "document_id": "nist-sp1299-csf2-overview",
+      "page_index": 2,
+      "reviewer_a": "陈明",
+      "reviewer_b": "PDP",
+      "adjudicator": "",
+      "note": "bucket=mixed_layout"
+    },
+    {
+      "document_id": "nist-sp1299-csf2-overview-ja",
+      "page_index": 2,
+      "reviewer_a": "陈明",
+      "reviewer_b": "PDP",
+      "adjudicator": "",
+      "note": "bucket=multilingual"
+    }
+  ]
+}
