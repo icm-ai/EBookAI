@@ -21,6 +21,7 @@ from utils.logging_config import get_logger
 @dataclass
 class TextBlock:
     """Represents a block of text with position and font information"""
+
     text: str
     x0: float
     y0: float
@@ -36,6 +37,7 @@ class TextBlock:
 @dataclass
 class PDFMetadata:
     """PDF document metadata"""
+
     title: Optional[str] = None
     author: Optional[str] = None
     subject: Optional[str] = None
@@ -50,6 +52,7 @@ class PDFMetadata:
 @dataclass
 class ImageInfo:
     """Information about an extracted image"""
+
     page_num: int
     x0: float
     y0: float
@@ -68,7 +71,9 @@ class PDFParser:
     def __init__(self):
         self.logger = get_logger("pdf_parser")
 
-    def parse_pdf(self, pdf_path: Path) -> Tuple[PDFMetadata, List[TextBlock], List[ImageInfo]]:
+    def parse_pdf(
+        self, pdf_path: Path
+    ) -> Tuple[PDFMetadata, List[TextBlock], List[ImageInfo]]:
         """
         Parse PDF and extract metadata, text blocks, and images
 
@@ -100,11 +105,15 @@ class PDFParser:
             images = self._extract_images(doc)
 
             # Calculate scan probability
-            metadata.scan_probability = self._calculate_scan_probability(text_blocks, len(doc))
+            metadata.scan_probability = self._calculate_scan_probability(
+                text_blocks, len(doc)
+            )
 
             doc.close()
 
-            self.logger.info(f"Parsing complete: {len(text_blocks)} text blocks, {len(images)} images")
+            self.logger.info(
+                f"Parsing complete: {len(text_blocks)} text blocks, {len(images)} images"
+            )
             return metadata, text_blocks, images
 
         except Exception as e:
@@ -119,14 +128,14 @@ class PDFParser:
         has_bookmarks = len(doc.get_toc()) > 0
 
         return PDFMetadata(
-            title=metadata_dict.get('title'),
-            author=metadata_dict.get('author'),
-            subject=metadata_dict.get('subject'),
-            creator=metadata_dict.get('creator'),
-            producer=metadata_dict.get('producer'),
+            title=metadata_dict.get("title"),
+            author=metadata_dict.get("author"),
+            subject=metadata_dict.get("subject"),
+            creator=metadata_dict.get("creator"),
+            producer=metadata_dict.get("producer"),
             page_count=len(doc),
             is_encrypted=doc.needs_pass,
-            has_bookmarks=has_bookmarks
+            has_bookmarks=has_bookmarks,
         )
 
     def _extract_text_blocks(self, page: fitz.Page, page_num: int) -> List[TextBlock]:
@@ -161,12 +170,14 @@ class PDFParser:
                                     font_size=font_size,
                                     is_bold=is_bold,
                                     page_num=page_num,
-                                    block_id=len(text_blocks)
+                                    block_id=len(text_blocks),
                                 )
                                 text_blocks.append(text_block)
 
         except Exception as e:
-            self.logger.warning(f"Error extracting text blocks from page {page_num}: {str(e)}")
+            self.logger.warning(
+                f"Error extracting text blocks from page {page_num}: {str(e)}"
+            )
 
         return text_blocks
 
@@ -200,20 +211,26 @@ class PDFParser:
                                 height=base_image.get("height", 0),
                                 image_format=base_image.get("ext", "png"),
                                 image_data=base_image.get("image", b""),
-                                is_color=base_image.get("colorspace", None) is not None
+                                is_color=base_image.get("colorspace", None) is not None,
                             )
                             images.append(image_info)
 
                     except Exception as e:
-                        self.logger.warning(f"Failed to extract image {img_index} from page {page_num}: {str(e)}")
+                        self.logger.warning(
+                            f"Failed to extract image {img_index} from page {page_num}: {str(e)}"
+                        )
                         continue
 
             except Exception as e:
-                self.logger.warning(f"Error processing images on page {page_num}: {str(e)}")
+                self.logger.warning(
+                    f"Error processing images on page {page_num}: {str(e)}"
+                )
 
         return images
 
-    def _calculate_scan_probability(self, text_blocks: List[TextBlock], page_count: int) -> float:
+    def _calculate_scan_probability(
+        self, text_blocks: List[TextBlock], page_count: int
+    ) -> float:
         """
         Calculate probability that PDF is scanned based on text extraction results
 
@@ -245,12 +262,9 @@ class PDFParser:
 
             for item in toc:
                 level, title, page = item
-                bookmarks.append({
-                    'level': level,
-                    'title': title,
-                    'page': page,
-                    'type': 'bookmark'
-                })
+                bookmarks.append(
+                    {"level": level, "title": title, "page": page, "type": "bookmark"}
+                )
 
             return bookmarks
 
@@ -258,7 +272,9 @@ class PDFParser:
             self.logger.warning(f"Failed to extract bookmarks: {str(e)}")
             return []
 
-    def render_page_as_image(self, pdf_path: Path, page_num: int, dpi: int = 200) -> Optional[bytes]:
+    def render_page_as_image(
+        self, pdf_path: Path, page_num: int, dpi: int = 200
+    ) -> Optional[bytes]:
         """
         Render a specific page as an image for OCR processing
 
@@ -307,27 +323,24 @@ class PDFParser:
             doc = fitz.open(str(pdf_path))
 
             result = {
-                'is_valid': True,
-                'page_count': len(doc),
-                'is_encrypted': doc.needs_pass,
-                'has_bookmarks': len(doc.get_toc()) > 0,
-                'file_size': pdf_path.stat().st_size,
-                'version': getattr(doc, 'pdf_version', 'unknown')
+                "is_valid": True,
+                "page_count": len(doc),
+                "is_encrypted": doc.needs_pass,
+                "has_bookmarks": len(doc.get_toc()) > 0,
+                "file_size": pdf_path.stat().st_size,
+                "version": getattr(doc, "pdf_version", "unknown"),
             }
 
             # Quick text extraction test
             try:
                 first_page = doc[0]
                 text_sample = first_page.get_text()
-                result['has_text'] = len(text_sample.strip()) > 10
+                result["has_text"] = len(text_sample.strip()) > 10
             except:
-                result['has_text'] = False
+                result["has_text"] = False
 
             doc.close()
             return result
 
         except Exception as e:
-            return {
-                'is_valid': False,
-                'error': str(e)
-            }
+            return {"is_valid": False, "error": str(e)}

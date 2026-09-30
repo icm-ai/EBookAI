@@ -25,6 +25,7 @@ from config import OCR_CONFIDENCE_THRESHOLD, TESSERACT_LANGUAGE_MODELS
 @dataclass
 class OCRResult:
     """Result of OCR processing for a page"""
+
     text: str
     confidence: float
     language: str
@@ -36,6 +37,7 @@ class OCRResult:
 @dataclass
 class PageOCRResult:
     """OCR result for a specific page"""
+
     page_num: int
     result: OCRResult
     image_size: Tuple[int, int]
@@ -48,21 +50,27 @@ class OCRService:
 
     def __init__(self):
         self.logger = get_logger("ocr_service")
-        self.supported_languages = self._parse_language_models(TESSERACT_LANGUAGE_MODELS)
+        self.supported_languages = self._parse_language_models(
+            TESSERACT_LANGUAGE_MODELS
+        )
 
         # Verify Tesseract is available
         try:
             pytesseract.get_tesseract_version()
-            self.logger.info(f"Tesseract version: {pytesseract.get_tesseract_version()}")
+            self.logger.info(
+                f"Tesseract version: {pytesseract.get_tesseract_version()}"
+            )
         except Exception as e:
             self.logger.error(f"Tesseract not available: {str(e)}")
             raise RuntimeError("Tesseract OCR engine not found")
 
     def _parse_language_models(self, language_models: str) -> List[str]:
         """Parse language models string into list"""
-        return [lang.strip() for lang in language_models.split(',') if lang.strip()]
+        return [lang.strip() for lang in language_models.split(",") if lang.strip()]
 
-    def process_page_image(self, image_bytes: bytes, page_num: int = 0, dpi: int = 200) -> PageOCRResult:
+    def process_page_image(
+        self, image_bytes: bytes, page_num: int = 0, dpi: int = 200
+    ) -> PageOCRResult:
         """
         Process a page image and extract text using OCR
 
@@ -97,7 +105,7 @@ class OCRService:
                 result=ocr_result,
                 image_size=image.size,
                 dpi=dpi,
-                warnings=[]
+                warnings=[],
             )
 
             # Add warnings if confidence is low
@@ -106,8 +114,10 @@ class OCRService:
                     f"Low OCR confidence ({ocr_result.confidence:.1f}% < {OCR_CONFIDENCE_THRESHOLD}%)"
                 )
 
-            self.logger.debug(f"Page {page_num} OCR complete: {len(ocr_result.text)} chars, "
-                             f"confidence: {ocr_result.confidence:.1f}%")
+            self.logger.debug(
+                f"Page {page_num} OCR complete: {len(ocr_result.text)} chars, "
+                f"confidence: {ocr_result.confidence:.1f}%"
+            )
 
             return page_result
 
@@ -126,7 +136,7 @@ class OCRService:
             Tuple of (processed_image, applied_steps)
         """
         applied_steps = []
-        processed_image = image.convert('RGB')  # Ensure RGB mode
+        processed_image = image.convert("RGB")  # Ensure RGB mode
 
         try:
             # Check if image needs deskewing
@@ -141,7 +151,7 @@ class OCRService:
                 applied_steps.append("contrast_enhance")
 
             # Convert to grayscale for better OCR
-            processed_image = processed_image.convert('L')
+            processed_image = processed_image.convert("L")
 
             # Apply thresholding (binarization)
             processed_image = self._apply_threshold(processed_image)
@@ -154,7 +164,7 @@ class OCRService:
         except Exception as e:
             self.logger.warning(f"Image preprocessing failed: {str(e)}")
             # Return original image if preprocessing fails
-            processed_image = image.convert('RGB')
+            processed_image = image.convert("RGB")
 
         return processed_image, applied_steps
 
@@ -194,12 +204,12 @@ class OCRService:
         """Apply thresholding to binarize image"""
         try:
             # Convert to grayscale if not already
-            if image.mode != 'L':
-                image = image.convert('L')
+            if image.mode != "L":
+                image = image.convert("L")
 
             # Apply adaptive threshold
             threshold = 128
-            return image.point(lambda x: 0 if x < threshold else 255, '1')
+            return image.point(lambda x: 0 if x < threshold else 255, "1")
         except Exception:
             return image
 
@@ -212,25 +222,25 @@ class OCRService:
         """
         try:
             # Quick OCR for language detection
-            config = '--psm 6'  # Assume uniform block of text
+            config = "--psm 6"  # Assume uniform block of text
 
             # Try Chinese first
             try:
                 chinese_result = pytesseract.image_to_string(
-                    image, lang='chi_sim+chi_tra', config=config
+                    image, lang="chi_sim+chi_tra", config=config
                 )
-                chinese_text = re.sub(r'[^\u4e00-\u9fff]', '', chinese_result)
+                chinese_text = re.sub(r"[^\u4e00-\u9fff]", "", chinese_result)
                 if len(chinese_text) > 10:
-                    return 'chi_sim+chi_tra'
+                    return "chi_sim+chi_tra"
             except Exception:
                 pass
 
             # Fallback to English
-            return 'eng'
+            return "eng"
 
         except Exception as e:
             self.logger.warning(f"Language detection failed: {str(e)}")
-            return 'eng'  # Default to English
+            return "eng"  # Default to English
 
     def _perform_ocr(self, image: Image.Image, language: str) -> OCRResult:
         """
@@ -245,7 +255,7 @@ class OCRService:
         """
         try:
             # Configure Tesseract
-            config = '--psm 6 --oem 3'  # Assume uniform text, default OCR engine
+            config = "--psm 6 --oem 3"  # Assume uniform text, default OCR engine
 
             # Get word-level data with confidence
             data = pytesseract.image_to_data(
@@ -258,20 +268,22 @@ class OCRService:
             total_confidence = 0
             word_count = 0
 
-            for i in range(len(data['text'])):
-                word = data['text'][i].strip()
+            for i in range(len(data["text"])):
+                word = data["text"][i].strip()
                 if word:
-                    conf = int(data['conf'][i])
+                    conf = int(data["conf"][i])
                     text_parts.append(word)
                     word_confidences.append((word, conf))
                     total_confidence += conf
                     word_count += 1
 
             # Calculate overall confidence
-            overall_confidence = (total_confidence / word_count) if word_count > 0 else 0
+            overall_confidence = (
+                (total_confidence / word_count) if word_count > 0 else 0
+            )
 
             # Combine text
-            full_text = ' '.join(text_parts)
+            full_text = " ".join(text_parts)
 
             return OCRResult(
                 text=full_text,
@@ -279,14 +291,16 @@ class OCRService:
                 language=language,
                 word_confidences=word_confidences,
                 preprocessing_applied=[],  # Will be set by caller
-                processing_time=0  # Will be set by caller
+                processing_time=0,  # Will be set by caller
             )
 
         except Exception as e:
             self.logger.error(f"OCR processing failed: {str(e)}")
             raise RuntimeError(f"OCR processing failed: {str(e)}")
 
-    def process_document(self, pdf_path: Path, page_range: Optional[Tuple[int, int]] = None) -> List[PageOCRResult]:
+    def process_document(
+        self, pdf_path: Path, page_range: Optional[Tuple[int, int]] = None
+    ) -> List[PageOCRResult]:
         """
         Process an entire PDF document using OCR
 
@@ -308,11 +322,13 @@ class OCRService:
 
             # Validate PDF first
             validation = pdf_parser.validate_pdf(pdf_path)
-            if not validation['is_valid']:
-                raise ValueError(f"Invalid PDF file: {validation.get('error', 'Unknown error')}")
+            if not validation["is_valid"]:
+                raise ValueError(
+                    f"Invalid PDF file: {validation.get('error', 'Unknown error')}"
+                )
 
             # Determine page range
-            total_pages = validation['page_count']
+            total_pages = validation["page_count"]
             if page_range:
                 start_page, end_page = page_range
                 start_page = max(0, start_page)
@@ -324,13 +340,19 @@ class OCRService:
             for page_num in range(start_page, end_page + 1):
                 try:
                     # Render page as image
-                    image_bytes = pdf_parser.render_page_as_image(pdf_path, page_num, dpi=300)
+                    image_bytes = pdf_parser.render_page_as_image(
+                        pdf_path, page_num, dpi=300
+                    )
 
                     if image_bytes:
-                        page_result = self.process_page_image(image_bytes, page_num, dpi=300)
+                        page_result = self.process_page_image(
+                            image_bytes, page_num, dpi=300
+                        )
                         results.append(page_result)
                     else:
-                        self.logger.warning(f"Failed to render page {page_num} as image")
+                        self.logger.warning(
+                            f"Failed to render page {page_num} as image"
+                        )
 
                 except Exception as e:
                     self.logger.error(f"Failed to process page {page_num}: {str(e)}")
@@ -356,7 +378,9 @@ class OCRService:
         """Get list of supported languages"""
         return self.supported_languages.copy()
 
-    def extract_text_with_layout(self, image: Image.Image, language: str = None) -> Dict[str, Any]:
+    def extract_text_with_layout(
+        self, image: Image.Image, language: str = None
+    ) -> Dict[str, Any]:
         """
         Extract text while preserving layout information
 
@@ -373,28 +397,28 @@ class OCRService:
 
             # Use hOCR output to preserve layout
             hocr = pytesseract.image_to_pdf_or_hocr(
-                image, lang=language, extension='hocr', config='--psm 6'
+                image, lang=language, extension="hocr", config="--psm 6"
             )
 
             # Also get regular text for comparison
-            text = pytesseract.image_to_string(image, lang=language, config='--psm 6')
+            text = pytesseract.image_to_string(image, lang=language, config="--psm 6")
 
             return {
-                'text': text,
-                'hocr': hocr,
-                'language': language,
-                'has_layout': True
+                "text": text,
+                "hocr": hocr,
+                "language": language,
+                "has_layout": True,
             }
 
         except Exception as e:
             self.logger.error(f"Layout-aware OCR failed: {str(e)}")
             # Fallback to regular OCR
-            text = pytesseract.image_to_string(image, lang=language or 'eng')
+            text = pytesseract.image_to_string(image, lang=language or "eng")
             return {
-                'text': text,
-                'hocr': None,
-                'language': language or 'eng',
-                'has_layout': False
+                "text": text,
+                "hocr": None,
+                "language": language or "eng",
+                "has_layout": False,
             }
 
 

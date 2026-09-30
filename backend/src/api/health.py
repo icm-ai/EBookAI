@@ -21,7 +21,7 @@ async def health_check() -> Dict[str, Any]:
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
         "service": "EBookAI",
-        "version": "1.0.0"
+        "version": "1.0.0",
     }
 
 
@@ -36,7 +36,7 @@ async def detailed_health_check() -> Dict[str, Any]:
         "service": "EBookAI",
         "version": "1.0.0",
         "components": {},
-        "check_duration": 0
+        "check_duration": 0,
     }
 
     # 检查转换服务
@@ -44,12 +44,12 @@ async def detailed_health_check() -> Dict[str, Any]:
         conversion_service = ConversionService()
         health_status["components"]["conversion_service"] = {
             "status": "healthy",
-            "message": "Conversion service is operational"
+            "message": "Conversion service is operational",
         }
     except Exception as e:
         health_status["components"]["conversion_service"] = {
             "status": "unhealthy",
-            "message": f"Conversion service error: {str(e)}"
+            "message": f"Conversion service error: {str(e)}",
         }
         health_status["status"] = "degraded"
 
@@ -59,12 +59,12 @@ async def detailed_health_check() -> Dict[str, Any]:
         health_status["components"]["batch_conversion_service"] = {
             "status": "healthy",
             "message": "Batch conversion service is operational",
-            "active_batches": batch_count
+            "active_batches": batch_count,
         }
     except Exception as e:
         health_status["components"]["batch_conversion_service"] = {
             "status": "unhealthy",
-            "message": f"Batch conversion service error: {str(e)}"
+            "message": f"Batch conversion service error: {str(e)}",
         }
         health_status["status"] = "degraded"
 
@@ -76,19 +76,19 @@ async def detailed_health_check() -> Dict[str, Any]:
                 "status": "healthy",
                 "message": "AI service configured",
                 "available_providers": available_providers,
-                "default_provider": ai_config.DEFAULT_AI_PROVIDER
+                "default_provider": ai_config.DEFAULT_AI_PROVIDER,
             }
         else:
             health_status["components"]["ai_service"] = {
                 "status": "degraded",
                 "message": "No AI providers configured",
                 "available_providers": [],
-                "default_provider": ai_config.DEFAULT_AI_PROVIDER
+                "default_provider": ai_config.DEFAULT_AI_PROVIDER,
             }
     except Exception as e:
         health_status["components"]["ai_service"] = {
             "status": "unhealthy",
-            "message": f"AI service error: {str(e)}"
+            "message": f"AI service error: {str(e)}",
         }
         health_status["status"] = "degraded"
 
@@ -99,8 +99,8 @@ async def detailed_health_check() -> Dict[str, Any]:
         extra={
             "status": health_status["status"],
             "duration": health_status["check_duration"],
-            "components_count": len(health_status["components"])
-        }
+            "components_count": len(health_status["components"]),
+        },
     )
 
     return health_status
@@ -114,7 +114,7 @@ async def get_system_metrics() -> Dict[str, Any]:
         batch_metrics = {
             "active_batches": len(batch_conversion_service.active_batches),
             "total_batches_processed": 0,  # 可以从日志或数据库获取
-            "average_processing_time": 0   # 可以从历史数据计算
+            "average_processing_time": 0,  # 可以从历史数据计算
         }
 
         # AI服务指标
@@ -122,7 +122,7 @@ async def get_system_metrics() -> Dict[str, Any]:
             "configured_providers": len(ai_config.get_available_providers()),
             "default_provider": ai_config.DEFAULT_AI_PROVIDER,
             "total_requests": 0,  # 可以从监控系统获取
-            "success_rate": 0     # 可以从监控系统计算
+            "success_rate": 0,  # 可以从监控系统计算
         }
 
         return {
@@ -132,15 +132,15 @@ async def get_system_metrics() -> Dict[str, Any]:
             "system": {
                 "uptime": "N/A",  # 可以跟踪服务启动时间
                 "memory_usage": "N/A",  # 可以使用psutil获取
-                "cpu_usage": "N/A"      # 可以使用psutil获取
-            }
+                "cpu_usage": "N/A",  # 可以使用psutil获取
+            },
         }
 
     except Exception as e:
         logger.error(f"Failed to get system metrics: {e}")
         return {
             "error": "Failed to retrieve system metrics",
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         }
 
 
@@ -158,13 +158,13 @@ async def readiness_check() -> Dict[str, Any]:
             return {
                 "status": "ready",
                 "timestamp": datetime.utcnow().isoformat(),
-                "message": "Service is ready to accept requests"
+                "message": "Service is ready to accept requests",
             }
         else:
             return {
                 "status": "not_ready",
                 "timestamp": datetime.utcnow().isoformat(),
-                "message": "No AI providers configured"
+                "message": "No AI providers configured",
             }
 
     except Exception as e:
@@ -172,7 +172,7 @@ async def readiness_check() -> Dict[str, Any]:
         return {
             "status": "not_ready",
             "timestamp": datetime.utcnow().isoformat(),
-            "message": f"Service not ready: {str(e)}"
+            "message": f"Service not ready: {str(e)}",
         }
 
 
@@ -182,5 +182,5 @@ async def liveness_check() -> Dict[str, Any]:
     return {
         "status": "alive",
         "timestamp": datetime.utcnow().isoformat(),
-        "message": "Service is alive"
+        "message": "Service is alive",
     }

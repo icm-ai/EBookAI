@@ -32,7 +32,7 @@ from config import (
     CONVERSION_TIMEOUT,
     OUTPUT_DIR,
     UPLOAD_DIR,
-    ENHANCED_PDF_CONVERSION
+    ENHANCED_PDF_CONVERSION,
 )
 
 
@@ -52,6 +52,7 @@ class ConversionService:
         if ENHANCED_PDF_CONVERSION:
             try:
                 from conversion.conversion_pipeline import ConversionPipeline
+
                 self.enhanced_pipeline = ConversionPipeline(ai_service)
                 self.logger.info("Enhanced PDF to EPUB conversion pipeline initialized")
             except Exception as e:
@@ -920,7 +921,9 @@ class ConversionService:
                 original_error=e,
             )
 
-    async def _pdf_to_epub_enhanced(self, pdf_path: Path, epub_path: Path, task_id: str):
+    async def _pdf_to_epub_enhanced(
+        self, pdf_path: Path, epub_path: Path, task_id: str
+    ):
         """
         Enhanced PDF to EPUB conversion using the new pipeline
 
@@ -930,21 +933,25 @@ class ConversionService:
             task_id: Task ID for progress tracking
         """
         try:
-            self.logger.info(f"Starting enhanced PDF to EPUB conversion: {pdf_path.name}")
+            self.logger.info(
+                f"Starting enhanced PDF to EPUB conversion: {pdf_path.name}"
+            )
 
             # Use enhanced pipeline
             result = self.enhanced_pipeline.convert_pdf_to_epub(pdf_path, epub_path)
 
             if result.success:
-                self.logger.info(f"Enhanced conversion successful: {result.method_used}, "
-                               f"quality: {result.quality_score:.1f}%, "
-                               f"time: {result.total_duration:.2f}s")
+                self.logger.info(
+                    f"Enhanced conversion successful: {result.method_used}, "
+                    f"quality: {result.quality_score:.1f}%, "
+                    f"time: {result.total_duration:.2f}s"
+                )
             else:
                 raise FileProcessingError(
                     message="Enhanced PDF to EPUB conversion failed",
                     file_path=str(pdf_path),
                     file_type="pdf",
-                    original_error=result.error_message
+                    original_error=result.error_message,
                 )
 
         except Exception as e:

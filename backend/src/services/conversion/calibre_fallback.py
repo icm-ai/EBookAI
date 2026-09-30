@@ -26,6 +26,7 @@ from config import ENABLE_CALIBRE_FALLBACK, CALIBRE_QUALITY_THRESHOLD, CALIBRE_T
 @dataclass
 class CalibreResult:
     """Result of Calibre conversion"""
+
     success: bool
     output_path: Optional[Path]
     error_message: Optional[str]
@@ -40,6 +41,7 @@ class CalibreResult:
 @dataclass
 class ConversionQualityMetrics:
     """Quality metrics for conversion comparison"""
+
     text_extraction_quality: float
     structure_preservation: float
     image_quality: float
@@ -54,16 +56,18 @@ class CalibreFallback:
     def __init__(self):
         self.logger = get_logger("calibre_fallback")
         self.calibre_available = self._check_calibre_availability()
-        self.calibre_version = self._get_calibre_version() if self.calibre_available else None
+        self.calibre_version = (
+            self._get_calibre_version() if self.calibre_available else None
+        )
 
     def _check_calibre_availability(self) -> bool:
         """Check if Calibre ebook-convert is available"""
         try:
             result = subprocess.run(
-                ['ebook-convert', '--version'],
+                ["ebook-convert", "--version"],
                 capture_output=True,
                 text=True,
-                timeout=10
+                timeout=10,
             )
             if result.returncode == 0:
                 self.logger.info("Calibre ebook-convert is available")
@@ -79,10 +83,10 @@ class CalibreFallback:
         """Get Calibre version information"""
         try:
             result = subprocess.run(
-                ['ebook-convert', '--version'],
+                ["ebook-convert", "--version"],
                 capture_output=True,
                 text=True,
-                timeout=10
+                timeout=10,
             )
             if result.returncode == 0:
                 return result.stdout.strip()
@@ -94,10 +98,9 @@ class CalibreFallback:
         """Check if Calibre fallback is available"""
         return ENABLE_CALIBRE_FALLBACK and self.calibre_available
 
-    def convert_pdf_to_epub(self,
-                           input_path: Path,
-                           output_path: Path,
-                           options: Dict[str, Any] = None) -> CalibreResult:
+    def convert_pdf_to_epub(
+        self, input_path: Path, output_path: Path, options: Dict[str, Any] = None
+    ) -> CalibreResult:
         """
         Convert PDF to EPUB using Calibre ebook-convert
 
@@ -117,13 +120,15 @@ class CalibreFallback:
                 processing_time=0,
                 command_used="",
                 stdout="",
-                stderr=""
+                stderr="",
             )
 
         start_time = time.time()
 
         try:
-            self.logger.info(f"Starting Calibre conversion: {input_path.name} -> {output_path.name}")
+            self.logger.info(
+                f"Starting Calibre conversion: {input_path.name} -> {output_path.name}"
+            )
 
             # Ensure output directory exists
             output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -133,10 +138,7 @@ class CalibreFallback:
 
             # Execute conversion
             result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=CALIBRE_TIMEOUT
+                cmd, capture_output=True, text=True, timeout=CALIBRE_TIMEOUT
             )
 
             processing_time = time.time() - start_time
@@ -144,19 +146,21 @@ class CalibreFallback:
             if result.returncode == 0 and output_path.exists():
                 file_size = output_path.stat().st_size
 
-                self.logger.info(f"Calibre conversion successful: {processing_time:.2f}s, "
-                               f"file size: {file_size:,} bytes")
+                self.logger.info(
+                    f"Calibre conversion successful: {processing_time:.2f}s, "
+                    f"file size: {file_size:,} bytes"
+                )
 
                 return CalibreResult(
                     success=True,
                     output_path=output_path,
                     error_message=None,
                     processing_time=processing_time,
-                    command_used=' '.join(cmd),
+                    command_used=" ".join(cmd),
                     stdout=result.stdout,
                     stderr=result.stderr,
                     file_size=file_size,
-                    quality_indicators=self._analyze_calibre_output(result.stdout)
+                    quality_indicators=self._analyze_calibre_output(result.stdout),
                 )
             else:
                 error_msg = result.stderr or result.stdout or "Unknown error"
@@ -167,23 +171,25 @@ class CalibreFallback:
                     output_path=None,
                     error_message=error_msg,
                     processing_time=processing_time,
-                    command_used=' '.join(cmd),
+                    command_used=" ".join(cmd),
                     stdout=result.stdout,
-                    stderr=result.stderr
+                    stderr=result.stderr,
                 )
 
         except subprocess.TimeoutExpired:
             processing_time = time.time() - start_time
-            self.logger.error(f"Calibre conversion timed out after {CALIBRE_TIMEOUT} seconds")
+            self.logger.error(
+                f"Calibre conversion timed out after {CALIBRE_TIMEOUT} seconds"
+            )
 
             return CalibreResult(
                 success=False,
                 output_path=None,
                 error_message=f"Conversion timed out after {CALIBRE_TIMEOUT} seconds",
                 processing_time=processing_time,
-                command_used=' '.join(cmd) if 'cmd' in locals() else "",
+                command_used=" ".join(cmd) if "cmd" in locals() else "",
                 stdout="",
-                stderr="Timeout"
+                stderr="Timeout",
             )
 
         except Exception as e:
@@ -195,26 +201,25 @@ class CalibreFallback:
                 output_path=None,
                 error_message=str(e),
                 processing_time=processing_time,
-                command_used=' '.join(cmd) if 'cmd' in locals() else "",
+                command_used=" ".join(cmd) if "cmd" in locals() else "",
                 stdout="",
-                stderr=str(e)
+                stderr=str(e),
             )
 
-    def _build_conversion_command(self,
-                                 input_path: Path,
-                                 output_path: Path,
-                                 options: Dict[str, Any] = None) -> List[str]:
+    def _build_conversion_command(
+        self, input_path: Path, output_path: Path, options: Dict[str, Any] = None
+    ) -> List[str]:
         """Build ebook-convert command with options"""
-        cmd = ['ebook-convert', str(input_path), str(output_path)]
+        cmd = ["ebook-convert", str(input_path), str(output_path)]
 
         # Add default options for better quality
         default_options = {
-            '--pdf-engine': 'mupdf',  # Use MuPDF for better PDF handling
-            '--enable-heuristics': '',  # Enable heuristic processing
-            '--keep-ligatures': '',  # Preserve ligatures
-            '--no-inline-toc': '',  # Generate separate TOC
-            '--pretty-print': '',  # Format HTML nicely
-            '--language': 'zh' if self._is_chinese_pdf(input_path) else 'en',
+            "--pdf-engine": "mupdf",  # Use MuPDF for better PDF handling
+            "--enable-heuristics": "",  # Enable heuristic processing
+            "--keep-ligatures": "",  # Preserve ligatures
+            "--no-inline-toc": "",  # Generate separate TOC
+            "--pretty-print": "",  # Format HTML nicely
+            "--language": "zh" if self._is_chinese_pdf(input_path) else "en",
         }
 
         # Add custom options
@@ -233,54 +238,55 @@ class CalibreFallback:
         """Simple heuristic to detect if PDF contains Chinese content"""
         try:
             # Read first few bytes to check for Chinese characters
-            with open(pdf_path, 'rb') as f:
-                sample = f.read(1000).decode('utf-8', errors='ignore')
+            with open(pdf_path, "rb") as f:
+                sample = f.read(1000).decode("utf-8", errors="ignore")
 
-            return any('\u4e00' <= char <= '\u9fff' for char in sample)
+            return any("\u4e00" <= char <= "\u9fff" for char in sample)
         except Exception:
             return False
 
     def _analyze_calibre_output(self, stdout: str) -> Dict[str, Any]:
         """Analyze Calibre output for quality indicators"""
         indicators = {
-            'pages_processed': 0,
-            'images_extracted': 0,
-            'toc_generated': False,
-            'metadata_found': False,
-            'warnings_count': 0
+            "pages_processed": 0,
+            "images_extracted": 0,
+            "toc_generated": False,
+            "metadata_found": False,
+            "warnings_count": 0,
         }
 
-        lines = stdout.split('\n')
+        lines = stdout.split("\n")
         for line in lines:
             line_lower = line.lower()
 
-            if 'pages' in line_lower:
+            if "pages" in line_lower:
                 try:
                     # Try to extract page count
                     import re
-                    match = re.search(r'(\d+)\s+pages?', line_lower)
+
+                    match = re.search(r"(\d+)\s+pages?", line_lower)
                     if match:
-                        indicators['pages_processed'] = int(match.group(1))
+                        indicators["pages_processed"] = int(match.group(1))
                 except Exception:
                     pass
 
-            if 'image' in line_lower or 'extracting' in line_lower:
-                indicators['images_extracted'] += 1
+            if "image" in line_lower or "extracting" in line_lower:
+                indicators["images_extracted"] += 1
 
-            if 'toc' in line_lower or 'table of contents' in line_lower:
-                indicators['toc_generated'] = True
+            if "toc" in line_lower or "table of contents" in line_lower:
+                indicators["toc_generated"] = True
 
-            if 'metadata' in line_lower:
-                indicators['metadata_found'] = True
+            if "metadata" in line_lower:
+                indicators["metadata_found"] = True
 
-            if 'warning' in line_lower or 'warn' in line_lower:
-                indicators['warnings_count'] += 1
+            if "warning" in line_lower or "warn" in line_lower:
+                indicators["warnings_count"] += 1
 
         return indicators
 
-    def compare_conversion_quality(self,
-                                   custom_result: Path,
-                                   calibre_result: CalibreResult) -> ConversionQualityMetrics:
+    def compare_conversion_quality(
+        self, custom_result: Path, calibre_result: CalibreResult
+    ) -> ConversionQualityMetrics:
         """
         Compare quality between custom and Calibre conversion results
 
@@ -298,7 +304,7 @@ class CalibreFallback:
                 image_quality=0,
                 metadata_completeness=0,
                 overall_score=0,
-                file_size_ratio=1.0
+                file_size_ratio=1.0,
             )
 
         try:
@@ -312,11 +318,17 @@ class CalibreFallback:
             # Simple scoring (this could be enhanced with actual EPUB analysis)
             text_score = 85  # Assume good text extraction
             structure_score = 80  # Assume decent structure
-            image_score = 90 if calibre_result.quality_indicators['images_extracted'] > 0 else 50
-            metadata_score = 90 if calibre_result.quality_indicators['metadata_found'] else 60
+            image_score = (
+                90 if calibre_result.quality_indicators["images_extracted"] > 0 else 50
+            )
+            metadata_score = (
+                90 if calibre_result.quality_indicators["metadata_found"] else 60
+            )
 
             # Calculate overall score
-            overall_score = (text_score + structure_score + image_score + metadata_score) / 4
+            overall_score = (
+                text_score + structure_score + image_score + metadata_score
+            ) / 4
 
             return ConversionQualityMetrics(
                 text_extraction_quality=text_score,
@@ -324,7 +336,7 @@ class CalibreFallback:
                 image_quality=image_score,
                 metadata_completeness=metadata_score,
                 overall_score=overall_score,
-                file_size_ratio=file_size_ratio
+                file_size_ratio=file_size_ratio,
             )
 
         except Exception as e:
@@ -335,14 +347,16 @@ class CalibreFallback:
                 image_quality=50,
                 metadata_completeness=50,
                 overall_score=50,
-                file_size_ratio=1.0
+                file_size_ratio=1.0,
             )
 
-    def should_trigger_fallback(self,
-                               custom_quality_score: float,
-                               error_occurred: bool = False,
-                               user_requested: bool = False,
-                               pdf_complexity: Dict[str, Any] = None) -> Tuple[bool, str]:
+    def should_trigger_fallback(
+        self,
+        custom_quality_score: float,
+        error_occurred: bool = False,
+        user_requested: bool = False,
+        pdf_complexity: Dict[str, Any] = None,
+    ) -> Tuple[bool, str]:
         """
         Determine if Calibre fallback should be triggered
 
@@ -368,15 +382,18 @@ class CalibreFallback:
 
         # Quality below threshold
         if custom_quality_score < CALIBRE_QUALITY_THRESHOLD:
-            return True, f"Custom quality score ({custom_quality_score:.1f}) below threshold ({CALIBRE_QUALITY_THRESHOLD})"
+            return (
+                True,
+                f"Custom quality score ({custom_quality_score:.1f}) below threshold ({CALIBRE_QUALITY_THRESHOLD})",
+            )
 
         # Complex PDF features
         if pdf_complexity:
-            if pdf_complexity.get('is_encrypted', False):
+            if pdf_complexity.get("is_encrypted", False):
                 return True, "PDF is encrypted"
-            if pdf_complexity.get('has_drm', False):
+            if pdf_complexity.get("has_drm", False):
                 return True, "PDF has DRM protection"
-            if pdf_complexity.get('complex_layout', False):
+            if pdf_complexity.get("complex_layout", False):
                 return True, "PDF has complex layout requiring specialized handling"
 
         return False, "Custom conversion quality acceptable"
@@ -384,12 +401,12 @@ class CalibreFallback:
     def get_fallback_statistics(self) -> Dict[str, Any]:
         """Get statistics about Calibre fallback usage"""
         return {
-            'available': self.is_available(),
-            'version': self.calibre_version,
-            'enabled': ENABLE_CALIBRE_FALLBACK,
-            'quality_threshold': CALIBRE_QUALITY_THRESHOLD,
-            'timeout': CALIBRE_TIMEOUT,
-            'command_path': shutil.which('ebook-convert') or 'Not found'
+            "available": self.is_available(),
+            "version": self.calibre_version,
+            "enabled": ENABLE_CALIBRE_FALLBACK,
+            "quality_threshold": CALIBRE_QUALITY_THRESHOLD,
+            "timeout": CALIBRE_TIMEOUT,
+            "command_path": shutil.which("ebook-convert") or "Not found",
         }
 
     def test_conversion(self, test_pdf_path: Path) -> bool:
@@ -414,39 +431,54 @@ class CalibreFallback:
     def get_supported_formats(self) -> Dict[str, List[str]]:
         """Get supported input and output formats from Calibre"""
         if not self.is_available():
-            return {'input': [], 'output': []}
+            return {"input": [], "output": []}
 
         try:
             result = subprocess.run(
-                ['ebook-convert', '--list-formats'],
+                ["ebook-convert", "--list-formats"],
                 capture_output=True,
                 text=True,
-                timeout=30
+                timeout=30,
             )
 
             if result.returncode == 0:
                 # Parse the output to extract formats
-                lines = result.stdout.split('\n')
+                lines = result.stdout.split("\n")
                 input_formats = []
                 output_formats = []
 
                 for line in lines:
-                    if 'input formats:' in line.lower():
+                    if "input formats:" in line.lower():
                         # This is simplified - in practice you'd parse more carefully
-                        input_formats = ['pdf', 'mobi', 'azw', 'azw3', 'txt', 'doc', 'docx']
-                    elif 'output formats:' in line.lower():
-                        output_formats = ['epub', 'mobi', 'azw3', 'pdf', 'txt']
+                        input_formats = [
+                            "pdf",
+                            "mobi",
+                            "azw",
+                            "azw3",
+                            "txt",
+                            "doc",
+                            "docx",
+                        ]
+                    elif "output formats:" in line.lower():
+                        output_formats = ["epub", "mobi", "azw3", "pdf", "txt"]
 
-                return {
-                    'input': input_formats,
-                    'output': output_formats
-                }
+                return {"input": input_formats, "output": output_formats}
 
         except Exception as e:
             self.logger.warning(f"Failed to get supported formats: {str(e)}")
 
         # Return default known formats
         return {
-            'input': ['pdf', 'mobi', 'azw', 'azw3', 'txt', 'doc', 'docx', 'html', 'rtf'],
-            'output': ['epub', 'mobi', 'azw3', 'pdf', 'txt', 'html', 'rtf']
+            "input": [
+                "pdf",
+                "mobi",
+                "azw",
+                "azw3",
+                "txt",
+                "doc",
+                "docx",
+                "html",
+                "rtf",
+            ],
+            "output": ["epub", "mobi", "azw3", "pdf", "txt", "html", "rtf"],
         }

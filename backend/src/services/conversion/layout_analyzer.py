@@ -20,6 +20,7 @@ from utils.logging_config import get_logger
 @dataclass
 class TextRegion:
     """Represents a region of text with layout information"""
+
     text: str
     x0: float
     y0: float
@@ -36,6 +37,7 @@ class TextRegion:
 @dataclass
 class ColumnInfo:
     """Information about detected columns"""
+
     column_number: int
     x_start: float
     x_end: float
@@ -46,6 +48,7 @@ class ColumnInfo:
 @dataclass
 class TableInfo:
     """Information about detected tables"""
+
     page_num: int
     x0: float
     y0: float
@@ -62,7 +65,9 @@ class LayoutAnalyzer:
     def __init__(self):
         self.logger = get_logger("layout_analyzer")
 
-    def analyze_page_layout(self, page: Page, page_num: int) -> Tuple[List[ColumnInfo], List[TextRegion], List[TableInfo]]:
+    def analyze_page_layout(
+        self, page: Page, page_num: int
+    ) -> Tuple[List[ColumnInfo], List[TextRegion], List[TableInfo]]:
         """
         Analyze page layout and detect columns, text regions, and tables
 
@@ -91,7 +96,9 @@ class LayoutAnalyzer:
             # Detect tables
             tables = self._detect_tables(page, page_num)
 
-            self.logger.debug(f"Page {page_num}: {len(columns)} columns, {len(text_regions)} regions, {len(tables)} tables")
+            self.logger.debug(
+                f"Page {page_num}: {len(columns)} columns, {len(text_regions)} regions, {len(tables)} tables"
+            )
             return columns, text_regions, tables
 
         except Exception as e:
@@ -104,7 +111,7 @@ class LayoutAnalyzer:
             return []
 
         # Analyze x-coordinate distribution
-        x_coords = [word['x0'] for word in words]
+        x_coords = [word["x0"] for word in words]
         x_coords.sort()
 
         # Find column boundaries using gaps in text
@@ -129,9 +136,9 @@ class LayoutAnalyzer:
         columns = []
         for i, (x_start, x_end) in enumerate(column_boundaries):
             # Find the furthest x coordinate in this column
-            column_words = [w for w in words if x_start <= w['x0'] <= x_end]
+            column_words = [w for w in words if x_start <= w["x0"] <= x_end]
             if column_words:
-                actual_x_end = max(w['x1'] for w in column_words)
+                actual_x_end = max(w["x1"] for w in column_words)
             else:
                 actual_x_end = x_end
 
@@ -140,13 +147,15 @@ class LayoutAnalyzer:
                 x_start=x_start,
                 x_end=actual_x_end,
                 width=actual_x_end - x_start,
-                text_regions=[]
+                text_regions=[],
             )
             columns.append(column_info)
 
         return columns
 
-    def _group_text_regions(self, page: Page, words: List[Dict], columns: List[ColumnInfo]) -> List[TextRegion]:
+    def _group_text_regions(
+        self, page: Page, words: List[Dict], columns: List[ColumnInfo]
+    ) -> List[TextRegion]:
         """Group words into text regions and assign to columns"""
         text_regions = []
 
@@ -154,21 +163,21 @@ class LayoutAnalyzer:
             return text_regions
 
         # Sort words by reading order (top to bottom, left to right)
-        words.sort(key=lambda w: (w['top'], w['left']))
+        words.sort(key=lambda w: (w["top"], w["left"]))
 
         # Group consecutive words into lines and regions
         current_line_words = []
-        current_top = words[0]['top']
+        current_top = words[0]["top"]
         line_tolerance = 5  # Tolerance for line grouping
 
         for word in words:
-            if abs(word['top'] - current_top) > line_tolerance:
+            if abs(word["top"] - current_top) > line_tolerance:
                 # New line, process previous line
                 if current_line_words:
                     line_regions = self._process_line(page, current_line_words, columns)
                     text_regions.extend(line_regions)
                 current_line_words = [word]
-                current_top = word['top']
+                current_top = word["top"]
             else:
                 current_line_words.append(word)
 
@@ -183,19 +192,21 @@ class LayoutAnalyzer:
 
         return text_regions
 
-    def _process_line(self, page: Page, line_words: List[Dict], columns: List[ColumnInfo]) -> List[TextRegion]:
+    def _process_line(
+        self, page: Page, line_words: List[Dict], columns: List[ColumnInfo]
+    ) -> List[TextRegion]:
         """Process a line of words and create text regions"""
         if not line_words:
             return []
 
         # Sort words by x position
-        line_words.sort(key=lambda w: w['left'])
+        line_words.sort(key=lambda w: w["left"])
 
         # Group words by column
         column_groups = {}
         for word in line_words:
             for col in columns:
-                if col.x_start <= word['x0'] <= col.x_end:
+                if col.x_start <= word["x0"] <= col.x_end:
                     if col.column_number not in column_groups:
                         column_groups[col.column_number] = []
                     column_groups[col.column_number].append(word)
@@ -206,13 +217,13 @@ class LayoutAnalyzer:
         for col_num, col_words in column_groups.items():
             if col_words:
                 # Combine words into text
-                text = ' '.join(word['text'] for word in col_words)
+                text = " ".join(word["text"] for word in col_words)
 
                 # Calculate bounding box
-                x0 = min(word['x0'] for word in col_words)
-                y0 = min(word['top'] for word in col_words)
-                x1 = max(word['x1'] for word in col_words)
-                y1 = max(word['bottom'] for word in col_words)
+                x0 = min(word["x0"] for word in col_words)
+                y0 = min(word["top"] for word in col_words)
+                x1 = max(word["x1"] for word in col_words)
+                y1 = max(word["bottom"] for word in col_words)
 
                 # Determine region type
                 region_type = self._classify_region_type(col_words)
@@ -228,7 +239,7 @@ class LayoutAnalyzer:
                     page_num=page.page_number,
                     region_type=region_type,
                     reading_order=0,  # Will be set later
-                    column_number=col_num
+                    column_number=col_num,
                 )
                 regions.append(region)
 
@@ -237,21 +248,21 @@ class LayoutAnalyzer:
     def _classify_region_type(self, words: List[Dict]) -> str:
         """Classify the type of text region based on font characteristics"""
         if not words:
-            return 'text'
+            return "text"
 
         # Check for heading characteristics
-        avg_font_size = sum(word.get('size', 12) for word in words) / len(words)
+        avg_font_size = sum(word.get("size", 12) for word in words) / len(words)
 
         # Larger text might be a heading
         if avg_font_size > 14:
-            return 'heading'
+            return "heading"
 
         # Check for table-like structure (multiple aligned words)
         if len(words) > 3 and self._has_tabular_structure(words):
-            return 'table'
+            return "table"
 
         # Default to text
-        return 'text'
+        return "text"
 
     def _has_tabular_structure(self, words: List[Dict]) -> bool:
         """Check if words have tabular structure (aligned columns)"""
@@ -259,19 +270,19 @@ class LayoutAnalyzer:
             return False
 
         # Check for regular spacing between words
-        positions = [word['x0'] for word in words]
+        positions = [word["x0"] for word in words]
         positions.sort()
 
         # Look for at least 2 regular gaps
         gaps = []
         for i in range(1, len(positions)):
-            gaps.append(positions[i] - positions[i-1])
+            gaps.append(positions[i] - positions[i - 1])
 
         # Check if gaps are somewhat regular
         if len(gaps) >= 2:
             avg_gap = sum(gaps) / len(gaps)
             variance = sum((gap - avg_gap) ** 2 for gap in gaps) / len(gaps)
-            std_dev = variance ** 0.5
+            std_dev = variance**0.5
 
             # If standard deviation is small relative to gap size, likely tabular
             if std_dev < avg_gap * 0.3:
@@ -300,7 +311,11 @@ class LayoutAnalyzer:
                     table_data = table.extract()
 
                     # Filter out empty rows
-                    valid_rows = [row for row in table_data if any(cell and cell.strip() for cell in row)]
+                    valid_rows = [
+                        row
+                        for row in table_data
+                        if any(cell and cell.strip() for cell in row)
+                    ]
 
                     if len(valid_rows) >= 2:  # At least 2 rows to be a table
                         table_info = TableInfo(
@@ -311,7 +326,7 @@ class LayoutAnalyzer:
                             y1=table.bbox[3],
                             rows=len(valid_rows),
                             columns=len(valid_rows[0]) if valid_rows else 0,
-                            cells=valid_rows
+                            cells=valid_rows,
                         )
                         tables.append(table_info)
 
@@ -324,7 +339,9 @@ class LayoutAnalyzer:
 
         return tables
 
-    def get_reading_order(self, text_regions: List[TextRegion], columns: List[ColumnInfo]) -> List[TextRegion]:
+    def get_reading_order(
+        self, text_regions: List[TextRegion], columns: List[ColumnInfo]
+    ) -> List[TextRegion]:
         """
         Determine the correct reading order for text regions
 
@@ -351,7 +368,9 @@ class LayoutAnalyzer:
         # Process each column
         for col in sorted_columns:
             # Get regions in this column
-            col_regions = [r for r in text_regions if r.column_number == col.column_number]
+            col_regions = [
+                r for r in text_regions if r.column_number == col.column_number
+            ]
 
             # Sort regions within column by y position
             col_regions.sort(key=lambda r: r.y0)
@@ -376,13 +395,13 @@ class LayoutAnalyzer:
             Dictionary with document structure analysis
         """
         structure_analysis = {
-            'total_pages': len(pages),
-            'multi_column_pages': 0,
-            'single_column_pages': 0,
-            'pages_with_tables': 0,
-            'total_tables': 0,
-            'average_columns_per_page': 0,
-            'column_consistency': True
+            "total_pages": len(pages),
+            "multi_column_pages": 0,
+            "single_column_pages": 0,
+            "pages_with_tables": 0,
+            "total_tables": 0,
+            "average_columns_per_page": 0,
+            "column_consistency": True,
         }
 
         all_column_counts = []
@@ -394,20 +413,22 @@ class LayoutAnalyzer:
             all_column_counts.append(column_count)
 
             if column_count > 1:
-                structure_analysis['multi_column_pages'] += 1
+                structure_analysis["multi_column_pages"] += 1
             else:
-                structure_analysis['single_column_pages'] += 1
+                structure_analysis["single_column_pages"] += 1
 
             if tables:
-                structure_analysis['pages_with_tables'] += 1
-                structure_analysis['total_tables'] += len(tables)
+                structure_analysis["pages_with_tables"] += 1
+                structure_analysis["total_tables"] += len(tables)
 
         # Calculate statistics
         if all_column_counts:
-            structure_analysis['average_columns_per_page'] = sum(all_column_counts) / len(all_column_counts)
+            structure_analysis["average_columns_per_page"] = sum(
+                all_column_counts
+            ) / len(all_column_counts)
 
             # Check column consistency
             unique_counts = set(all_column_counts)
-            structure_analysis['column_consistency'] = len(unique_counts) <= 2
+            structure_analysis["column_consistency"] = len(unique_counts) <= 2
 
         return structure_analysis

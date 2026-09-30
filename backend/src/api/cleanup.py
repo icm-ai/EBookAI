@@ -38,8 +38,7 @@ async def run_cleanup():
                     "uploads": round(stats["upload_space_freed_mb"], 2),
                     "outputs": round(stats["output_space_freed_mb"], 2),
                     "total": round(
-                        stats["upload_space_freed_mb"]
-                        + stats["output_space_freed_mb"],
+                        stats["upload_space_freed_mb"] + stats["output_space_freed_mb"],
                         2,
                     ),
                 },
@@ -89,6 +88,4 @@ async def get_cleanup_status():
 
     except Exception as e:
         logger.error(f"Error getting cleanup status: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500, detail=f"Failed to get status: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to get status: {str(e)}")

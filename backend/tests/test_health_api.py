@@ -8,16 +8,16 @@ from datetime import datetime
 def client():
     """Create test client"""
     from main import app
+
     return TestClient(app)
 
 
 @pytest.fixture
 def mock_services():
     """Mock all services for health checks"""
-    with patch("api.health.ConversionService") as mock_conversion, \
-         patch("api.health.batch_conversion_service") as mock_batch, \
-         patch("api.health.ai_config") as mock_ai_config:
-
+    with patch("api.health.ConversionService") as mock_conversion, patch(
+        "api.health.batch_conversion_service"
+    ) as mock_batch, patch("api.health.ai_config") as mock_ai_config:
         mock_batch.active_batches = {}
         mock_ai_config.get_available_providers.return_value = ["deepseek", "openai"]
         mock_ai_config.DEFAULT_AI_PROVIDER = "deepseek"
@@ -25,7 +25,7 @@ def mock_services():
         yield {
             "conversion": mock_conversion,
             "batch": mock_batch,
-            "ai_config": mock_ai_config
+            "ai_config": mock_ai_config,
         }
 
 
@@ -50,7 +50,7 @@ class TestBasicHealthCheck:
         data = response.json()
 
         timestamp = data["timestamp"]
-        datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+        datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
 
 
 class TestDetailedHealthCheck:
@@ -77,7 +77,9 @@ class TestDetailedHealthCheck:
         assert "ai_service" in data["components"]
         assert data["components"]["ai_service"]["status"] == "healthy"
 
-    def test_detailed_health_check_conversion_service_error(self, client, mock_services):
+    def test_detailed_health_check_conversion_service_error(
+        self, client, mock_services
+    ):
         """Test detailed health check when conversion service fails"""
         mock_services["conversion"].side_effect = Exception("Calibre not found")
 
@@ -88,11 +90,15 @@ class TestDetailedHealthCheck:
 
         assert data["status"] == "degraded"
         assert data["components"]["conversion_service"]["status"] == "unhealthy"
-        assert "Calibre not found" in data["components"]["conversion_service"]["message"]
+        assert (
+            "Calibre not found" in data["components"]["conversion_service"]["message"]
+        )
 
     def test_detailed_health_check_batch_service_error(self, client, mock_services):
         """Test detailed health check when batch service fails"""
-        mock_services["batch"].active_batches = Mock(side_effect=Exception("Batch service error"))
+        mock_services["batch"].active_batches = Mock(
+            side_effect=Exception("Batch service error")
+        )
 
         response = client.get("/api/health/detailed")
 
@@ -112,12 +118,16 @@ class TestDetailedHealthCheck:
         data = response.json()
 
         assert data["components"]["ai_service"]["status"] == "degraded"
-        assert data["components"]["ai_service"]["message"] == "No AI providers configured"
+        assert (
+            data["components"]["ai_service"]["message"] == "No AI providers configured"
+        )
         assert data["components"]["ai_service"]["available_providers"] == []
 
     def test_detailed_health_check_ai_service_error(self, client, mock_services):
         """Test detailed health check when AI service fails"""
-        mock_services["ai_config"].get_available_providers.side_effect = Exception("AI config error")
+        mock_services["ai_config"].get_available_providers.side_effect = Exception(
+            "AI config error"
+        )
 
         response = client.get("/api/health/detailed")
 
@@ -189,7 +199,9 @@ class TestSystemMetrics:
 
     def test_get_system_metrics_error_handling(self, client, mock_services):
         """Test system metrics error handling"""
-        mock_services["batch"].active_batches = Mock(side_effect=Exception("Metrics error"))
+        mock_services["batch"].active_batches = Mock(
+            side_effect=Exception("Metrics error")
+        )
 
         response = client.get("/api/health/metrics")
 
@@ -228,7 +240,9 @@ class TestReadinessCheck:
 
     def test_readiness_check_service_error(self, client, mock_services):
         """Test readiness check when service initialization fails"""
-        mock_services["conversion"].side_effect = Exception("Service initialization failed")
+        mock_services["conversion"].side_effect = Exception(
+            "Service initialization failed"
+        )
 
         response = client.get("/api/health/readiness")
 
@@ -259,7 +273,7 @@ class TestLivenessCheck:
         data = response.json()
 
         timestamp = data["timestamp"]
-        datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+        datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
 
 
 class TestHealthCheckIntegration:
@@ -272,7 +286,7 @@ class TestHealthCheckIntegration:
             "/api/health/detailed",
             "/api/health/metrics",
             "/api/health/readiness",
-            "/api/health/liveness"
+            "/api/health/liveness",
         ]
 
         for endpoint in endpoints:

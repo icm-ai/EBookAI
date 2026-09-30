@@ -20,6 +20,7 @@ from utils.logging_config import get_logger
 @dataclass
 class ChapterBoundary:
     """Represents a detected chapter boundary"""
+
     page_num: int
     title: str
     confidence: float
@@ -33,6 +34,7 @@ class ChapterBoundary:
 @dataclass
 class ChapterStructure:
     """Complete chapter structure of the document"""
+
     chapters: List[ChapterBoundary]
     total_confidence: float
     detection_methods_used: List[str]
@@ -46,7 +48,9 @@ class ChapterDetector:
         self.logger = get_logger("chapter_detector")
         self.ai_service = ai_service
 
-    def detect_chapters(self, pdf_doc, text_blocks: List, metadata: Dict = None) -> ChapterStructure:
+    def detect_chapters(
+        self, pdf_doc, text_blocks: List, metadata: Dict = None
+    ) -> ChapterStructure:
         """
         Detect chapter boundaries using multiple methods
 
@@ -87,19 +91,21 @@ class ChapterDetector:
             structure = ChapterStructure(
                 chapters=combined_chapters,
                 total_confidence=total_confidence,
-                detection_methods_used=self._get_used_methods([
-                    bookmark_chapters, font_chapters, pattern_chapters, ai_chapters
-                ]),
+                detection_methods_used=self._get_used_methods(
+                    [bookmark_chapters, font_chapters, pattern_chapters, ai_chapters]
+                ),
                 metadata={
-                    'bookmark_count': len(bookmark_chapters),
-                    'font_detected_count': len(font_chapters),
-                    'pattern_detected_count': len(pattern_chapters),
-                    'ai_detected_count': len(ai_chapters)
-                }
+                    "bookmark_count": len(bookmark_chapters),
+                    "font_detected_count": len(font_chapters),
+                    "pattern_detected_count": len(pattern_chapters),
+                    "ai_detected_count": len(ai_chapters),
+                },
             )
 
-            self.logger.info(f"Chapter detection complete: {len(combined_chapters)} chapters, "
-                           f"confidence: {total_confidence:.1f}%")
+            self.logger.info(
+                f"Chapter detection complete: {len(combined_chapters)} chapters, "
+                f"confidence: {total_confidence:.1f}%"
+            )
 
             return structure
 
@@ -110,7 +116,7 @@ class ChapterDetector:
                 chapters=[],
                 total_confidence=0.0,
                 detection_methods_used=[],
-                metadata={'error': str(e)}
+                metadata={"error": str(e)},
             )
 
     def _extract_bookmarks(self, pdf_doc) -> List[ChapterBoundary]:
@@ -140,7 +146,7 @@ class ChapterDetector:
                     title=title,
                     confidence=confidence,
                     detection_method="bookmark",
-                    level=level
+                    level=level,
                 )
                 chapters.append(chapter)
 
@@ -156,7 +162,7 @@ class ChapterDetector:
         confidence = 90.0  # Base confidence for bookmarks
 
         # Adjust based on title characteristics
-        if re.match(r'^(Chapter|第|章|Part|部分|Section|节)\s*\d+', title, re.IGNORECASE):
+        if re.match(r"^(Chapter|第|章|Part|部分|Section|节)\s*\d+", title, re.IGNORECASE):
             confidence += 5  # Clear chapter indicators
 
         # Lower confidence for very short titles
@@ -178,7 +184,9 @@ class ChapterDetector:
 
         try:
             # Analyze font sizes to identify headings
-            font_sizes = [block.font_size for block in text_blocks if block.font_size > 0]
+            font_sizes = [
+                block.font_size for block in text_blocks if block.font_size > 0
+            ]
 
             if not font_sizes:
                 return chapters
@@ -202,14 +210,18 @@ class ChapterDetector:
                 page_headings = []
 
                 for block in page_blocks:
-                    if (block.font_size >= heading_threshold and
-                        block.is_bold and
-                        len(block.text.strip()) > 2):
-
+                    if (
+                        block.font_size >= heading_threshold
+                        and block.is_bold
+                        and len(block.text.strip()) > 2
+                    ):
                         # Additional checks for heading quality
                         if self._is_likely_heading(block.text):
                             confidence = self._calculate_font_confidence(
-                                block.font_size, avg_font_size, max_font_size, block.is_bold
+                                block.font_size,
+                                avg_font_size,
+                                max_font_size,
+                                block.is_bold,
                             )
 
                             heading = ChapterBoundary(
@@ -220,7 +232,7 @@ class ChapterDetector:
                                 level=1,  # Default level
                                 position_y=block.y0,
                                 font_size=block.font_size,
-                                is_bold=block.is_bold
+                                is_bold=block.is_bold,
                             )
                             page_headings.append(heading)
 
@@ -242,10 +254,10 @@ class ChapterDetector:
 
         # Common chapter patterns
         chapter_patterns = [
-            r'^(Chapter|章|第\s*\d+章|Part|部分|Section|节)\s*\d+',
-            r'^\d+\.\s+',  # "1. "
-            r'^[IVXLCDM]+\.\s+',  # Roman numerals
-            r'^[A-Z]\.\s+',  # "A. "
+            r"^(Chapter|章|第\s*\d+章|Part|部分|Section|节)\s*\d+",
+            r"^\d+\.\s+",  # "1. "
+            r"^[IVXLCDM]+\.\s+",  # Roman numerals
+            r"^[A-Z]\.\s+",  # "A. "
         ]
 
         for pattern in chapter_patterns:
@@ -253,17 +265,25 @@ class ChapterDetector:
                 return True
 
         # Check if text is short and doesn't look like a sentence
-        if (len(text) < 100 and
-            not text.endswith(('.', '!', '?', '。', '！', '？')) and
-            not any(word in text.lower() for word in ['the', 'and', 'or', 'but', 'because'])):
+        if (
+            len(text) < 100
+            and not text.endswith((".", "!", "?", "。", "！", "？"))
+            and not any(
+                word in text.lower() for word in ["the", "and", "or", "but", "because"]
+            )
+        ):
             return True
 
         return False
 
-    def _calculate_font_confidence(self, font_size: float, avg_size: float, max_size: float, is_bold: bool) -> float:
+    def _calculate_font_confidence(
+        self, font_size: float, avg_size: float, max_size: float, is_bold: bool
+    ) -> float:
         """Calculate confidence score for font-based detection"""
         # Base confidence based on how much larger than average
-        size_ratio = (font_size - avg_size) / (max_size - avg_size) if max_size > avg_size else 0
+        size_ratio = (
+            (font_size - avg_size) / (max_size - avg_size) if max_size > avg_size else 0
+        )
         confidence = 50 + (size_ratio * 40)  # 50-90 range
 
         # Boost for bold text
@@ -272,7 +292,9 @@ class ChapterDetector:
 
         return max(0, min(100, confidence))
 
-    def _detect_by_page_patterns(self, pdf_doc, text_blocks: List) -> List[ChapterBoundary]:
+    def _detect_by_page_patterns(
+        self, pdf_doc, text_blocks: List
+    ) -> List[ChapterBoundary]:
         """Detect chapters based on page break patterns and content analysis"""
         chapters = []
 
@@ -296,9 +318,9 @@ class ChapterDetector:
                     top_block = max(top_blocks, key=lambda b: b.font_size)
 
                     # Check if it looks like a chapter start
-                    if (top_block.font_size > 14 and
-                        self._is_likely_heading(top_block.text)):
-
+                    if top_block.font_size > 14 and self._is_likely_heading(
+                        top_block.text
+                    ):
                         confidence = 60  # Moderate confidence for pattern detection
 
                         chapter = ChapterBoundary(
@@ -308,7 +330,7 @@ class ChapterDetector:
                             detection_method="page_pattern",
                             level=1,
                             position_y=top_block.y0,
-                            font_size=top_block.font_size
+                            font_size=top_block.font_size,
                         )
                         chapters.append(chapter)
 
@@ -343,7 +365,7 @@ class ChapterDetector:
             # Prepare text for AI analysis
             sample_text = ""
             for page_num in sample_pages:
-                page_text = ' '.join(pages_text[page_num])
+                page_text = " ".join(pages_text[page_num])
                 sample_text += f"Page {page_num + 1}:\n{page_text[:200]}...\n\n"
 
             # Use AI to identify chapter starts
@@ -377,7 +399,7 @@ class ChapterDetector:
                         title=title,
                         confidence=70,  # Moderate confidence for AI detection
                         detection_method="ai_analysis",
-                        level=1
+                        level=1,
                     )
                     chapters.append(chapter)
 
@@ -391,15 +413,17 @@ class ChapterDetector:
             self.logger.warning(f"AI analysis failed: {str(e)}")
             return []
 
-    def _parse_ai_response(self, response: str, pages_text: Dict) -> List[Tuple[int, str]]:
+    def _parse_ai_response(
+        self, response: str, pages_text: Dict
+    ) -> List[Tuple[int, str]]:
         """Parse AI response to extract chapter information"""
         chapters = []
 
         try:
-            lines = response.strip().split('\n')
+            lines = response.strip().split("\n")
             for line in lines:
                 # Look for "Page X: Title" pattern
-                match = re.match(r'Page\s*(\d+):\s*(.+)', line.strip(), re.IGNORECASE)
+                match = re.match(r"Page\s*(\d+):\s*(.+)", line.strip(), re.IGNORECASE)
                 if match:
                     page_num = int(match.group(1)) - 1  # Convert to 0-indexed
                     title = match.group(2).strip()
@@ -407,9 +431,13 @@ class ChapterDetector:
                     # Verify page exists and get actual title
                     if page_num in pages_text and pages_text[page_num]:
                         # Use first few words from actual page as title if AI response is too generic
-                        if len(title) < 3 or title.lower() in ['chapter', 'section', 'part']:
-                            actual_text = ' '.join(pages_text[page_num])[:100]
-                            title = actual_text.split('.')[0].strip()
+                        if len(title) < 3 or title.lower() in [
+                            "chapter",
+                            "section",
+                            "part",
+                        ]:
+                            actual_text = " ".join(pages_text[page_num])[:100]
+                            title = actual_text.split(".")[0].strip()
 
                         if title and len(title) > 2:
                             chapters.append((page_num, title))
@@ -419,7 +447,9 @@ class ChapterDetector:
 
         return chapters
 
-    def _combine_detection_methods(self, bookmark_chapters, font_chapters, pattern_chapters, ai_chapters) -> List[ChapterBoundary]:
+    def _combine_detection_methods(
+        self, bookmark_chapters, font_chapters, pattern_chapters, ai_chapters
+    ) -> List[ChapterBoundary]:
         """Combine results from different detection methods"""
         all_chapters = []
 
@@ -455,17 +485,21 @@ class ChapterDetector:
 
         return all_chapters
 
-    def _conflicts_with_existing(self, chapter: ChapterBoundary, existing: List[ChapterBoundary]) -> bool:
+    def _conflicts_with_existing(
+        self, chapter: ChapterBoundary, existing: List[ChapterBoundary]
+    ) -> bool:
         """Check if a chapter conflicts with existing ones"""
         for existing_chapter in existing:
             # Same page and similar title - likely duplicate
-            if (chapter.page_num == existing_chapter.page_num and
-                self._titles_similar(chapter.title, existing_chapter.title)):
+            if chapter.page_num == existing_chapter.page_num and self._titles_similar(
+                chapter.title, existing_chapter.title
+            ):
                 return True
 
             # Very close pages (within 2 pages) with similar titles
-            if (abs(chapter.page_num - existing_chapter.page_num) <= 2 and
-                self._titles_similar(chapter.title, existing_chapter.title)):
+            if abs(
+                chapter.page_num - existing_chapter.page_num
+            ) <= 2 and self._titles_similar(chapter.title, existing_chapter.title):
                 return True
 
         return False
@@ -491,7 +525,9 @@ class ChapterDetector:
         similarity = len(intersection) / len(union)
         return similarity >= threshold
 
-    def _deduplicate_and_improve(self, chapters: List[ChapterBoundary]) -> List[ChapterBoundary]:
+    def _deduplicate_and_improve(
+        self, chapters: List[ChapterBoundary]
+    ) -> List[ChapterBoundary]:
         """Remove duplicates and improve chapter titles"""
         if not chapters:
             return chapters
@@ -522,11 +558,11 @@ class ChapterDetector:
         title = title.strip()
 
         # Remove page numbers
-        title = re.sub(r'^Page\s*\d+\s*[:\-]?\s*', '', title, flags=re.IGNORECASE)
+        title = re.sub(r"^Page\s*\d+\s*[:\-]?\s*", "", title, flags=re.IGNORECASE)
 
         # Fix common formatting issues
-        title = re.sub(r'\s+', ' ', title)  # Multiple spaces to single space
-        title = title.strip('•·-—–')  # Remove leading bullets
+        title = re.sub(r"\s+", " ", title)  # Multiple spaces to single space
+        title = title.strip("•·-—–")  # Remove leading bullets
 
         # Capitalize properly
         if title:
@@ -541,10 +577,10 @@ class ChapterDetector:
 
         # Weight chapters by detection method
         weights = {
-            'bookmark': 1.0,
-            'font_analysis': 0.8,
-            'page_pattern': 0.6,
-            'ai_analysis': 0.7
+            "bookmark": 1.0,
+            "font_analysis": 0.8,
+            "page_pattern": 0.6,
+            "ai_analysis": 0.7,
         }
 
         weighted_confidence = 0.0
@@ -559,7 +595,7 @@ class ChapterDetector:
 
     def _get_used_methods(self, method_lists: List[List[ChapterBoundary]]) -> List[str]:
         """Get list of detection methods that returned results"""
-        method_names = ['bookmark', 'font_analysis', 'page_pattern', 'ai_analysis']
+        method_names = ["bookmark", "font_analysis", "page_pattern", "ai_analysis"]
         used_methods = []
 
         for i, method_list in enumerate(method_names):

@@ -24,6 +24,7 @@ from utils.logging_config import get_logger
 @dataclass
 class EpubChapter:
     """Represents a chapter in the EPUB"""
+
     chapter_id: str
     title: str
     content: str
@@ -36,6 +37,7 @@ class EpubChapter:
 @dataclass
 class EpubMetadata:
     """EPUB metadata information"""
+
     title: str
     author: str
     language: str
@@ -56,12 +58,14 @@ class EpubGenerator:
         self.chinese_css = self._create_chinese_css()
         self.english_css = self._create_english_css()
 
-    def generate_epub(self,
-                     output_path: Path,
-                     chapters: List[EpubChapter],
-                     metadata: EpubMetadata,
-                     images: Dict[str, bytes] = None,
-                     toc_structure: List[Dict] = None) -> bool:
+    def generate_epub(
+        self,
+        output_path: Path,
+        chapters: List[EpubChapter],
+        metadata: EpubMetadata,
+        images: Dict[str, bytes] = None,
+        toc_structure: List[Dict] = None,
+    ) -> bool:
         """
         Generate EPUB file from chapters and metadata
 
@@ -76,7 +80,9 @@ class EpubGenerator:
             True if generation successful, False otherwise
         """
         try:
-            self.logger.info(f"Generating EPUB: {len(chapters)} chapters, {len(images) if images else 0} images")
+            self.logger.info(
+                f"Generating EPUB: {len(chapters)} chapters, {len(images) if images else 0} images"
+            )
 
             # Create EPUB book
             book = epub.EpubBook()
@@ -107,7 +113,7 @@ class EpubGenerator:
             book.add_item(epub.EpubNav())
 
             # Define spine
-            book.spine = ['nav'] + epub_chapters
+            book.spine = ["nav"] + epub_chapters
 
             # Write EPUB file
             epub.write_epub(str(output_path), book)
@@ -128,33 +134,35 @@ class EpubGenerator:
 
         # Optional metadata
         if metadata.publisher:
-            book.add_metadata('DC', 'publisher', metadata.publisher)
+            book.add_metadata("DC", "publisher", metadata.publisher)
 
         if metadata.description:
-            book.add_metadata('DC', 'description', metadata.description)
+            book.add_metadata("DC", "description", metadata.description)
 
         if metadata.tags:
             for tag in metadata.tags:
-                book.add_metadata('DC', 'subject', tag)
+                book.add_metadata("DC", "subject", tag)
 
         # Dates
-        book.add_metadata('DC', 'date', metadata.creation_date.strftime('%Y-%m-%d'))
-        book.add_metadata('DC', 'modified', metadata.modification_date.strftime('%Y-%m-%d'))
+        book.add_metadata("DC", "date", metadata.creation_date.strftime("%Y-%m-%d"))
+        book.add_metadata(
+            "DC", "modified", metadata.modification_date.strftime("%Y-%m-%d")
+        )
 
         # Source information
         if metadata.source_info:
             for key, value in metadata.source_info.items():
-                book.add_metadata('DC', f'source-{key}', str(value))
+                book.add_metadata("DC", f"source-{key}", str(value))
 
     def _add_styles(self, book: epub.EpubBook, language: str):
         """Add CSS styles based on language"""
-        if 'zh' in language.lower():
+        if "zh" in language.lower():
             # Chinese styles
             nav_css = epub.EpubItem(
                 uid="nav_css",
                 file_name="style/nav.css",
                 media_type="text/css",
-                content=self.chinese_css
+                content=self.chinese_css,
             )
         else:
             # English styles
@@ -162,12 +170,14 @@ class EpubGenerator:
                 uid="nav_css",
                 file_name="style/nav.css",
                 media_type="text/css",
-                content=self.english_css
+                content=self.english_css,
             )
 
         book.add_item(nav_css)
 
-    def _create_chapter_html(self, chapter: EpubChapter, images: Dict[str, bytes] = None) -> str:
+    def _create_chapter_html(
+        self, chapter: EpubChapter, images: Dict[str, bytes] = None
+    ) -> str:
         """Create HTML content for a chapter"""
         # Start HTML document
         html_content = f"""<!DOCTYPE html>
@@ -197,14 +207,16 @@ class EpubGenerator:
 
         return html_content
 
-    def _process_chapter_content(self, content: str, images: Dict[str, bytes] = None) -> str:
+    def _process_chapter_content(
+        self, content: str, images: Dict[str, bytes] = None
+    ) -> str:
         """Process chapter content and embed images"""
         if not images:
             return f"<p>{self._escape_html(content)}</p>"
 
         # For now, simple paragraph processing
         # In a more advanced implementation, you'd parse and process images
-        paragraphs = content.split('\n\n')
+        paragraphs = content.split("\n\n")
         html_paragraphs = []
 
         for paragraph in paragraphs:
@@ -212,7 +224,7 @@ class EpubGenerator:
             if paragraph:
                 html_paragraphs.append(f"<p>{self._escape_html(paragraph)}</p>")
 
-        return '\n'.join(html_paragraphs)
+        return "\n".join(html_paragraphs)
 
     def _escape_html(self, text: str) -> str:
         """Escape HTML special characters"""
@@ -225,7 +237,9 @@ class EpubGenerator:
         }
         return "".join(html_escape_table.get(c, c) for c in text)
 
-    def _create_epub_chapter(self, chapter: EpubChapter, images: Dict[str, bytes] = None) -> epub.EpubHtml:
+    def _create_epub_chapter(
+        self, chapter: EpubChapter, images: Dict[str, bytes] = None
+    ) -> epub.EpubHtml:
         """Create an EPUB chapter"""
         # Generate HTML content
         html_content = self._create_chapter_html(chapter, images)
@@ -235,7 +249,7 @@ class EpubGenerator:
             title=chapter.title,
             file_name=chapter.file_name,
             content=html_content,
-            lang='zh' if 'zh' in chapter.title else 'en'
+            lang="zh" if "zh" in chapter.title else "en",
         )
 
         return epub_chapter
@@ -245,23 +259,23 @@ class EpubGenerator:
         for image_id, image_data in images.items():
             try:
                 # Determine image format
-                if image_data.startswith(b'\x89PNG'):
-                    media_type = 'image/png'
-                    file_ext = 'png'
-                elif image_data.startswith(b'\xff\xd8'):
-                    media_type = 'image/jpeg'
-                    file_ext = 'jpg'
+                if image_data.startswith(b"\x89PNG"):
+                    media_type = "image/png"
+                    file_ext = "png"
+                elif image_data.startswith(b"\xff\xd8"):
+                    media_type = "image/jpeg"
+                    file_ext = "jpg"
                 else:
                     # Default to PNG
-                    media_type = 'image/png'
-                    file_ext = 'png'
+                    media_type = "image/png"
+                    file_ext = "png"
 
                 # Create image item
                 image_item = epub.EpubItem(
                     uid=image_id,
                     file_name=f"images/{image_id}.{file_ext}",
                     media_type=media_type,
-                    content=image_data
+                    content=image_data,
                 )
 
                 book.add_item(image_item)
@@ -269,7 +283,9 @@ class EpubGenerator:
             except Exception as e:
                 self.logger.warning(f"Failed to add image {image_id}: {str(e)}")
 
-    def _create_table_of_contents(self, chapters: List[epub.EpubHtml], custom_structure: List[Dict] = None) -> List:
+    def _create_table_of_contents(
+        self, chapters: List[epub.EpubHtml], custom_structure: List[Dict] = None
+    ) -> List:
         """Create table of contents structure"""
         if custom_structure:
             # Use custom structure if provided
@@ -281,16 +297,20 @@ class EpubGenerator:
                 toc.append(chapter)
             return toc
 
-    def _build_custom_toc(self, structure: List[Dict], chapters: List[epub.EpubHtml]) -> List:
+    def _build_custom_toc(
+        self, structure: List[Dict], chapters: List[epub.EpubHtml]
+    ) -> List:
         """Build table of contents from custom structure"""
         # This is a simplified implementation
         # In practice, you'd parse the custom structure and build nested TOC
         toc = []
 
         for item in structure:
-            if item.get('type') == 'chapter':
+            if item.get("type") == "chapter":
                 # Find corresponding chapter
-                chapter = next((c for c in chapters if c.title == item.get('title')), None)
+                chapter = next(
+                    (c for c in chapters if c.title == item.get("title")), None
+                )
                 if chapter:
                     toc.append(chapter)
 
@@ -581,10 +601,9 @@ pre {
 }
 """
 
-    def create_chapters_from_text_blocks(self,
-                                        text_blocks: List,
-                                        chapter_boundaries: List,
-                                        metadata: Dict) -> List[EpubChapter]:
+    def create_chapters_from_text_blocks(
+        self, text_blocks: List, chapter_boundaries: List, metadata: Dict
+    ) -> List[EpubChapter]:
         """Create EPUB chapters from text blocks and chapter boundaries"""
         chapters = []
 
@@ -600,12 +619,12 @@ pre {
             all_text = " ".join(block.text for block in text_blocks)
             chapter = EpubChapter(
                 chapter_id="chapter_001",
-                title=metadata.get('title', 'Document'),
+                title=metadata.get("title", "Document"),
                 content=all_text,
                 file_name="chapter_001.xhtml",
                 level=1,
                 page_num=0,
-                images=[]
+                images=[],
             )
             chapters.append(chapter)
         else:
@@ -638,40 +657,39 @@ pre {
                     file_name=f"{chapter_id}.xhtml",
                     level=boundary.level,
                     page_num=start_page,
-                    images=chapter_images
+                    images=chapter_images,
                 )
                 chapters.append(chapter)
 
         return chapters
 
-    def generate_metadata(self,
-                          pdf_metadata: Dict,
-                          title: str = None,
-                          author: str = None) -> EpubMetadata:
+    def generate_metadata(
+        self, pdf_metadata: Dict, title: str = None, author: str = None
+    ) -> EpubMetadata:
         """Generate EPUB metadata from PDF metadata and additional info"""
         now = datetime.now()
 
         return EpubMetadata(
-            title=title or pdf_metadata.get('title', 'Unknown Title'),
-            author=author or pdf_metadata.get('author', 'Unknown Author'),
-            language='zh' if self._contains_chinese(pdf_metadata) else 'en',
+            title=title or pdf_metadata.get("title", "Unknown Title"),
+            author=author or pdf_metadata.get("author", "Unknown Author"),
+            language="zh" if self._contains_chinese(pdf_metadata) else "en",
             identifier=str(uuid.uuid4()),
-            publisher='EBookAI',
-            description=pdf_metadata.get('subject', 'Converted from PDF'),
+            publisher="EBookAI",
+            description=pdf_metadata.get("subject", "Converted from PDF"),
             creation_date=now,
             modification_date=now,
             tags=[],
             source_info={
-                'conversion_method': 'enhanced_pdf_to_epub',
-                'conversion_date': now.isoformat(),
-                'original_pages': pdf_metadata.get('page_count', 0)
-            }
+                "conversion_method": "enhanced_pdf_to_epub",
+                "conversion_date": now.isoformat(),
+                "original_pages": pdf_metadata.get("page_count", 0),
+            },
         )
 
     def _contains_chinese(self, metadata: Dict) -> bool:
         """Check if metadata contains Chinese characters"""
         text_to_check = f"{metadata.get('title', '')} {metadata.get('author', '')}"
-        return any('\u4e00' <= char <= '\u9fff' for char in text_to_check)
+        return any("\u4e00" <= char <= "\u9fff" for char in text_to_check)
 
 
 # Import dataclass

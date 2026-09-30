@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch, AsyncMock
 from services.batch_conversion_service import (
     BatchConversionService,
     BatchTask,
-    BatchJob
+    BatchJob,
 )
 from utils.exceptions import ValidationError, BatchConversionError
 
@@ -29,7 +29,7 @@ def sample_files():
     return [
         {"filename": "book1.epub", "path": "/tmp/book1.epub"},
         {"filename": "book2.epub", "path": "/tmp/book2.epub"},
-        {"filename": "book3.epub", "path": "/tmp/book3.epub"}
+        {"filename": "book3.epub", "path": "/tmp/book3.epub"},
     ]
 
 
@@ -95,8 +95,9 @@ class TestCreateBatchJob:
 
         assert result1["batch_id"] != result2["batch_id"]
 
-        task_ids = [task["task_id"] for task in result1["tasks"]] + \
-                   [task["task_id"] for task in result2["tasks"]]
+        task_ids = [task["task_id"] for task in result1["tasks"]] + [
+            task["task_id"] for task in result2["tasks"]
+        ]
         assert len(task_ids) == len(set(task_ids))
 
 
@@ -104,7 +105,9 @@ class TestProcessBatchJob:
     """Test process_batch_job method"""
 
     @pytest.mark.asyncio
-    async def test_process_batch_job_success(self, batch_service, sample_files, mock_conversion_service):
+    async def test_process_batch_job_success(
+        self, batch_service, sample_files, mock_conversion_service
+    ):
         """Test successful batch job processing"""
         batch_result = await batch_service.create_batch_job(sample_files, "pdf")
         batch_id = batch_result["batch_id"]
@@ -121,7 +124,9 @@ class TestProcessBatchJob:
         assert batch.failed_files == 0
 
     @pytest.mark.asyncio
-    async def test_process_batch_job_partial_failure(self, batch_service, sample_files, mock_conversion_service):
+    async def test_process_batch_job_partial_failure(
+        self, batch_service, sample_files, mock_conversion_service
+    ):
         """Test batch job processing with partial failures"""
         batch_result = await batch_service.create_batch_job(sample_files, "pdf")
         batch_id = batch_result["batch_id"]
@@ -147,13 +152,17 @@ class TestProcessBatchJob:
         assert batch.status == "completed"
 
     @pytest.mark.asyncio
-    async def test_process_batch_job_all_failures(self, batch_service, sample_files, mock_conversion_service):
+    async def test_process_batch_job_all_failures(
+        self, batch_service, sample_files, mock_conversion_service
+    ):
         """Test batch job processing when all tasks fail"""
         batch_result = await batch_service.create_batch_job(sample_files, "pdf")
         batch_id = batch_result["batch_id"]
 
         mock_instance = Mock()
-        mock_instance.convert_file = AsyncMock(side_effect=Exception("All conversions failed"))
+        mock_instance.convert_file = AsyncMock(
+            side_effect=Exception("All conversions failed")
+        )
         mock_conversion_service.return_value = mock_instance
 
         await batch_service.process_batch_job(batch_id)
@@ -170,9 +179,14 @@ class TestProcessBatchJob:
             await batch_service.process_batch_job("nonexistent_batch_id")
 
     @pytest.mark.asyncio
-    async def test_process_batch_job_respects_concurrency_limit(self, batch_service, mock_conversion_service):
+    async def test_process_batch_job_respects_concurrency_limit(
+        self, batch_service, mock_conversion_service
+    ):
         """Test batch processing respects concurrency limit"""
-        files = [{"filename": f"book{i}.epub", "path": f"/tmp/book{i}.epub"} for i in range(10)]
+        files = [
+            {"filename": f"book{i}.epub", "path": f"/tmp/book{i}.epub"}
+            for i in range(10)
+        ]
         batch_result = await batch_service.create_batch_job(files, "pdf")
         batch_id = batch_result["batch_id"]
 
@@ -221,7 +235,9 @@ class TestGetBatchStatus:
             batch_service.get_batch_status("nonexistent_id")
 
     @pytest.mark.asyncio
-    async def test_get_batch_status_includes_task_details(self, batch_service, sample_files):
+    async def test_get_batch_status_includes_task_details(
+        self, batch_service, sample_files
+    ):
         """Test batch status includes task details"""
         batch_result = await batch_service.create_batch_job(sample_files, "pdf")
         batch_id = batch_result["batch_id"]
@@ -273,7 +289,9 @@ class TestCleanupCompletedBatches:
     """Test cleanup_completed_batches method"""
 
     @pytest.mark.asyncio
-    async def test_cleanup_completed_batches(self, batch_service, sample_files, mock_conversion_service):
+    async def test_cleanup_completed_batches(
+        self, batch_service, sample_files, mock_conversion_service
+    ):
         """Test cleanup of completed batches"""
         batch1 = await batch_service.create_batch_job(sample_files[:2], "pdf")
         batch2 = await batch_service.create_batch_job(sample_files[1:], "pdf")
@@ -325,9 +343,7 @@ class TestBatchDataClasses:
     def test_batch_task_creation(self):
         """Test BatchTask creation"""
         task = BatchTask(
-            file_path="/tmp/book.epub",
-            target_format="pdf",
-            task_id="task-123"
+            file_path="/tmp/book.epub", target_format="pdf", task_id="task-123"
         )
 
         assert task.file_path == "/tmp/book.epub"
@@ -340,15 +356,15 @@ class TestBatchDataClasses:
     def test_batch_job_creation(self):
         """Test BatchJob creation"""
         tasks = [
-            BatchTask(file_path="/tmp/book1.epub", target_format="pdf", task_id="task-1"),
-            BatchTask(file_path="/tmp/book2.epub", target_format="pdf", task_id="task-2")
+            BatchTask(
+                file_path="/tmp/book1.epub", target_format="pdf", task_id="task-1"
+            ),
+            BatchTask(
+                file_path="/tmp/book2.epub", target_format="pdf", task_id="task-2"
+            ),
         ]
 
-        job = BatchJob(
-            batch_id="batch-456",
-            tasks=tasks,
-            total_files=2
-        )
+        job = BatchJob(batch_id="batch-456", tasks=tasks, total_files=2)
 
         assert job.batch_id == "batch-456"
         assert len(job.tasks) == 2
@@ -367,7 +383,7 @@ class TestEdgeCases:
         tasks = [
             batch_service.create_batch_job(sample_files, "pdf"),
             batch_service.create_batch_job(sample_files, "mobi"),
-            batch_service.create_batch_job(sample_files, "txt")
+            batch_service.create_batch_job(sample_files, "txt"),
         ]
 
         results = await asyncio.gather(*tasks)
@@ -376,7 +392,9 @@ class TestEdgeCases:
         assert len(set(r["batch_id"] for r in results)) == 3
 
     @pytest.mark.asyncio
-    async def test_process_batch_updates_progress(self, batch_service, sample_files, mock_conversion_service):
+    async def test_process_batch_updates_progress(
+        self, batch_service, sample_files, mock_conversion_service
+    ):
         """Test batch processing updates progress correctly"""
         batch_result = await batch_service.create_batch_job(sample_files, "pdf")
         batch_id = batch_result["batch_id"]

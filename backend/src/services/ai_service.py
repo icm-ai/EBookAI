@@ -11,6 +11,7 @@ from utils.exceptions import AIServiceError
 @dataclass
 class AIResult:
     """Result from AI processing"""
+
     content: str
     provider: str
     model: str
@@ -34,6 +35,7 @@ class AIService:
     ) -> AIResult:
         """Generate text summary using specified or default provider"""
         import time
+
         start_time = time.time()
 
         provider = provider or self.provider
@@ -41,8 +43,7 @@ class AIService:
 
         if not config["api_key"]:
             raise AIServiceError(
-                message=f"{provider} API key not configured",
-                provider=provider
+                message=f"{provider} API key not configured", provider=provider
             )
 
         prompt = f"""
@@ -58,7 +59,9 @@ class AIService:
                     config, prompt, max_length
                 )
             elif api_type == "anthropic":
-                content, token_usage = await self._call_anthropic_api(config, prompt, max_length)
+                content, token_usage = await self._call_anthropic_api(
+                    config, prompt, max_length
+                )
             else:
                 raise ValueError(f"Unsupported api_type: {api_type}")
 
@@ -70,8 +73,8 @@ class AIService:
                     "provider": provider,
                     "processing_time": processing_time,
                     "input_length": len(text),
-                    "output_length": len(content)
-                }
+                    "output_length": len(content),
+                },
             )
 
             return AIResult(
@@ -79,22 +82,28 @@ class AIService:
                 provider=provider,
                 model=config["model"],
                 processing_time=processing_time,
-                token_usage=token_usage
+                token_usage=token_usage,
             )
 
         except Exception as e:
-            self.logger.error(f"AI processing failed: {e}", extra={"provider": provider})
+            self.logger.error(
+                f"AI processing failed: {e}", extra={"provider": provider}
+            )
             raise AIServiceError(
                 message=f"AI processing failed: {str(e)}",
                 provider=provider,
-                original_error=e
+                original_error=e,
             )
 
     async def enhance_text(
-        self, text: str, enhancement_type: str = "improve_readability", provider: str = None
+        self,
+        text: str,
+        enhancement_type: str = "improve_readability",
+        provider: str = None,
     ) -> AIResult:
         """Enhance text with various AI improvements"""
         import time
+
         start_time = time.time()
 
         provider = provider or self.provider
@@ -105,13 +114,13 @@ class AIService:
             "fix_grammar": "请修正以下文本中的语法错误和拼写错误：",
             "translate_to_chinese": "请将以下文本翻译成中文：",
             "translate_to_english": "请将以下文本翻译成英文：",
-            "format_content": "请对以下文本进行格式化，添加适当的段落分隔和标点符号："
+            "format_content": "请对以下文本进行格式化，添加适当的段落分隔和标点符号：",
         }
 
         if enhancement_type not in enhancement_prompts:
             raise AIServiceError(
                 message=f"Unsupported enhancement type: {enhancement_type}",
-                provider=provider
+                provider=provider,
             )
 
         prompt = f"{enhancement_prompts[enhancement_type]}\n\n{text[:3000]}"
@@ -123,7 +132,9 @@ class AIService:
                     config, prompt, max_tokens=1000
                 )
             elif api_type == "anthropic":
-                content, token_usage = await self._call_anthropic_api(config, prompt, max_tokens=1000)
+                content, token_usage = await self._call_anthropic_api(
+                    config, prompt, max_tokens=1000
+                )
             else:
                 raise ValueError(f"Unsupported api_type: {api_type}")
 
@@ -134,14 +145,14 @@ class AIService:
                 provider=provider,
                 model=config["model"],
                 processing_time=processing_time,
-                token_usage=token_usage
+                token_usage=token_usage,
             )
 
         except Exception as e:
             raise AIServiceError(
                 message=f"Text enhancement failed: {str(e)}",
                 provider=provider,
-                original_error=e
+                original_error=e,
             )
 
     async def complete_prompt(
@@ -209,8 +220,7 @@ class AIService:
                     raise ValueError(f"Unsupported operation: {operation}")
 
         return await asyncio.gather(
-            *[process_single_text(text) for text in texts],
-            return_exceptions=True
+            *[process_single_text(text) for text in texts], return_exceptions=True
         )
 
     async def _call_openai_compatible_api(
@@ -240,15 +250,11 @@ class AIService:
                 label = str(image.get("label", "source evidence"))
                 mime_type = str(image.get("mime_type", "image/png"))
                 data_base64 = str(image.get("data_base64", ""))
-                user_content.append(
-                    {"type": "text", "text": f"SOURCE_IMAGE {label}"}
-                )
+                user_content.append({"type": "text", "text": f"SOURCE_IMAGE {label}"})
                 user_content.append(
                     {
                         "type": "image_url",
-                        "image_url": {
-                            "url": f"data:{mime_type};base64,{data_base64}"
-                        },
+                        "image_url": {"url": f"data:{mime_type};base64,{data_base64}"},
                     }
                 )
 
@@ -262,7 +268,9 @@ class AIService:
         try:
             async with httpx.AsyncClient(timeout=60.0) as client:
                 response = await client.post(
-                    f"{config['base_url']}/chat/completions", headers=headers, json=payload
+                    f"{config['base_url']}/chat/completions",
+                    headers=headers,
+                    json=payload,
                 )
 
                 if response.status_code != 200:
@@ -289,7 +297,11 @@ class AIService:
         except httpx.ConnectError:
             raise Exception("Failed to connect to API")
         except Exception as e:
-            if "API request failed" in str(e) or "timed out" in str(e) or "connect" in str(e):
+            if (
+                "API request failed" in str(e)
+                or "timed out" in str(e)
+                or "connect" in str(e)
+            ):
                 raise
             raise Exception(f"Unexpected API error: {str(e)}")
 
@@ -321,9 +333,7 @@ class AIService:
                 label = str(image.get("label", "source evidence"))
                 mime_type = str(image.get("mime_type", "image/png"))
                 data_base64 = str(image.get("data_base64", ""))
-                user_content.append(
-                    {"type": "text", "text": f"SOURCE_IMAGE {label}"}
-                )
+                user_content.append({"type": "text", "text": f"SOURCE_IMAGE {label}"})
                 user_content.append(
                     {
                         "type": "image",
@@ -372,7 +382,11 @@ class AIService:
         except httpx.ConnectError:
             raise Exception("Failed to connect to API")
         except Exception as e:
-            if "API request failed" in str(e) or "timed out" in str(e) or "connect" in str(e):
+            if (
+                "API request failed" in str(e)
+                or "timed out" in str(e)
+                or "connect" in str(e)
+            ):
                 raise
             raise Exception(f"Unexpected API error: {str(e)}")
 

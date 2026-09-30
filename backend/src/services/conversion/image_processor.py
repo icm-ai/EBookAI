@@ -23,13 +23,14 @@ from config import (
     IMAGE_MAX_WIDTH_FAST,
     IMAGE_MAX_WIDTH_STANDARD,
     IMAGE_MAX_WIDTH_HIGH,
-    CONVERSION_QUALITY_LEVEL
+    CONVERSION_QUALITY_LEVEL,
 )
 
 
 @dataclass
 class ProcessedImage:
     """Represents a processed image ready for EPUB embedding"""
+
     image_id: str
     original_data: bytes
     processed_data: bytes
@@ -49,6 +50,7 @@ class ProcessedImage:
 @dataclass
 class ImageAssociation:
     """Information about how an image relates to surrounding text"""
+
     image_id: str
     nearest_text_blocks: List[str]
     position_in_text: str  # 'before', 'after', 'between'
@@ -65,7 +67,9 @@ class ImageProcessor:
         self.processed_images = {}
         self.image_counter = 0
 
-    def process_images(self, pdf_images: List, text_blocks: List, quality_level: str = None) -> List[ProcessedImage]:
+    def process_images(
+        self, pdf_images: List, text_blocks: List, quality_level: str = None
+    ) -> List[ProcessedImage]:
         """
         Process and optimize all images from PDF
 
@@ -81,13 +85,17 @@ class ImageProcessor:
             quality_level = CONVERSION_QUALITY_LEVEL
 
         try:
-            self.logger.info(f"Processing {len(pdf_images)} images with quality level: {quality_level}")
+            self.logger.info(
+                f"Processing {len(pdf_images)} images with quality level: {quality_level}"
+            )
 
             processed_images = []
 
             for pdf_image in pdf_images:
                 try:
-                    processed_image = self._process_single_image(pdf_image, quality_level)
+                    processed_image = self._process_single_image(
+                        pdf_image, quality_level
+                    )
                     processed_images.append(processed_image)
 
                     # Store for reference
@@ -105,7 +113,9 @@ class ImageProcessor:
             if self.ai_service:
                 self._generate_alt_text(processed_images)
 
-            self.logger.info(f"Image processing complete: {len(processed_images)} images processed")
+            self.logger.info(
+                f"Image processing complete: {len(processed_images)} images processed"
+            )
             return processed_images
 
         except Exception as e:
@@ -128,29 +138,37 @@ class ImageProcessor:
 
             # Determine optimal format and size
             target_width = self._get_target_width(quality_level)
-            optimal_format = self._determine_optimal_format(original_image, original_format)
+            optimal_format = self._determine_optimal_format(
+                original_image, original_format
+            )
 
             # Process image (resize, optimize)
-            processed_image = self._resize_and_optimize(original_image, target_width, quality_level)
+            processed_image = self._resize_and_optimize(
+                original_image, target_width, quality_level
+            )
 
             # Convert to target format
-            final_data = self._convert_to_format(processed_image, optimal_format, quality_level)
+            final_data = self._convert_to_format(
+                processed_image, optimal_format, quality_level
+            )
 
             # Calculate compression metrics
             final_size = processed_image.size
             final_file_size = len(final_data)
-            compression_ratio = final_file_size / original_file_size if original_file_size > 0 else 1.0
+            compression_ratio = (
+                final_file_size / original_file_size if original_file_size > 0 else 1.0
+            )
 
             # Create position info
             position_info = {
-                'page_num': pdf_image.page_num,
-                'x0': pdf_image.x0,
-                'y0': pdf_image.y0,
-                'x1': pdf_image.x1,
-                'y1': pdf_image.y1,
-                'width': pdf_image.width,
-                'height': pdf_image.height,
-                'is_color': pdf_image.is_color
+                "page_num": pdf_image.page_num,
+                "x0": pdf_image.x0,
+                "y0": pdf_image.y0,
+                "x1": pdf_image.x1,
+                "y1": pdf_image.y1,
+                "width": pdf_image.width,
+                "height": pdf_image.height,
+                "is_color": pdf_image.is_color,
             }
 
             return ProcessedImage(
@@ -165,7 +183,7 @@ class ImageProcessor:
                 final_file_size=final_file_size,
                 compression_ratio=compression_ratio,
                 position_info=position_info,
-                quality_level=quality_level
+                quality_level=quality_level,
             )
 
         except Exception as e:
@@ -175,33 +193,35 @@ class ImageProcessor:
     def _get_target_width(self, quality_level: str) -> int:
         """Get target width based on quality level"""
         width_map = {
-            'fast': IMAGE_MAX_WIDTH_FAST,
-            'standard': IMAGE_MAX_WIDTH_STANDARD,
-            'high': IMAGE_MAX_WIDTH_HIGH
+            "fast": IMAGE_MAX_WIDTH_FAST,
+            "standard": IMAGE_MAX_WIDTH_STANDARD,
+            "high": IMAGE_MAX_WIDTH_HIGH,
         }
         return width_map.get(quality_level, IMAGE_MAX_WIDTH_STANDARD)
 
-    def _determine_optimal_format(self, image: Image.Image, original_format: str) -> str:
+    def _determine_optimal_format(
+        self, image: Image.Image, original_format: str
+    ) -> str:
         """Determine optimal output format for the image"""
         # If original is PNG with transparency, keep PNG
-        if original_format == 'png' and image.mode in ('RGBA', 'LA'):
-            return 'png'
+        if original_format == "png" and image.mode in ("RGBA", "LA"):
+            return "png"
 
         # For photographs and complex images, use JPEG
         if self._is_photograph(image):
-            return 'jpeg'
+            return "jpeg"
 
         # For diagrams, charts, and simple graphics, use PNG
         if self._is_diagram(image):
-            return 'png'
+            return "png"
 
         # Default to JPEG for better compression
-        return 'jpeg'
+        return "jpeg"
 
     def _is_photograph(self, image: Image.Image) -> bool:
         """Determine if image is a photograph"""
         # Simple heuristic based on size and color complexity
-        if image.mode not in ('RGB', 'RGBA'):
+        if image.mode not in ("RGB", "RGBA"):
             return False
 
         width, height = image.size
@@ -239,7 +259,9 @@ class ImageProcessor:
 
         return False
 
-    def _resize_and_optimize(self, image: Image.Image, target_width: int, quality_level: str) -> Image.Image:
+    def _resize_and_optimize(
+        self, image: Image.Image, target_width: int, quality_level: str
+    ) -> Image.Image:
         """Resize and optimize image"""
         # Calculate new dimensions maintaining aspect ratio
         width, height = image.size
@@ -250,77 +272,87 @@ class ImageProcessor:
             image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
         # Apply quality-specific optimizations
-        if quality_level == 'high':
+        if quality_level == "high":
             # High quality: minimal processing
             pass
-        elif quality_level == 'standard':
+        elif quality_level == "standard":
             # Standard: mild sharpening
-            image = image.filter(ImageFilter.UnsharpMask(radius=1, percent=120, threshold=3))
+            image = image.filter(
+                ImageFilter.UnsharpMask(radius=1, percent=120, threshold=3)
+            )
         else:  # fast
             # Fast: aggressive optimization
-            image = image.filter(ImageFilter.UnsharpMask(radius=1, percent=150, threshold=5))
+            image = image.filter(
+                ImageFilter.UnsharpMask(radius=1, percent=150, threshold=5)
+            )
 
         # Ensure RGB mode for JPEG
-        if image.mode in ('RGBA', 'LA', 'P'):
-            background = Image.new('RGB', image.size, (255, 255, 255))
-            if image.mode == 'P':
-                image = image.convert('RGBA')
-            background.paste(image, mask=image.split()[-1] if image.mode == 'RGBA' else None)
+        if image.mode in ("RGBA", "LA", "P"):
+            background = Image.new("RGB", image.size, (255, 255, 255))
+            if image.mode == "P":
+                image = image.convert("RGBA")
+            background.paste(
+                image, mask=image.split()[-1] if image.mode == "RGBA" else None
+            )
             image = background
 
         return image
 
-    def _convert_to_format(self, image: Image.Image, target_format: str, quality_level: str) -> bytes:
+    def _convert_to_format(
+        self, image: Image.Image, target_format: str, quality_level: str
+    ) -> bytes:
         """Convert image to target format and return bytes"""
         buffer = io.BytesIO()
 
-        if target_format.lower() == 'jpeg':
+        if target_format.lower() == "jpeg":
             # JPEG settings based on quality level
-            quality_map = {
-                'fast': 70,
-                'standard': 85,
-                'high': 95
-            }
+            quality_map = {"fast": 70, "standard": 85, "high": 95}
             quality = quality_map.get(quality_level, 85)
 
-            image.save(buffer, format='JPEG', quality=quality, optimize=True)
+            image.save(buffer, format="JPEG", quality=quality, optimize=True)
         else:  # PNG
             # PNG settings based on quality level
-            if quality_level == 'fast':
+            if quality_level == "fast":
                 # Fast: lower compression
-                image.save(buffer, format='PNG', optimize=False, compress_level=3)
-            elif quality_level == 'standard':
+                image.save(buffer, format="PNG", optimize=False, compress_level=3)
+            elif quality_level == "standard":
                 # Standard: balanced compression
-                image.save(buffer, format='PNG', optimize=True, compress_level=6)
+                image.save(buffer, format="PNG", optimize=True, compress_level=6)
             else:  # high
                 # High: maximum compression
-                image.save(buffer, format='PNG', optimize=True, compress_level=9)
+                image.save(buffer, format="PNG", optimize=True, compress_level=9)
 
         buffer.seek(0)
         return buffer.getvalue()
 
-    def _analyze_text_associations(self, processed_images: List[ProcessedImage], text_blocks: List):
+    def _analyze_text_associations(
+        self, processed_images: List[ProcessedImage], text_blocks: List
+    ):
         """Analyze how images relate to surrounding text"""
         for image in processed_images:
             associations = self._find_nearest_text_blocks(image, text_blocks)
 
             if associations:
                 # Store association information
-                image.associated_text = ' '.join(associations['nearest_text_blocks'])
+                image.associated_text = " ".join(associations["nearest_text_blocks"])
 
                 # Generate suggested caption
-                if associations['nearest_text_blocks']:
-                    image.position_info['suggested_caption'] = associations['nearest_text_blocks'][0][:100]
+                if associations["nearest_text_blocks"]:
+                    image.position_info["suggested_caption"] = associations[
+                        "nearest_text_blocks"
+                    ][0][:100]
 
-    def _find_nearest_text_blocks(self, image: ProcessedImage, text_blocks: List) -> Dict[str, Any]:
+    def _find_nearest_text_blocks(
+        self, image: ProcessedImage, text_blocks: List
+    ) -> Dict[str, Any]:
         """Find text blocks nearest to an image"""
         if not text_blocks:
             return {}
 
         # Get image position
-        img_page = image.position_info['page_num']
-        img_y0 = image.position_info['y0']
-        img_x0 = image.position_info['x0']
+        img_page = image.position_info["page_num"]
+        img_y0 = image.position_info["y0"]
+        img_x0 = image.position_info["x0"]
 
         # Find text blocks on the same or nearby pages
         nearby_blocks = []
@@ -353,16 +385,16 @@ class ImageProcessor:
         if blocks_with_distance:
             nearest_block = blocks_with_distance[0][1]
             if nearest_block.y0 < img_y0:
-                position = 'after'
+                position = "after"
             else:
-                position = 'before'
+                position = "before"
         else:
-            position = 'unknown'
+            position = "unknown"
 
         return {
-            'nearest_text_blocks': nearest_blocks,
-            'position_in_text': position,
-            'contextual_relevance': 0.8  # Simple relevance score
+            "nearest_text_blocks": nearest_blocks,
+            "position_in_text": position,
+            "contextual_relevance": 0.8,  # Simple relevance score
         }
 
     def _generate_alt_text(self, processed_images: List[ProcessedImage]):
@@ -381,7 +413,7 @@ class ImageProcessor:
 
                 # Convert to bytes
                 buffer = io.BytesIO()
-                image_for_ai.save(buffer, format='JPEG', quality=85)
+                image_for_ai.save(buffer, format="JPEG", quality=85)
                 image_bytes = buffer.getvalue()
 
                 # Prepare prompt for AI
@@ -398,10 +430,14 @@ class ImageProcessor:
                     alt_text = self.ai_service.analyze_image(image_bytes, prompt)
                     image.alt_text = alt_text.strip() if alt_text else None
                 except Exception as e:
-                    self.logger.warning(f"AI alt text generation failed for {image.image_id}: {str(e)}")
+                    self.logger.warning(
+                        f"AI alt text generation failed for {image.image_id}: {str(e)}"
+                    )
 
             except Exception as e:
-                self.logger.warning(f"Failed to generate alt text for {image.image_id}: {str(e)}")
+                self.logger.warning(
+                    f"Failed to generate alt text for {image.image_id}: {str(e)}"
+                )
 
     def get_image_statistics(self) -> Dict[str, Any]:
         """Get statistics about processed images"""
@@ -409,38 +445,42 @@ class ImageProcessor:
             return {}
 
         stats = {
-            'total_images': len(self.processed_images),
-            'total_original_size': 0,
-            'total_final_size': 0,
-            'format_counts': {},
-            'quality_levels': {},
-            'average_compression': 0.0
+            "total_images": len(self.processed_images),
+            "total_original_size": 0,
+            "total_final_size": 0,
+            "format_counts": {},
+            "quality_levels": {},
+            "average_compression": 0.0,
         }
 
         compression_ratios = []
 
         for image in self.processed_images.values():
-            stats['total_original_size'] += image.original_file_size
-            stats['total_final_size'] += image.final_file_size
+            stats["total_original_size"] += image.original_file_size
+            stats["total_final_size"] += image.final_file_size
 
             # Count formats
             fmt = image.final_format
-            stats['format_counts'][fmt] = stats['format_counts'].get(fmt, 0) + 1
+            stats["format_counts"][fmt] = stats["format_counts"].get(fmt, 0) + 1
 
             # Count quality levels
             ql = image.quality_level
-            stats['quality_levels'][ql] = stats['quality_levels'].get(ql, 0) + 1
+            stats["quality_levels"][ql] = stats["quality_levels"].get(ql, 0) + 1
 
             compression_ratios.append(image.compression_ratio)
 
         if compression_ratios:
-            stats['average_compression'] = sum(compression_ratios) / len(compression_ratios)
+            stats["average_compression"] = sum(compression_ratios) / len(
+                compression_ratios
+            )
 
         # Calculate overall compression
-        if stats['total_original_size'] > 0:
-            stats['overall_compression'] = stats['total_final_size'] / stats['total_original_size']
+        if stats["total_original_size"] > 0:
+            stats["overall_compression"] = (
+                stats["total_final_size"] / stats["total_original_size"]
+            )
         else:
-            stats['overall_compression'] = 1.0
+            stats["overall_compression"] = 1.0
 
         return stats
 
@@ -455,7 +495,7 @@ class ImageProcessor:
                 filename = f"{image_id}.{image.final_format}"
                 file_path = output_dir / filename
 
-                with open(file_path, 'wb') as f:
+                with open(file_path, "wb") as f:
                     f.write(image.processed_data)
 
                 image_paths[image_id] = str(file_path)
@@ -467,7 +507,9 @@ class ImageProcessor:
             self.logger.error(f"Failed to save images to directory: {str(e)}")
             return {}
 
-    def create_epub_manifest_items(self, image_paths: Dict[str, str]) -> List[Dict[str, str]]:
+    def create_epub_manifest_items(
+        self, image_paths: Dict[str, str]
+    ) -> List[Dict[str, str]]:
         """Create EPUB manifest items for images"""
         manifest_items = []
 
@@ -479,20 +521,20 @@ class ImageProcessor:
 
             # Determine MIME type
             mime_type = f"image/{image.final_format}"
-            if image.final_format == 'jpg':
-                mime_type = 'image/jpeg'
+            if image.final_format == "jpg":
+                mime_type = "image/jpeg"
 
             # Create manifest item
             item = {
-                'id': image_id,
-                'href': f"images/{Path(file_path).name}",
-                'media-type': mime_type,
-                'properties': []
+                "id": image_id,
+                "href": f"images/{Path(file_path).name}",
+                "media-type": mime_type,
+                "properties": [],
             }
 
             # Add properties if available
             if image.alt_text:
-                item['properties'].append('alt-text-available')
+                item["properties"].append("alt-text-available")
 
             manifest_items.append(item)
 

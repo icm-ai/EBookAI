@@ -33,14 +33,14 @@ class TestPDFParser:
         """Test PDF validation with valid file"""
         # This would need a real PDF file for testing
         # For now, just test the method exists
-        assert hasattr(self.parser, 'validate_pdf')
+        assert hasattr(self.parser, "validate_pdf")
 
     def test_validate_pdf_with_invalid_file(self):
         """Test PDF validation with invalid file"""
         invalid_path = Path("nonexistent.pdf")
         result = self.parser.validate_pdf(invalid_path)
-        assert not result['is_valid']
-        assert 'error' in result
+        assert not result["is_valid"]
+        assert "error" in result
 
 
 class TestLayoutAnalyzer:
@@ -53,9 +53,9 @@ class TestLayoutAnalyzer:
         """Test document structure analysis"""
         # Test with empty page list
         result = self.analyzer.analyze_document_structure([])
-        assert result['total_pages'] == 0
-        assert result['multi_column_pages'] == 0
-        assert result['single_column_pages'] == 0
+        assert result["total_pages"] == 0
+        assert result["multi_column_pages"] == 0
+        assert result["single_column_pages"] == 0
 
 
 class TestChapterDetector:
@@ -85,8 +85,8 @@ class TestImageProcessor:
     def test_get_image_statistics(self):
         """Test image statistics"""
         stats = self.processor.get_image_statistics()
-        assert 'total_images' in stats
-        assert stats['total_images'] == 0
+        assert "total_images" in stats
+        assert stats["total_images"] == 0
 
 
 class TestEpubGenerator:
@@ -98,14 +98,14 @@ class TestEpubGenerator:
     def test_create_chinese_css(self):
         """Test Chinese CSS generation"""
         css = self.generator._create_chinese_css()
-        assert 'font-family' in css
-        assert 'line-height' in css
+        assert "font-family" in css
+        assert "line-height" in css
 
     def test_create_english_css(self):
         """Test English CSS generation"""
         css = self.generator._create_english_css()
-        assert 'font-family' in css
-        assert 'line-height' in css
+        assert "font-family" in css
+        assert "line-height" in css
 
 
 class TestCalibreFallback:
@@ -123,9 +123,9 @@ class TestCalibreFallback:
     def test_get_fallback_statistics(self):
         """Test fallback statistics"""
         stats = self.fallback.get_fallback_statistics()
-        assert 'available' in stats
-        assert 'enabled' in stats
-        assert 'quality_threshold' in stats
+        assert "available" in stats
+        assert "enabled" in stats
+        assert "quality_threshold" in stats
 
 
 class TestConversionPipeline:
@@ -137,10 +137,10 @@ class TestConversionPipeline:
     def test_get_pipeline_statistics(self):
         """Test pipeline statistics"""
         stats = self.pipeline.get_pipeline_statistics()
-        assert 'enhanced_conversion_enabled' in stats
-        assert 'calibre_fallback_enabled' in stats
-        assert 'pipeline_stages' in stats
-        assert len(stats['pipeline_stages']) == 5
+        assert "enhanced_conversion_enabled" in stats
+        assert "calibre_fallback_enabled" in stats
+        assert "pipeline_stages" in stats
+        assert len(stats["pipeline_stages"]) == 5
 
 
 # Integration tests
@@ -158,6 +158,7 @@ class TestEnhancedConversionIntegration:
             from services.conversion.epub_generator import EpubGenerator
             from services.conversion.calibre_fallback import CalibreFallback
             from services.conversion.conversion_pipeline import ConversionPipeline
+
             assert True
         except ImportError as e:
             pytest.fail(f"Failed to import components: {e}")

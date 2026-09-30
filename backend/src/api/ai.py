@@ -61,7 +61,7 @@ async def enhance_text(request: EnhanceRequest):
         result = await ai_service.enhance_text(
             text=request.text,
             enhancement_type=request.enhancement_type,
-            provider=request.provider
+            provider=request.provider,
         )
 
         return {
@@ -77,7 +77,9 @@ async def enhance_text(request: EnhanceRequest):
 
     except Exception as e:
         logger.error(f"Text enhancement failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Text enhancement failed: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Text enhancement failed: {str(e)}"
+        )
 
 
 @router.post("/batch-process")
@@ -96,30 +98,28 @@ async def batch_process_texts(request: BatchProcessRequest):
             kwargs["provider"] = request.provider
 
         results = await ai_service.batch_process_texts(
-            texts=request.texts,
-            operation=request.operation,
-            **kwargs
+            texts=request.texts, operation=request.operation, **kwargs
         )
 
         # Process results and handle exceptions
         processed_results = []
         for i, result in enumerate(results):
             if isinstance(result, Exception):
-                processed_results.append({
-                    "index": i,
-                    "success": False,
-                    "error": str(result)
-                })
+                processed_results.append(
+                    {"index": i, "success": False, "error": str(result)}
+                )
             else:
-                processed_results.append({
-                    "index": i,
-                    "success": True,
-                    "content": result.content,
-                    "provider": result.provider,
-                    "model": result.model,
-                    "processing_time": result.processing_time,
-                    "token_usage": result.token_usage,
-                })
+                processed_results.append(
+                    {
+                        "index": i,
+                        "success": True,
+                        "content": result.content,
+                        "provider": result.provider,
+                        "model": result.model,
+                        "processing_time": result.processing_time,
+                        "token_usage": result.token_usage,
+                    }
+                )
 
         successful_count = sum(1 for r in processed_results if r["success"])
         total_processing_time = sum(
@@ -133,13 +133,15 @@ async def batch_process_texts(request: BatchProcessRequest):
                 "successful": successful_count,
                 "failed": len(request.texts) - successful_count,
                 "total_processing_time": total_processing_time,
-                "operation": request.operation
-            }
+                "operation": request.operation,
+            },
         }
 
     except Exception as e:
         logger.error(f"Batch processing failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Batch processing failed: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Batch processing failed: {str(e)}"
+        )
 
 
 @router.get("/enhancement-types")
@@ -150,28 +152,16 @@ async def get_enhancement_types():
             {
                 "key": "improve_readability",
                 "name": "改善可读性",
-                "description": "改善文本的可读性，使其更易于理解"
+                "description": "改善文本的可读性，使其更易于理解",
             },
-            {
-                "key": "fix_grammar",
-                "name": "修正语法",
-                "description": "修正语法错误和拼写错误"
-            },
-            {
-                "key": "translate_to_chinese",
-                "name": "翻译成中文",
-                "description": "将文本翻译成中文"
-            },
-            {
-                "key": "translate_to_english",
-                "name": "翻译成英文",
-                "description": "将文本翻译成英文"
-            },
+            {"key": "fix_grammar", "name": "修正语法", "description": "修正语法错误和拼写错误"},
+            {"key": "translate_to_chinese", "name": "翻译成中文", "description": "将文本翻译成中文"},
+            {"key": "translate_to_english", "name": "翻译成英文", "description": "将文本翻译成英文"},
             {
                 "key": "format_content",
                 "name": "格式化内容",
-                "description": "对文本进行格式化，添加适当的段落分隔和标点符号"
-            }
+                "description": "对文本进行格式化，添加适当的段落分隔和标点符号",
+            },
         ]
     }
 
@@ -208,7 +198,7 @@ async def test_provider(provider: str):
             "status": "working",
             "test_summary": result.content,
             "model": result.model,
-            "processing_time": result.processing_time
+            "processing_time": result.processing_time,
         }
 
     except Exception as e:

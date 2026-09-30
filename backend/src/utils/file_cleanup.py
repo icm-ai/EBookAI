@@ -108,18 +108,14 @@ class FileCleanupManager:
 
         # Clean upload directory
         if self.upload_dir.exists():
-            upload_stats = await self._cleanup_directory(
-                self.upload_dir, cutoff_time
-            )
+            upload_stats = await self._cleanup_directory(self.upload_dir, cutoff_time)
             stats["upload_files_removed"] = upload_stats["files_removed"]
             stats["upload_space_freed_mb"] = upload_stats["space_freed_mb"]
             stats["errors"].extend(upload_stats["errors"])
 
         # Clean output directory
         if self.output_dir.exists():
-            output_stats = await self._cleanup_directory(
-                self.output_dir, cutoff_time
-            )
+            output_stats = await self._cleanup_directory(self.output_dir, cutoff_time)
             stats["output_files_removed"] = output_stats["files_removed"]
             stats["output_space_freed_mb"] = output_stats["space_freed_mb"]
             stats["errors"].extend(output_stats["errors"])
@@ -134,9 +130,7 @@ class FileCleanupManager:
 
         return stats
 
-    async def _cleanup_directory(
-        self, directory: Path, cutoff_time: float
-    ) -> dict:
+    async def _cleanup_directory(self, directory: Path, cutoff_time: float) -> dict:
         """
         Clean up old files in a specific directory.
 
@@ -242,9 +236,7 @@ class FileCleanupManager:
             "output_dir": self._get_directory_stats(self.output_dir),
         }
 
-        total_size = (
-            stats["upload_dir"]["size_mb"] + stats["output_dir"]["size_mb"]
-        )
+        total_size = stats["upload_dir"]["size_mb"] + stats["output_dir"]["size_mb"]
         total_files = (
             stats["upload_dir"]["file_count"] + stats["output_dir"]["file_count"]
         )

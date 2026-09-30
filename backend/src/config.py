@@ -188,13 +188,17 @@ ALLOWED_EXTENSIONS = {".epub", ".pdf", ".txt", ".mobi", ".azw3"}
 CONVERSION_TIMEOUT = 300  # 5 minutes
 
 # Enhanced PDF to EPUB conversion settings
-ENHANCED_PDF_CONVERSION = os.getenv("ENHANCED_PDF_CONVERSION", "false").lower() == "true"
+ENHANCED_PDF_CONVERSION = (
+    os.getenv("ENHANCED_PDF_CONVERSION", "false").lower() == "true"
+)
 CONVERSION_QUALITY_LEVEL = os.getenv("CONVERSION_QUALITY_LEVEL", "standard")
 OCR_CONFIDENCE_THRESHOLD = float(os.getenv("OCR_CONFIDENCE_THRESHOLD", "85"))
 IMAGE_MAX_WIDTH_FAST = 600
 IMAGE_MAX_WIDTH_STANDARD = 800
 IMAGE_MAX_WIDTH_HIGH = 1200
-TESSERACT_LANGUAGE_MODELS = os.getenv("TESSERACT_LANGUAGE_MODELS", "chi_sim,chi_tra,eng")
+TESSERACT_LANGUAGE_MODELS = os.getenv(
+    "TESSERACT_LANGUAGE_MODELS", "chi_sim,chi_tra,eng"
+)
 
 # Calibre fallback settings
 ENABLE_CALIBRE_FALLBACK = os.getenv("ENABLE_CALIBRE_FALLBACK", "true").lower() == "true"

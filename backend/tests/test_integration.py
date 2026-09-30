@@ -9,6 +9,7 @@ from unittest.mock import Mock, patch, AsyncMock
 def client():
     """Create test client"""
     from main import app
+
     return TestClient(app)
 
 
@@ -26,14 +27,16 @@ class TestCompleteConversionWorkflow:
     @pytest.mark.integration
     def test_single_file_conversion_workflow(self, client, temp_test_file):
         """Test complete single file conversion workflow"""
-        with patch("services.conversion_service.ConversionService.convert_file") as mock_convert:
+        with patch(
+            "services.conversion_service.ConversionService.convert_file"
+        ) as mock_convert:
             mock_convert.return_value = "/outputs/test.pdf"
 
             with open(temp_test_file, "rb") as f:
                 response = client.post(
                     "/api/convert",
                     files={"file": ("test.txt", f, "text/plain")},
-                    data={"target_format": "pdf"}
+                    data={"target_format": "pdf"},
                 )
 
             assert response.status_code == 200
@@ -51,14 +54,16 @@ class TestCompleteConversionWorkflow:
         detailed_health = client.get("/api/health/detailed")
         assert detailed_health.status_code == 200
 
-        with patch("services.conversion_service.ConversionService.convert_file") as mock_convert:
+        with patch(
+            "services.conversion_service.ConversionService.convert_file"
+        ) as mock_convert:
             mock_convert.return_value = "/outputs/test.pdf"
 
             with open(temp_test_file, "rb") as f:
                 conversion_response = client.post(
                     "/api/convert",
                     files={"file": ("test.txt", f, "text/plain")},
-                    data={"target_format": "pdf"}
+                    data={"target_format": "pdf"},
                 )
 
             assert conversion_response.status_code == 200
@@ -76,7 +81,9 @@ class TestBatchConversionWorkflow:
             test_file.write_text(f"Test content {i}")
             test_files.append(test_file)
 
-        with patch("services.conversion_service.ConversionService.convert_file") as mock_convert:
+        with patch(
+            "services.conversion_service.ConversionService.convert_file"
+        ) as mock_convert:
             mock_convert.return_value = "/outputs/test.pdf"
 
             files = [
@@ -85,9 +92,7 @@ class TestBatchConversionWorkflow:
             ]
 
             response = client.post(
-                "/api/batch/convert",
-                files=files,
-                data={"target_format": "pdf"}
+                "/api/batch/convert", files=files, data={"target_format": "pdf"}
             )
 
             for f in test_files:
@@ -111,14 +116,16 @@ class TestBatchConversionWorkflow:
         test_file = tmp_path / "test.txt"
         test_file.write_text("Test content")
 
-        with patch("services.conversion_service.ConversionService.convert_file") as mock_convert:
+        with patch(
+            "services.conversion_service.ConversionService.convert_file"
+        ) as mock_convert:
             mock_convert.return_value = "/outputs/test.pdf"
 
             with open(str(test_file), "rb") as f:
                 response = client.post(
                     "/api/batch/convert",
                     files=[("files", ("test.txt", f, "text/plain"))],
-                    data={"target_format": "pdf"}
+                    data={"target_format": "pdf"},
                 )
 
             assert response.status_code == 200
@@ -158,19 +165,20 @@ class TestAIServiceWorkflow:
         """Test AI summary generation workflow"""
         with patch("services.ai_service.AIService.generate_summary") as mock_summary:
             from services.ai_service import AIResult
+
             mock_summary.return_value = AIResult(
                 content="Test summary",
                 provider="deepseek",
                 model="deepseek-chat",
-                processing_time=0.5
+                processing_time=0.5,
             )
 
             response = client.post(
                 "/api/ai/summary",
                 json={
                     "text": "This is a long text that needs to be summarized.",
-                    "max_length": 100
-                }
+                    "max_length": 100,
+                },
             )
 
             assert response.status_code == 200
@@ -205,7 +213,7 @@ class TestErrorHandlingWorkflow:
             response = client.post(
                 "/api/convert",
                 files={"file": ("test.txt", f, "text/plain")},
-                data={"target_format": "invalid_format"}
+                data={"target_format": "invalid_format"},
             )
 
         assert response.status_code in [400, 422]
@@ -213,10 +221,7 @@ class TestErrorHandlingWorkflow:
     @pytest.mark.integration
     def test_missing_file_workflow(self, client):
         """Test workflow with missing file"""
-        response = client.post(
-            "/api/convert",
-            data={"target_format": "pdf"}
-        )
+        response = client.post("/api/convert", data={"target_format": "pdf"})
 
         assert response.status_code in [400, 422]
 
@@ -235,6 +240,7 @@ class TestConcurrentOperations:
     @pytest.mark.asyncio
     async def test_concurrent_health_checks(self, client):
         """Test concurrent health check requests"""
+
         async def make_health_request():
             return client.get("/api/health")
 
@@ -253,7 +259,9 @@ class TestConcurrentOperations:
             test_file.write_text(f"Concurrent test content {i}")
             test_files.append(test_file)
 
-        with patch("services.conversion_service.ConversionService.convert_file") as mock_convert:
+        with patch(
+            "services.conversion_service.ConversionService.convert_file"
+        ) as mock_convert:
             mock_convert.return_value = "/outputs/test.pdf"
 
             responses = []
@@ -262,7 +270,7 @@ class TestConcurrentOperations:
                     response = client.post(
                         "/api/batch/convert",
                         files=[("files", (test_file.name, f, "text/plain"))],
-                        data={"target_format": "pdf"}
+                        data={"target_format": "pdf"},
                     )
                     responses.append(response)
 
@@ -277,14 +285,16 @@ class TestServiceInteractions:
     @pytest.mark.integration
     def test_conversion_and_cleanup_interaction(self, client, temp_test_file):
         """Test interaction between conversion and cleanup services"""
-        with patch("services.conversion_service.ConversionService.convert_file") as mock_convert:
+        with patch(
+            "services.conversion_service.ConversionService.convert_file"
+        ) as mock_convert:
             mock_convert.return_value = "/outputs/test.pdf"
 
             with open(temp_test_file, "rb") as f:
                 conversion_response = client.post(
                     "/api/convert",
                     files={"file": ("test.txt", f, "text/plain")},
-                    data={"target_format": "pdf"}
+                    data={"target_format": "pdf"},
                 )
 
             assert conversion_response.status_code == 200
@@ -311,7 +321,9 @@ class TestDataFlow:
     @pytest.mark.integration
     def test_file_upload_to_download_flow(self, client, temp_test_file):
         """Test complete flow from file upload to download"""
-        with patch("services.conversion_service.ConversionService.convert_file") as mock_convert:
+        with patch(
+            "services.conversion_service.ConversionService.convert_file"
+        ) as mock_convert:
             output_path = "/outputs/test_output.pdf"
             mock_convert.return_value = output_path
 
@@ -319,7 +331,7 @@ class TestDataFlow:
                 upload_response = client.post(
                     "/api/convert",
                     files={"file": ("test.txt", f, "text/plain")},
-                    data={"target_format": "pdf"}
+                    data={"target_format": "pdf"},
                 )
 
             assert upload_response.status_code == 200
@@ -332,14 +344,16 @@ class TestDataFlow:
         test_file = tmp_path / "progress_test.txt"
         test_file.write_text("Progress test content")
 
-        with patch("services.conversion_service.ConversionService.convert_file") as mock_convert:
+        with patch(
+            "services.conversion_service.ConversionService.convert_file"
+        ) as mock_convert:
             mock_convert.return_value = "/outputs/test.pdf"
 
             with open(str(test_file), "rb") as f:
                 create_response = client.post(
                     "/api/batch/convert",
                     files=[("files", ("progress_test.txt", f, "text/plain"))],
-                    data={"target_format": "pdf"}
+                    data={"target_format": "pdf"},
                 )
 
             assert create_response.status_code == 200
