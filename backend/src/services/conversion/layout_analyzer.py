@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple, Any
 
 import pdfplumber
+from pdfplumber.page import Page
 from utils.logging_config import get_logger
 
 
@@ -61,7 +62,7 @@ class LayoutAnalyzer:
     def __init__(self):
         self.logger = get_logger("layout_analyzer")
 
-    def analyze_page_layout(self, page: pdfplumber.Page, page_num: int) -> Tuple[List[ColumnInfo], List[TextRegion], List[TableInfo]]:
+    def analyze_page_layout(self, page: Page, page_num: int) -> Tuple[List[ColumnInfo], List[TextRegion], List[TableInfo]]:
         """
         Analyze page layout and detect columns, text regions, and tables
 
@@ -145,7 +146,7 @@ class LayoutAnalyzer:
 
         return columns
 
-    def _group_text_regions(self, page: pdfplumber.Page, words: List[Dict], columns: List[ColumnInfo]) -> List[TextRegion]:
+    def _group_text_regions(self, page: Page, words: List[Dict], columns: List[ColumnInfo]) -> List[TextRegion]:
         """Group words into text regions and assign to columns"""
         text_regions = []
 
@@ -182,7 +183,7 @@ class LayoutAnalyzer:
 
         return text_regions
 
-    def _process_line(self, page: pdfplumber.Page, line_words: List[Dict], columns: List[ColumnInfo]) -> List[TextRegion]:
+    def _process_line(self, page: Page, line_words: List[Dict], columns: List[ColumnInfo]) -> List[TextRegion]:
         """Process a line of words and create text regions"""
         if not line_words:
             return []
@@ -278,7 +279,7 @@ class LayoutAnalyzer:
 
         return False
 
-    def _detect_tables(self, page: pdfplumber.Page, page_num: int) -> List[TableInfo]:
+    def _detect_tables(self, page: Page, page_num: int) -> List[TableInfo]:
         """Detect tables in the page"""
         tables = []
 
@@ -364,7 +365,7 @@ class LayoutAnalyzer:
 
         return sorted_regions
 
-    def analyze_document_structure(self, pages: List[pdfplumber.Page]) -> Dict[str, Any]:
+    def analyze_document_structure(self, pages: List[Page]) -> Dict[str, Any]:
         """
         Analyze overall document structure across all pages
 
