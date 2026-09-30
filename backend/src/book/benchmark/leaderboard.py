@@ -380,11 +380,14 @@ def compare_leaderboards(
 
 
 def render_leaderboard_markdown(leaderboard: ParserLeaderboard) -> str:
+    gold_mode = (
+        "reviewed + draft" if leaderboard.policy.include_draft else "reviewed only"
+    )
     lines = [
         "# Parser Gold Leaderboard",
         "",
         f"- Corpus: `{leaderboard.corpus_id}`",
-        f"- Gold mode: {'reviewed + draft' if leaderboard.policy.include_draft else 'reviewed only'}",
+        f"- Gold mode: {gold_mode}",
         f"- Minimum documents: {leaderboard.policy.minimum_annotated_documents}",
         f"- Minimum pages: {leaderboard.policy.minimum_annotated_pages}",
         "",

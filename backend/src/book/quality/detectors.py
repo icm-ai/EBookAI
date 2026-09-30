@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import uuid
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Iterable, List, Sequence, Tuple
+from typing import Any, Dict, List, Sequence
 
 from book.domain.models import Book, BookNode, NodeType, Patch, PatchOperation
 from book.quality.models import IssueSeverity, QualityIssue

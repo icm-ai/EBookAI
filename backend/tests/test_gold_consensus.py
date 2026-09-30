@@ -5,6 +5,7 @@ from pathlib import Path
 
 import fitz
 import pytest
+
 from book.benchmark.baseline import (
     ReviewedBaselineSnapshot,
     build_reviewed_baseline,

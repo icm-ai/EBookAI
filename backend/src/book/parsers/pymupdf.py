@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 import fitz
+
 from book.domain.models import (
     Book,
     BookMetadata,

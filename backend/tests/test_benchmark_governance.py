@@ -5,8 +5,8 @@ from pathlib import Path
 
 import fitz
 import pytest
+
 from book.benchmark.baseline import (
-    ReviewedBaselineRegistry,
     build_reviewed_baseline,
     load_active_reviewed_baseline,
     register_reviewed_baseline,

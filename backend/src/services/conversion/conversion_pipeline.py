@@ -8,32 +8,31 @@ This module provides the main conversion pipeline that coordinates all component
 - Quality assessment and comparison
 """
 
-import logging
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any, Dict, List, Optional, Tuple
 
-from utils.logging_config import get_logger
-from utils.progress_tracker import progress_tracker
-
-# Import all conversion components
-from pdf_parser import PDFParser, PDFMetadata
-from layout_analyzer import LayoutAnalyzer
-from ocr_service import OCRService
-from chapter_detector import ChapterDetector
-from image_processor import ImageProcessor, ProcessedImage
-from epub_generator import EpubGenerator, EpubChapter, EpubMetadata
 from calibre_fallback import CalibreFallback
+from chapter_detector import ChapterDetector
 
 # Import configuration
 from config import (
-    ENHANCED_PDF_CONVERSION,
-    CONVERSION_QUALITY_LEVEL,
-    OCR_CONFIDENCE_THRESHOLD,
-    ENABLE_CALIBRE_FALLBACK,
     CALIBRE_QUALITY_THRESHOLD,
+    CONVERSION_QUALITY_LEVEL,
+    ENABLE_CALIBRE_FALLBACK,
+    ENHANCED_PDF_CONVERSION,
+    OCR_CONFIDENCE_THRESHOLD,
 )
+from epub_generator import EpubChapter, EpubGenerator, EpubMetadata
+from image_processor import ImageProcessor, ProcessedImage
+from layout_analyzer import LayoutAnalyzer
+from ocr_service import OCRService
+
+# Import all conversion components
+from pdf_parser import PDFMetadata, PDFParser
+from utils.logging_config import get_logger
+from utils.progress_tracker import progress_tracker
 
 
 @dataclass

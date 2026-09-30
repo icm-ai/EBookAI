@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from book.domain.models import Book
-from book.orchestration import OrchestrationResult, ParserOrchestrator
+from book.orchestration import ParserOrchestrator
 from book.parsers import MarkerAdapter, MinerUAdapter, ParserRegistry, PyMuPDFAdapter
 from book.publication import (
     PublicationReport,

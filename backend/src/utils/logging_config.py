@@ -61,7 +61,10 @@ def get_logging_config(
                 "()": JSONFormatter,
             },
             "detailed": {
-                "format": "{asctime} - {name} - {levelname} - {module}:{funcName}:{lineno} - {message}",
+                "format": (
+                    "{asctime} - {name} - {levelname} - "
+                    "{module}:{funcName}:{lineno} - {message}"
+                ),
                 "style": "{",
             },
             "simple": {

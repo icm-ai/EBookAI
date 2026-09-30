@@ -1,7 +1,9 @@
+from typing import Dict
+
 from fastapi import APIRouter, HTTPException
-from typing import Dict, Optional
-from utils.progress_tracker import progress_tracker
+
 from utils.logging_config import get_logger
+from utils.progress_tracker import progress_tracker
 
 router = APIRouter(prefix="/progress", tags=["progress"])
 logger = get_logger("progress_api")

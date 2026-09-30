@@ -1,11 +1,12 @@
 import asyncio
-import httpx
-from typing import Dict, List, Optional
 from dataclasses import dataclass
+from typing import Dict, List, Optional
+
+import httpx
 
 from config import ai_config
-from utils.logging_config import get_logger
 from utils.exceptions import AIServiceError
+from utils.logging_config import get_logger
 
 
 @dataclass
@@ -68,7 +69,7 @@ class AIService:
             processing_time = time.time() - start_time
 
             self.logger.info(
-                f"AI summary generated successfully",
+                "AI summary generated successfully",
                 extra={
                     "provider": provider,
                     "processing_time": processing_time,
@@ -278,8 +279,11 @@ class AIService:
                     try:
                         error_data = response.json()
                         if "error" in error_data:
-                            error_detail += f": {error_data['error'].get('message', 'Unknown error')}"
-                    except:
+                            message = error_data["error"].get(
+                                "message", "Unknown error"
+                            )
+                            error_detail += f": {message}"
+                    except (AttributeError, KeyError, TypeError, ValueError):
                         error_detail += f": {response.text[:200]}"
 
                     raise Exception(error_detail)
@@ -363,8 +367,11 @@ class AIService:
                     try:
                         error_data = response.json()
                         if "error" in error_data:
-                            error_detail += f": {error_data['error'].get('message', 'Unknown error')}"
-                    except:
+                            message = error_data["error"].get(
+                                "message", "Unknown error"
+                            )
+                            error_detail += f": {message}"
+                    except (AttributeError, KeyError, TypeError, ValueError):
                         error_detail += f": {response.text[:200]}"
 
                     raise Exception(error_detail)

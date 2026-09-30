@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import List, Tuple
 
 import fitz
+
 from book.domain.models import Book, SourceRef
 from book.quality import QualityIssue
 

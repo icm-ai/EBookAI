@@ -4,6 +4,7 @@ from dataclasses import replace
 from pathlib import Path
 
 import pytest
+
 from book.benchmark.change_control import (
     ChangeControlPolicy,
     ChangeInput,

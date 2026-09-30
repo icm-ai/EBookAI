@@ -10,21 +10,20 @@ This module provides comprehensive image processing capabilities:
 """
 
 import io
-import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any, Union
+from typing import Any, Dict, List, Optional, Tuple
 
-from PIL import Image, ImageFilter, ImageEnhance
-from utils.logging_config import get_logger
+from PIL import Image, ImageFilter
 
 # Import configuration
 from config import (
-    IMAGE_MAX_WIDTH_FAST,
-    IMAGE_MAX_WIDTH_STANDARD,
-    IMAGE_MAX_WIDTH_HIGH,
     CONVERSION_QUALITY_LEVEL,
+    IMAGE_MAX_WIDTH_FAST,
+    IMAGE_MAX_WIDTH_HIGH,
+    IMAGE_MAX_WIDTH_STANDARD,
 )
+from utils.logging_config import get_logger
 
 
 @dataclass
@@ -417,12 +416,13 @@ class ImageProcessor:
                 image_bytes = buffer.getvalue()
 
                 # Prepare prompt for AI
+                context = image.associated_text or "various topics"
                 prompt = f"""
                 Describe this image in detail for accessibility purposes.
                 Focus on what's important for understanding the content.
                 Keep the description concise but informative.
 
-                Context: This image appears in a document about {image.associated_text or 'various topics'}.
+                Context: This image appears in a document about {context}.
                 """
 
                 # Call AI service (implementation depends on your AI service interface)

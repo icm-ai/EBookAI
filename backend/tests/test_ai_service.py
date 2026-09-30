@@ -1,7 +1,8 @@
+from unittest.mock import AsyncMock, Mock, patch
+
 import pytest
-import asyncio
-from unittest.mock import Mock, patch, AsyncMock
-from services.ai_service import AIService, AIResult
+
+from services.ai_service import AIResult, AIService
 from utils.exceptions import AIServiceError
 
 
@@ -64,11 +65,6 @@ class TestGenerateSummary:
     @pytest.mark.asyncio
     async def test_generate_summary_success_openai(self, ai_service):
         """Test successful summary generation with OpenAI API"""
-        mock_response = {
-            "choices": [{"message": {"content": "This is a test summary."}}],
-            "usage": {"prompt_tokens": 100, "completion_tokens": 20},
-        }
-
         with patch.object(
             ai_service, "_call_openai_compatible_api", new_callable=AsyncMock
         ) as mock_call:
@@ -94,7 +90,7 @@ class TestGenerateSummary:
         ) as mock_call:
             mock_call.return_value = ("Short summary.", {})
 
-            result = await ai_service.generate_summary("Test text", max_length=100)
+            await ai_service.generate_summary("Test text", max_length=100)
 
             mock_call.assert_called_once()
             args = mock_call.call_args[0]

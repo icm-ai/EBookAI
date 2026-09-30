@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 import pytest
+
 from book.benchmark import CorpusManifest
 from book.benchmark.review_plan import (
     ReviewPlan,

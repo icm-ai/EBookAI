@@ -9,10 +9,9 @@ This module provides sophisticated chapter detection using multiple methods:
 - Confidence scoring for each method
 """
 
-import logging
 import re
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any, Dict, List, Optional, Tuple
 
 from utils.logging_config import get_logger
 
@@ -430,7 +429,8 @@ class ChapterDetector:
 
                     # Verify page exists and get actual title
                     if page_num in pages_text and pages_text[page_num]:
-                        # Use first few words from actual page as title if AI response is too generic
+                        # Use first few words from the page as a title when
+                        # the AI response is too generic.
                         if len(title) < 3 or title.lower() in [
                             "chapter",
                             "section",

@@ -9,18 +9,16 @@ This module provides Calibre integration as a fallback conversion engine:
 - Fallback trigger management
 """
 
-import logging
 import shutil
 import subprocess
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
-
-from utils.logging_config import get_logger
+from typing import Any, Dict, List, Optional, Tuple
 
 # Import configuration
-from config import ENABLE_CALIBRE_FALLBACK, CALIBRE_QUALITY_THRESHOLD, CALIBRE_TIMEOUT
+from config import CALIBRE_QUALITY_THRESHOLD, CALIBRE_TIMEOUT, ENABLE_CALIBRE_FALLBACK
+from utils.logging_config import get_logger
 
 
 @dataclass
@@ -384,7 +382,8 @@ class CalibreFallback:
         if custom_quality_score < CALIBRE_QUALITY_THRESHOLD:
             return (
                 True,
-                f"Custom quality score ({custom_quality_score:.1f}) below threshold ({CALIBRE_QUALITY_THRESHOLD})",
+                f"Custom quality score ({custom_quality_score:.1f}) below threshold "
+                f"({CALIBRE_QUALITY_THRESHOLD})",
             )
 
         # Complex PDF features

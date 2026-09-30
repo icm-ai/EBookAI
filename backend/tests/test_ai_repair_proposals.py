@@ -4,6 +4,7 @@ from pathlib import Path
 
 import fitz
 import pytest
+
 from book.domain.models import (
     Book,
     BookMetadata,

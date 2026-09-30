@@ -6,15 +6,15 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List
 
-from book.benchmark.consensus import GoldConsensusStore
-from book.benchmark.gold import GoldValidationError
-from book.benchmark.review_workbench import GoldReviewStore
-from book.parsers.base import ParserBackendUnavailable
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
+from book.benchmark.consensus import GoldConsensusStore
+from book.benchmark.gold import GoldValidationError
+from book.benchmark.review_workbench import GoldReviewStore
+from book.parsers.base import ParserBackendUnavailable
 from config import OUTPUT_DIR
 
 router = APIRouter(prefix="/gold-review", tags=["gold-review"])

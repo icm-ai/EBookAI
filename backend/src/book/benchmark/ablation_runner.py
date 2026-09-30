@@ -13,7 +13,7 @@ import tempfile
 import time
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 from book.benchmark.ablation import (
     AblationObservation,

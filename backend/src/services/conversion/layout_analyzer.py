@@ -8,12 +8,11 @@ This module provides sophisticated layout analysis for PDF documents including:
 - Content region analysis
 """
 
-import logging
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any, Dict, List, Optional, Tuple
 
-import pdfplumber
 from pdfplumber.page import Page
+
 from utils.logging_config import get_logger
 
 
@@ -97,7 +96,8 @@ class LayoutAnalyzer:
             tables = self._detect_tables(page, page_num)
 
             self.logger.debug(
-                f"Page {page_num}: {len(columns)} columns, {len(text_regions)} regions, {len(tables)} tables"
+                f"Page {page_num}: {len(columns)} columns, "
+                f"{len(text_regions)} regions, {len(tables)} tables"
             )
             return columns, text_regions, tables
 

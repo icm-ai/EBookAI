@@ -5,6 +5,7 @@ from pathlib import Path
 
 import fitz
 import pytest
+
 from book.benchmark.gold import GoldAnnotation
 from book.benchmark.review_workbench import GoldReviewStore
 
@@ -237,7 +238,7 @@ def test_publish_is_explicit_and_detects_canonical_drift(tmp_path):
     store = _fixture_store(tmp_path)
     session = store.create("fixture", 0)
     _confirm_all(store, session.id)
-    promoted = store.promote(session.id, reviewer="alice")
+    store.promote(session.id, reviewer="alice")
 
     canonical_path = tmp_path / "gold" / "fixture.json"
     before = GoldAnnotation.load(canonical_path)

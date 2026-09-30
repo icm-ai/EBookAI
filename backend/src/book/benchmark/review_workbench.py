@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import fitz
+
 from book.benchmark.corpus import CorpusStore
 from book.benchmark.gold import (
     GOLD_SCHEMA_VERSION,
@@ -25,10 +26,10 @@ from book.benchmark.gold import (
     load_gold_annotation,
     validate_gold_against_spec,
 )
-from book.benchmark.models import CorpusDocumentSpec, CorpusManifest
+from book.benchmark.models import CorpusDocumentSpec
 from book.benchmark.review_plan import ReviewPlan, ReviewTarget, validate_review_plan
 from book.benchmark.runner import default_parser_registry
-from book.domain.models import Book, NodeType
+from book.domain.models import Book
 from book.parsers.base import ParserBackendUnavailable
 
 

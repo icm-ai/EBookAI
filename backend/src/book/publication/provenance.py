@@ -6,7 +6,7 @@ import importlib.metadata
 import os
 import platform
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, List, Optional
 
 from book.domain.models import Book
 from book.publication.epubcheck import EpubCheckResult

@@ -8,18 +8,19 @@ This module provides OCR capabilities for scanned PDF documents including:
 - Text extraction from scanned pages
 """
 
-import logging
+import io
 import re
+import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any, Dict, List, Optional, Tuple
 
 import pytesseract
-from PIL import Image, ImageFilter, ImageEnhance
-from utils.logging_config import get_logger
+from PIL import Image, ImageEnhance, ImageFilter
 
 # Import configuration
 from config import OCR_CONFIDENCE_THRESHOLD, TESSERACT_LANGUAGE_MODELS
+from utils.logging_config import get_logger
 
 
 @dataclass
@@ -111,12 +112,14 @@ class OCRService:
             # Add warnings if confidence is low
             if ocr_result.confidence < OCR_CONFIDENCE_THRESHOLD:
                 page_result.warnings.append(
-                    f"Low OCR confidence ({ocr_result.confidence:.1f}% < {OCR_CONFIDENCE_THRESHOLD}%)"
+                    f"Low OCR confidence ({ocr_result.confidence:.1f}% < "
+                    f"{OCR_CONFIDENCE_THRESHOLD}%)"
                 )
 
             self.logger.debug(
                 f"Page {page_num} OCR complete: {len(ocr_result.text)} chars, "
-                f"confidence: {ocr_result.confidence:.1f}%"
+                f"confidence: {ocr_result.confidence:.1f}%, "
+                f"time: {processing_time:.2f}s"
             )
 
             return page_result
@@ -420,8 +423,3 @@ class OCRService:
                 "language": language or "eng",
                 "has_layout": False,
             }
-
-
-# Import required modules
-import io
-import time

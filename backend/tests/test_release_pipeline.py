@@ -6,6 +6,7 @@ import zipfile
 from pathlib import Path
 
 import pytest
+
 from book.domain.models import (
     Book,
     BookMetadata,

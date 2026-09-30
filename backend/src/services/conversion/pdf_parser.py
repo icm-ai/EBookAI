@@ -9,12 +9,12 @@ This module provides high-quality PDF parsing capabilities including:
 - Scan detection
 """
 
-import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any, Dict, List, Optional, Tuple
 
 import fitz  # PyMuPDF
+
 from utils.logging_config import get_logger
 
 
@@ -336,7 +336,7 @@ class PDFParser:
                 first_page = doc[0]
                 text_sample = first_page.get_text()
                 result["has_text"] = len(text_sample.strip()) > 10
-            except:
+            except Exception:
                 result["has_text"] = False
 
             doc.close()

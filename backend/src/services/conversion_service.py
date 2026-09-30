@@ -11,6 +11,14 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
+
+from config import (
+    ALLOWED_EXTENSIONS,
+    CONVERSION_TIMEOUT,
+    ENHANCED_PDF_CONVERSION,
+    OUTPUT_DIR,
+    UPLOAD_DIR,
+)
 from utils.error_handler import handle_service_error
 from utils.exceptions import (
     ConversionError,
@@ -26,14 +34,6 @@ from utils.logging_config import (
     log_operation_start,
 )
 from utils.progress_tracker import progress_tracker
-
-from config import (
-    ALLOWED_EXTENSIONS,
-    CONVERSION_TIMEOUT,
-    OUTPUT_DIR,
-    UPLOAD_DIR,
-    ENHANCED_PDF_CONVERSION,
-)
 
 
 class ConversionService:
@@ -880,9 +880,17 @@ class ConversionService:
                 text_content = " ".join(readable_text)
 
                 if len(text_content.strip()) < 100:
-                    text_content = f"MOBI file: {mobi_path.name}\n\nThis is a converted MOBI file. Basic text extraction applied.\n\nOriginal file size: {len(content)} bytes"
+                    text_content = (
+                        f"MOBI file: {mobi_path.name}\n\n"
+                        "This is a converted MOBI file. Basic text extraction applied.\n\n"
+                        f"Original file size: {len(content)} bytes"
+                    )
             except Exception:
-                text_content = f"MOBI file: {mobi_path.name}\n\nContent extraction from this MOBI file is not fully supported. Please consider converting to EPUB first."
+                text_content = (
+                    f"MOBI file: {mobi_path.name}\n\n"
+                    "Content extraction from this MOBI file is not fully supported. "
+                    "Please consider converting to EPUB first."
+                )
 
             return text_content
         except Exception as e:
@@ -908,9 +916,17 @@ class ConversionService:
                 text_content = " ".join(readable_text)
 
                 if len(text_content.strip()) < 100:
-                    text_content = f"AZW3 file: {azw3_path.name}\n\nThis is a converted AZW3 file. Basic text extraction applied.\n\nOriginal file size: {len(content)} bytes"
+                    text_content = (
+                        f"AZW3 file: {azw3_path.name}\n\n"
+                        "This is a converted AZW3 file. Basic text extraction applied.\n\n"
+                        f"Original file size: {len(content)} bytes"
+                    )
             except Exception:
-                text_content = f"AZW3 file: {azw3_path.name}\n\nContent extraction from this AZW3 file is not fully supported. Please consider converting to EPUB first."
+                text_content = (
+                    f"AZW3 file: {azw3_path.name}\n\n"
+                    "Content extraction from this AZW3 file is not fully supported. "
+                    "Please consider converting to EPUB first."
+                )
 
             return text_content
         except Exception as e:

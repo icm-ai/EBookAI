@@ -1,7 +1,8 @@
-from typing import Optional, List
+from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+
 from services.ai_service import AIService
 from utils.logging_config import get_logger
 

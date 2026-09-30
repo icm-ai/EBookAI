@@ -1028,7 +1028,10 @@ def render_ablation_markdown(report: AblationReport) -> str:
             [
                 "## Variant evidence",
                 "",
-                "| Variant | Quality | Failure rate | Invalid pages | Seconds/page | Issues/page | Human min/page | AI $/page |",
+                (
+                    "| Variant | Quality | Failure rate | Invalid pages | Seconds/page | "
+                    "Issues/page | Human min/page | AI $/page |"
+                ),
                 "|---|---:|---:|---:|---:|---:|---:|---:|",
             ]
         )

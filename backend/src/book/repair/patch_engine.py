@@ -537,10 +537,11 @@ class PatchEngine:
                 node_type = NodeType(raw_type)
                 attrs = {**original.attrs, **raw_part.get("attrs", {})}
 
+            split_seed = f"{original.id}:{index}:{content}"
             node_id = (
                 original.id
                 if index == 0
-                else f"node-{uuid.uuid5(uuid.NAMESPACE_URL, original.id + ':' + str(index) + ':' + content)}"
+                else f"node-{uuid.uuid5(uuid.NAMESPACE_URL, split_seed)}"
             )
             attrs["split_from"] = original.id
             created.append(

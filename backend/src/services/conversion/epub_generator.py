@@ -10,14 +10,13 @@ This module provides comprehensive EPUB generation capabilities:
 """
 
 import uuid
-import logging
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any, Dict, List
 
-import ebooklib
 from ebooklib import epub
+
 from utils.logging_config import get_logger
 
 
@@ -690,7 +689,3 @@ pre {
         """Check if metadata contains Chinese characters"""
         text_to_check = f"{metadata.get('title', '')} {metadata.get('author', '')}"
         return any("\u4e00" <= char <= "\u9fff" for char in text_to_check)
-
-
-# Import dataclass
-from dataclasses import dataclass

@@ -2,11 +2,11 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import APIRouter, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
-from services.conversion_service import ConversionService
 
 from config import ALLOWED_EXTENSIONS, MAX_FILE_SIZE, OUTPUT_DIR, UPLOAD_DIR
+from services.conversion_service import ConversionService
 
 router = APIRouter()
 conversion_service = ConversionService()
@@ -25,7 +25,7 @@ async def health_check():
 
 
 @router.get("/files")
-async def list_files(file_type: str = Query("output", regex="^(input|output)$")):
+async def list_files(file_type: str = Query("output", pattern="^(input|output)$")):
     """List uploaded or converted files"""
     target_dir = UPLOAD_DIR if file_type == "input" else OUTPUT_DIR
 
@@ -51,7 +51,7 @@ async def list_files(file_type: str = Query("output", regex="^(input|output)$"))
 
 
 @router.post("/convert")
-async def convert_file(file: UploadFile = File(...), target_format: str = "pdf"):
+async def convert_file(file: UploadFile = File(...), target_format: str = Form("pdf")):
     """Convert uploaded file to target format"""
 
     # Validate filename
@@ -81,7 +81,6 @@ async def convert_file(file: UploadFile = File(...), target_format: str = "pdf")
         )
 
     # Validate file size
-    file_size = 0
     content = await file.read()
     file_size = len(content)
 

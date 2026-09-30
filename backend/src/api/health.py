@@ -1,14 +1,13 @@
-from fastapi import APIRouter
-from typing import Dict, Any
 import time
-import asyncio
 from datetime import datetime
+from typing import Any, Dict
 
-from services.conversion_service import ConversionService
-from services.ai_service import AIService
-from services.batch_conversion_service import batch_conversion_service
-from utils.logging_config import get_logger
+from fastapi import APIRouter
+
 from config import ai_config
+from services.batch_conversion_service import batch_conversion_service
+from services.conversion_service import ConversionService
+from utils.logging_config import get_logger
 
 router = APIRouter(prefix="/health", tags=["health"])
 logger = get_logger("health_api")
@@ -41,7 +40,7 @@ async def detailed_health_check() -> Dict[str, Any]:
 
     # 检查转换服务
     try:
-        conversion_service = ConversionService()
+        ConversionService()
         health_status["components"]["conversion_service"] = {
             "status": "healthy",
             "message": "Conversion service is operational",
@@ -95,7 +94,7 @@ async def detailed_health_check() -> Dict[str, Any]:
     health_status["check_duration"] = round(time.time() - start_time, 3)
 
     logger.info(
-        f"Health check completed",
+        "Health check completed",
         extra={
             "status": health_status["status"],
             "duration": health_status["check_duration"],
@@ -149,7 +148,7 @@ async def readiness_check() -> Dict[str, Any]:
     """就绪检查 - 检查服务是否准备好接收请求"""
     try:
         # 检查关键服务是否可用
-        conversion_service = ConversionService()
+        ConversionService()
 
         # 检查是否有可用的AI提供商
         available_providers = ai_config.get_available_providers()

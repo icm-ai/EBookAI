@@ -3,7 +3,6 @@ Global error handler for FastAPI application.
 """
 import traceback
 import uuid
-from typing import Union
 
 from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -11,11 +10,11 @@ from starlette.status import (
     HTTP_400_BAD_REQUEST,
     HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
-    HTTP_413_REQUEST_ENTITY_TOO_LARGE,
     HTTP_422_UNPROCESSABLE_ENTITY,
     HTTP_500_INTERNAL_SERVER_ERROR,
     HTTP_503_SERVICE_UNAVAILABLE,
 )
+
 from utils.exceptions import (
     AIServiceError,
     ConfigurationError,
@@ -91,12 +90,6 @@ def create_error_response(
 
     if isinstance(error, EBookAIException):
         # Handle custom exceptions
-        error_response = ErrorResponse(
-            error_code=error.error_code,
-            message=error.message,
-            details=error.details,
-            request_id=request_id,
-        )
         status_code = get_http_status_from_error(error)
 
         # Log the error with context
@@ -113,11 +106,6 @@ def create_error_response(
 
     elif isinstance(error, HTTPException):
         # Handle FastAPI HTTP exceptions
-        error_response = ErrorResponse(
-            error_code="HTTP_ERROR",
-            message=error.detail,
-            request_id=request_id,
-        )
         status_code = error.status_code
 
         logger.warning(
@@ -127,11 +115,6 @@ def create_error_response(
 
     elif isinstance(error, ValueError):
         # Handle validation errors
-        error_response = ErrorResponse(
-            error_code="VALIDATION_ERROR",
-            message=str(error),
-            request_id=request_id,
-        )
         status_code = HTTP_400_BAD_REQUEST
 
         logger.warning(
@@ -141,12 +124,6 @@ def create_error_response(
 
     elif isinstance(error, FileNotFoundError):
         # Handle file not found errors
-        error_response = ErrorResponse(
-            error_code="FILE_NOT_FOUND",
-            message="Requested file was not found",
-            details={"original_error": str(error)},
-            request_id=request_id,
-        )
         status_code = HTTP_404_NOT_FOUND
 
         logger.warning(
@@ -156,11 +133,6 @@ def create_error_response(
 
     elif isinstance(error, PermissionError):
         # Handle permission errors
-        error_response = ErrorResponse(
-            error_code="PERMISSION_DENIED",
-            message="Access denied",
-            request_id=request_id,
-        )
         status_code = HTTP_403_FORBIDDEN
 
         logger.warning(
@@ -170,12 +142,6 @@ def create_error_response(
 
     else:
         # Handle unexpected errors
-        error_response = ErrorResponse(
-            error_code="INTERNAL_ERROR",
-            message="An unexpected error occurred",
-            details={"type": type(error).__name__} if error else {},
-            request_id=request_id,
-        )
         status_code = HTTP_500_INTERNAL_SERVER_ERROR
 
         logger.error(
@@ -245,8 +211,6 @@ def handle_service_error(
     operation: str, error: Exception, **context
 ) -> EBookAIException:
     """Convert service-level exceptions to application exceptions"""
-    request_id = context.get("request_id", str(uuid.uuid4()))
-
     if isinstance(error, EBookAIException):
         return error
 

@@ -1,8 +1,6 @@
-import json
 import time
+from dataclasses import asdict, dataclass
 from typing import Dict, Optional
-from dataclasses import dataclass, asdict
-from pathlib import Path
 
 
 @dataclass

@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import fitz
+
 from book.domain.models import NodeType
 from book.parsers.pymupdf import PyMuPDFAdapter
 

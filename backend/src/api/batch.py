@@ -1,18 +1,20 @@
 import os
+from pathlib import Path
 from typing import List
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel
 
+from config import ALLOWED_EXTENSIONS, UPLOAD_DIR
 from services.batch_conversion_service import batch_conversion_service
 from utils.logging_config import get_logger
-from config import UPLOAD_DIR, ALLOWED_EXTENSIONS
 
 router = APIRouter(prefix="/batch", tags=["batch-conversion"])
 logger = get_logger("batch_api")
 
 
 class BatchConversionRequest(BaseModel):
-    """Request model for batch conversion"""
+    """Request model for batch conversion."""
 
     target_format: str
     file_paths: List[str]
@@ -22,7 +24,7 @@ class BatchConversionRequest(BaseModel):
 async def create_batch_conversion(
     target_format: str = Form(...), files: List[UploadFile] = File(...)
 ) -> dict:
-    """Create and start a batch conversion job"""
+    """Create and start a batch conversion job."""
     try:
         if not files:
             raise HTTPException(status_code=400, detail="No files provided")
@@ -33,7 +35,6 @@ async def create_batch_conversion(
                 detail="Too many files. Maximum 50 files allowed per batch.",
             )
 
-        # Validate target format
         if f".{target_format.lower()}" not in ALLOWED_EXTENSIONS:
             raise HTTPException(
                 status_code=400, detail=f"Unsupported target format: {target_format}"
@@ -41,46 +42,47 @@ async def create_batch_conversion(
 
         uploaded_files = []
 
-        # Save uploaded files and validate
         for file in files:
             if not file.filename:
-                continue
+                raise HTTPException(status_code=400, detail="Missing filename")
 
-            # Check file extension
-            file_ext = os.path.splitext(file.filename)[1].lower()
+            safe_filename = Path(file.filename).name
+            if not safe_filename or safe_filename.startswith("."):
+                raise HTTPException(status_code=400, detail="Invalid filename")
+
+            file_ext = os.path.splitext(safe_filename)[1].lower()
             if file_ext not in ALLOWED_EXTENSIONS:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Unsupported file format: {file_ext} (file: {file.filename})",
+                    detail=f"Unsupported file format: {file_ext} (file: {safe_filename})",
                 )
 
-            # Check file size (50MB limit)
             content = await file.read()
+            if not content:
+                raise HTTPException(
+                    status_code=400, detail=f"Empty file: {safe_filename}"
+                )
             if len(content) > 50 * 1024 * 1024:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"File too large: {file.filename} (max 50MB)",
+                    detail=f"File too large: {safe_filename} (max 50MB)",
                 )
 
-            # Save file
-            file_path = UPLOAD_DIR / file.filename
-            with open(file_path, "wb") as f:
-                f.write(content)
+            file_path = UPLOAD_DIR / safe_filename
+            with open(file_path, "wb") as output:
+                output.write(content)
 
             uploaded_files.append(
                 {
                     "file_path": str(file_path),
-                    "filename": file.filename,
+                    "filename": safe_filename,
                     "size": len(content),
                 }
             )
 
-        # Create batch job
         batch_result = await batch_conversion_service.create_batch_job(
             uploaded_files, target_format
         )
-
-        # Start the batch conversion
         start_result = await batch_conversion_service.start_batch_conversion(
             batch_result["batch_id"]
         )
@@ -103,17 +105,14 @@ async def create_batch_conversion(
 
 @router.get("/status/{batch_id}")
 async def get_batch_status(batch_id: str) -> dict:
-    """Get the status of a batch conversion job"""
+    """Get the status of a batch conversion job."""
     try:
         status = batch_conversion_service.get_batch_status(batch_id)
-
         if status is None:
             raise HTTPException(
                 status_code=404, detail=f"Batch job {batch_id} not found"
             )
-
         return {"batch_id": batch_id, "status": status}
-
     except HTTPException:
         raise
     except Exception as e:
@@ -123,12 +122,10 @@ async def get_batch_status(batch_id: str) -> dict:
 
 @router.get("/list")
 async def list_batch_jobs() -> dict:
-    """List all batch conversion jobs"""
+    """List all batch conversion jobs."""
     try:
         batches = batch_conversion_service.get_all_batches()
-
         return {"batches": batches, "count": len(batches)}
-
     except Exception as e:
         logger.error(f"Failed to list batch jobs: {e}")
         raise HTTPException(status_code=500, detail="Failed to retrieve batch jobs")
@@ -136,12 +133,10 @@ async def list_batch_jobs() -> dict:
 
 @router.post("/cleanup")
 async def cleanup_completed_batches() -> dict:
-    """Clean up old completed batch jobs"""
+    """Clean up old completed batch jobs."""
     try:
         batch_conversion_service.cleanup_completed_batches(max_age_hours=2)
-
         return {"message": "Cleanup completed successfully"}
-
     except Exception as e:
         logger.error(f"Failed to cleanup batch jobs: {e}")
         raise HTTPException(status_code=500, detail="Failed to cleanup batch jobs")

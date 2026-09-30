@@ -8,7 +8,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 from difflib import SequenceMatcher
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from book.benchmark.models import CorpusDocumentSpec
 from book.domain.models import Book, BookNode, NodeType

@@ -5,6 +5,7 @@ from pathlib import Path
 
 import fitz
 import pytest
+
 from book.benchmark.baseline import ReviewedBaselineRegistry
 from book.benchmark.campaign import (
     CampaignTarget,
@@ -19,7 +20,6 @@ from book.benchmark.governance import BenchmarkGovernancePolicy
 from book.benchmark.leaderboard import LeaderboardPolicy
 from book.benchmark.models import CorpusManifest
 from book.benchmark.provenance import ConsensusProvenanceRegistry
-from book.benchmark.review_batch import ReviewBatch
 from book.benchmark.review_plan import ReviewPlan
 from book.benchmark.review_workbench import GoldReviewStore
 

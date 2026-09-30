@@ -2,17 +2,14 @@
 User-friendly error messages and response formatting.
 """
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from utils.exceptions import (
     AIServiceError,
-    ConfigurationError,
     ConversionError,
     ConversionTimeoutError,
     EBookAIException,
     FileProcessingError,
-    ResourceNotFoundError,
-    SecurityError,
     ValidationError,
 )
 

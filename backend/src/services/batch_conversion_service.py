@@ -1,13 +1,12 @@
 import asyncio
 import uuid
-from pathlib import Path
-from typing import List, Dict, Any
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
+from typing import Any, Dict, List
 
+from services.conversion_service import ConversionService
+from utils.exceptions import BatchConversionError, ValidationError
 from utils.logging_config import get_logger
 from utils.progress_tracker import progress_tracker
-from utils.exceptions import ValidationError, BatchConversionError
-from services.conversion_service import ConversionService
 
 
 @dataclass
@@ -166,7 +165,7 @@ class BatchConversionService:
                     return await self._process_single_task(batch_id, task)
 
             # Process all tasks concurrently (with limit)
-            results = await asyncio.gather(
+            await asyncio.gather(
                 *[process_single_task(task) for task in batch_job.tasks],
                 return_exceptions=True,
             )
@@ -183,11 +182,14 @@ class BatchConversionService:
                 batch_job.status = "completed_with_errors"
                 progress_tracker.complete_task(
                     batch_id,
-                    f"{batch_job.completed_files}/{batch_job.total_files} files converted ({batch_job.failed_files} failed)",
+                    f"{batch_job.completed_files}/{batch_job.total_files} files converted "
+                    f"({batch_job.failed_files} failed)",
                 )
 
             self.logger.info(
-                f"Batch conversion {batch_id} finished: {batch_job.completed_files} completed, {batch_job.failed_files} failed"
+                f"Batch conversion {batch_id} finished: "
+                f"{batch_job.completed_files} completed, "
+                f"{batch_job.failed_files} failed"
             )
 
         except Exception as e:
@@ -226,10 +228,11 @@ class BatchConversionService:
                 / batch_job.total_files
                 * 100
             )
+            processed_files = batch_job.completed_files + batch_job.failed_files
             progress_tracker.update_progress(
                 batch_id,
-                batch_job.completed_files + batch_job.failed_files,
-                f"Processed {batch_job.completed_files + batch_job.failed_files}/{batch_job.total_files} files",
+                processed_files,
+                f"Processed {processed_files}/{batch_job.total_files} files",
                 progress_percent,
             )
 
@@ -247,10 +250,12 @@ class BatchConversionService:
                 / batch_job.total_files
                 * 100
             )
+            processed_files = batch_job.completed_files + batch_job.failed_files
             progress_tracker.update_progress(
                 batch_id,
-                batch_job.completed_files + batch_job.failed_files,
-                f"Processed {batch_job.completed_files + batch_job.failed_files}/{batch_job.total_files} files ({batch_job.failed_files} failed)",
+                processed_files,
+                f"Processed {processed_files}/{batch_job.total_files} files "
+                f"({batch_job.failed_files} failed)",
                 progress_percent,
             )
 

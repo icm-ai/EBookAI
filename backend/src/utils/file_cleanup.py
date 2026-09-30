@@ -7,9 +7,9 @@ import asyncio
 import os
 import shutil
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 from utils.logging_config import get_logger
 
