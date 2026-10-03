@@ -1,250 +1,220 @@
-# 项目状态报告
-
-最后更新：2024-10-12 21:45
-
-## 项目概览
-
-EBookAI 是一个 AI 增强的电子书处理工具，支持多种格式转换和智能文本处理。项目定位为工具型产品，用户可以通过 Docker 自行部署或直接使用 Web 界面。
-
-## 当前阶段
-
-**MVP 开发后期 - 接近完成** - 核心功能完整，基础设施完善，准备发布 v0.2.0。
-
-## 完成的功能
-
-### 核心功能 ✅
-
-- [x] 多格式电子书转换（EPUB、PDF、MOBI、AZW3、TXT）
-- [x] 基于 Calibre 的高质量转换引擎
-- [x] 批量文件处理
-- [x] WebSocket 实时进度推送
-- [x] AI 文本摘要生成
-- [x] 多 AI 提供商支持（OpenAI、Claude、DeepSeek 等）
-- [x] AI 提供商自动发现机制
-
-### 用户界面 ✅
-
-- [x] React 18 现代化 Web 界面
-- [x] 文件拖拽上传（单文件和批量）
-- [x] 文件上传和下载
-- [x] 实时转换进度显示
-- [x] 批量操作支持
-- [x] Toast 通知系统
-- [x] 错误边界组件
-- [x] 友好的错误提示和用户引导
-
-### API 和后端 ✅
-
-- [x] FastAPI RESTful API
-- [x] 自动生成的 API 文档（Swagger/OpenAPI）
-- [x] 健康检查端点
-- [x] 性能监控中间件
-- [x] 结构化日志系统
-- [x] 全局错误处理
-
-### 部署和运维 ✅
-
-- [x] Docker 容器化
-- [x] Docker Compose 配置
-- [x] 多阶段构建优化
-- [x] 健康检查配置
-- [x] 非 root 用户运行
-- [x] 自动文件清理机制
-
-### 开源项目基础设施 ✅
-
-- [x] MIT 开源许可证
-- [x] 完善的 README 文档
-- [x] 贡献指南（CONTRIBUTING.md）
-- [x] 行为准则（CODE_OF_CONDUCT.md）
-- [x] GitHub Issue 模板（Bug、功能请求、问题咨询）
-- [x] GitHub PR 模板
-- [x] CI/CD 工作流
-  - [x] 代码质量检查（Black、isort、Flake8）
-  - [x] 自动化测试
-  - [x] Docker 镜像构建
-  - [x] Docker Hub 自动发布
-
-### 文档体系 ✅
-
-- [x] 用户文档
-  - [x] README（使用说明、快速开始）
-  - [x] 部署指南（deployment.md）
-  - [x] 常见问题（faq.md）
-  - [x] AI 配置指南
-  - [x] API 参考文档
-  - [x] 环境变量配置
-- [x] 开发文档
-  - [x] 贡献指南
-  - [x] 开发环境搭建
-  - [x] 项目架构说明
-- [x] 版本管理
-  - [x] CHANGELOG.md
-
-### 测试 ✅
-
-- [x] pytest 测试框架
-- [x] 71+ 测试用例
-- [x] 文件清理功能测试（18 个测试）
-- [x] 批量转换 API 测试（12 个测试）
-- [x] 清理 API 测试（8 个测试）
-- [x] 配置测试（8 个测试）
-- [x] API 集成测试（13 个测试）
-- [x] 转换服务测试（12 个测试）
-
-## 正在进行的工作
-
-### 短期目标（本周完成）
-
-- [x] 增加测试覆盖率至 60%+（完成 71+ 测试用例）
-- [x] 前端用户体验优化
-  - [x] 文件拖拽上传（已实现）
-  - [x] 更友好的错误提示（Toast + ErrorBoundary）
-  - [ ] 批量下载功能
-  - [ ] 响应式设计优化
-- [ ] 优化 Docker 镜像大小
-- [ ] 性能优化
-  - [ ] 大文件处理优化
-  - [ ] 内存使用优化
-  - [ ] 并发限制机制
+# EBookAI Project Status
+
+Last updated: 2026-10-03
+
+> For engineering takeover and the exact continuation sequence, start with [`docs/HANDOFF.md`](../docs/HANDOFF.md).
+
+## Project phase
+
+EBookAI is no longer in the 2024 MVP/v0.2.0 planning phase previously described by this file.
+
+The active engineering program has progressed through a BookIR-centered PDF-to-EPUB architecture, real-world parser benchmarking, gold review/governance, publication verification, and release trust controls.
+
+The current phase is:
+
+**Milestone 21 — Runtime Ablation Pilot & Architecture Simplification**
 
-### 中期目标（2-4 周）
+This is an evidence-driven Occam checkpoint. Feature expansion is intentionally paused while the project measures whether parser orchestration, deterministic repair, and AI repair justify their runtime complexity.
 
-- [ ] 更多 AI 功能
-  - [ ] 文本翻译
-  - [ ] 内容校对
-  - [ ] 智能排版优化
-- [ ] 高级转换选项
-  - [ ] 自定义 DPI
-  - [ ] 页面大小配置
-  - [ ] 字体选择
-- [ ] 桌面应用版本（Electron）
-- [ ] 首个正式版本发布（v1.0.0）
+## Current repository state
 
-### 长期目标（1-3 个月）
+- Repository: `icm-ai/EBookAI`
+- Active engineering branch: `milestone-21-runtime-ablation-pilot`
+- Milestone 21 design: `docs/architecture/runtime-ablation-occam.md`
+- Pilot definition: `benchmark/ablation/runtime-occam-v1.json`
+- Independent human-review batch: PR #3
+- PR #3 state: open, draft
+- PR #3 reviewers: 陈明 and PDP
+- Review-package run: `36651219486`
+- Backend technical-debt validation run: `36675576427` — success
 
-- [ ] 更多格式支持（DOC、DOCX、RTF）
-- [ ] 云存储集成（S3、OSS）
-- [ ] 批量任务队列优化（Celery + Redis）
-- [ ] 用户指标和分析
-- [ ] 多语言界面支持
+## Completed capability areas
 
-## 技术债务
+### BookIR conversion architecture
 
-### 高优先级
+- [x] BookIR domain model
+- [x] deterministic reconstruction pipeline
+- [x] EPUB compiler
+- [x] PyMuPDF parser backend
+- [x] MinerU parser backend adapter
+- [x] Marker parser backend adapter
+- [x] parser capability registry
+- [x] quality-aware parser orchestration
 
-- 增加错误边界处理
-- 优化大文件内存占用
-- 完善 API 错误响应格式
-- 添加请求限流机制
+### Quality, repair, and review
 
-### 中优先级
+- [x] Quality Engine
+- [x] deterministic Patch Engine
+- [x] source evidence model
+- [x] source-grounded AI repair proposals
+- [x] reversible review/session workflow
+- [x] Gold Review workbench/API/UI
 
-- 前端代码重构（组件拆分）
-- 日志聚合和分析
-- 数据库持久化（可选功能）
-- 缓存机制（Redis）
+### Publication and release trust
 
-### 低优先级
+- [x] publication QA
+- [x] EPUBCheck integration
+- [x] release pipeline
+- [x] release provenance and attestation
+- [x] standalone release verifier
+- [x] native Sigstore support
 
-- 前端单元测试
-- E2E 测试
-- 性能基准测试
-- 国际化支持
+### Benchmark and governed evidence
 
-## 项目指标
+- [x] rights-cleared real-world corpus structure
+- [x] multi-backend parser benchmark
+- [x] gold annotations
+- [x] review-plan workflow
+- [x] independent reviewer packages
+- [x] multi-reviewer consensus machinery
+- [x] reviewed campaign machinery
+- [x] leaderboard/baseline support
+- [x] benchmark governance
+- [x] benchmark change control
+- [x] CI readiness gates
 
-### 代码统计
+### Milestone 21 implementation
 
-- 后端代码行数：约 3500+ 行（Python）
-- 前端代码行数：约 2500+ 行（JavaScript/React）
-- 测试代码行数：1000+ 行
-- 测试用例数量：71+ 个
-- 测试覆盖率：约 65%（目标达成）
+- [x] governed runtime ablation pilot definition
+- [x] A/B/C/D cumulative variant model
+- [x] evidence-readiness checks
+- [x] local A/B/C runner
+- [x] ablation analysis/report generation
+- [x] explicit external-only Variant D contract
+- [x] runtime-ablation tests
+- [ ] evidence floor satisfied
+- [ ] independent review pair completed and persisted
+- [ ] canonical reviewed gold + consensus provenance complete for all required buckets
+- [ ] A/B/C experiment executed on evidence-ready pages
+- [ ] real-provider Variant D experiment executed
+- [ ] final Occam architecture conclusions reached
 
-### 文档
+## Milestone 21 experiment contract
 
-- 用户文档：6 个文件
-- 开发文档：3 个文件
-- 代码注释：完善
+The four cumulative variants are:
 
-### 依赖
+| Variant | Runtime |
+|---|---|
+| A | PyMuPDF + deterministic reconstruction |
+| B | A + Quality Engine + parser routing / semantic fallback |
+| C | B + deterministic Patch Engine repair |
+| D | C + source-grounded AI repair |
 
-- 后端依赖：17 个包
-- 前端依赖：约 30 个包
-- 系统依赖：Python 3.11+、Node.js 18+、Calibre
+The evidence floor is:
 
-## 发布计划
+```text
+reviewed pages >= 8
+AND
+all 8 required difficulty buckets have reviewed evidence
+```
 
-### v0.2.0（计划中）
+The eight required buckets cover form/vector layout, hierarchy, figure/caption, dense technical text, table, list, mixed layout, and multilingual/non-Latin text.
 
-**预计发布：2024-10-20**
+No final runtime-layer KEEP/REMOVE decision is valid before that floor is met.
 
-主要内容：
-- 文件自动清理机制
-- 完整的开源项目基础设施
-- 完善的文档体系
-- CI/CD 自动化
+## Human-review status
 
-### v1.0.0（计划中）
+PR #3 defines the first real review batch:
 
-**预计发布：2024-11-15**
+- 8 pages covering the 8 required difficulty buckets;
+- 2 independent reviewers: 陈明 and PDP;
+- 16 reviewer packages generated by GitHub Actions;
+- reserve pages intentionally excluded to minimize human workload.
 
-主要内容：
-- 生产环境就绪
-- 性能优化完成
-- 测试覆盖率达标
-- 完整的用户文档
-- Docker Hub 官方镜像
+Current review procedure:
 
-## 贡献者
+1. EEL page index 8 is the calibration page.
+2. Each reviewer completes the remaining seven pages independently.
+3. Reviewer answers are not reconciled until both independent passes are complete.
+4. GitHub review records must not be modified unless the user explicitly authorizes the write.
 
-- 核心开发：1 人
-- 贡献者：欢迎加入
-- Issues：0（新项目）
-- Pull Requests：0（新项目）
+Known review limitations:
 
-## 社区
+- XFA form rendering is not visually available in the package.
+- NIST AI RMF page index 25 does not contain the expected table content for the intended table bucket.
 
-- GitHub Stars：0（新项目）
-- GitHub Forks：0（新项目）
-- 活跃度：开发中
+The selected handling rule is to keep the original scope and record these limitations rather than silently swapping targets.
 
-## 下一步行动
+## Backend CI and technical-debt status
 
-### 立即执行
+Legacy backend CI debt exposed during Milestone 21 was resolved and squashed into:
 
-1. 提交所有文档和基础设施改进
-2. 运行测试确保功能正常
-3. 创建 GitHub 仓库并推送代码
-4. 配置 GitHub Secrets（Docker Hub 凭证）
+```text
+73393db30cfa219a8f9903802b2df6b63bc6bbe7
+fix(backend): retire legacy CI technical debt
+```
 
-### 本周内
+The cleanup included formatting/lint debt, import compatibility, API/test contract drift, async/mock test behavior, pytest configuration, and the Docker `httpx`/`httpcore`/`h11` dependency conflict.
 
-1. 增加测试覆盖率
-2. 优化前端用户体验
-3. 完成性能优化
-4. 准备 v0.2.0 发布
+Validation run `36675576427` completed successfully and exercised:
 
-### 本月内
+- Black
+- isort
+- Flake8
+- full backend tests
+- Docker build
+- `pip check`
 
-1. 发布 v0.2.0
-2. 收集用户反馈
-3. 修复发现的问题
-4. 开始 v1.0.0 开发
+Temporary repair/probe files used during diagnosis were removed after validation.
 
-## 资源链接
+## Current priorities
 
-- GitHub 仓库：https://github.com/YOUR_USERNAME/EBookAI
-- 文档：[docs/](docs/)
-- 问题追踪：GitHub Issues
-- 开发路线图：[README.md](README.md#开发路线图)
+Priority order is intentionally narrow:
 
-## 备注
+1. complete independent human review evidence;
+2. obtain the second independent reviewer pass;
+3. persist reviewed gold and consensus provenance when authorized;
+4. verify the Milestone 21 evidence floor;
+5. run A/B/C locally;
+6. run D with a real, explicitly recorded AI provider/model;
+7. analyze pairwise quality/workload/latency/failure/cost evidence;
+8. simplify the default architecture only where the evidence supports simplification.
 
-项目当前处于良好的开发状态，核心功能完整，文档齐全。接下来重点是测试覆盖、性能优化和用户体验改进。
+Do not start a new feature milestone merely because Milestone 21 tooling exists. The unresolved work is evidence collection and architectural decision-making, not more mechanism.
 
----
+## Key documentation
 
-最后更新：2024-10-12
-维护者：[@YOUR_USERNAME](https://github.com/YOUR_USERNAME)
+### Current handoff and Milestone 21
+
+- [`docs/HANDOFF.md`](../docs/HANDOFF.md)
+- [`docs/architecture/runtime-ablation-occam.md`](../docs/architecture/runtime-ablation-occam.md)
+
+### Benchmark and review architecture
+
+- [`docs/architecture/real-world-parser-benchmark.md`](../docs/architecture/real-world-parser-benchmark.md)
+- [`docs/architecture/golden-corpus.md`](../docs/architecture/golden-corpus.md)
+- [`docs/architecture/gold-annotation-benchmark.md`](../docs/architecture/gold-annotation-benchmark.md)
+- [`docs/architecture/gold-review-workbench.md`](../docs/architecture/gold-review-workbench.md)
+- [`docs/architecture/multi-reviewer-consensus.md`](../docs/architecture/multi-reviewer-consensus.md)
+- [`docs/architecture/first-reviewed-campaign.md`](../docs/architecture/first-reviewed-campaign.md)
+- [`docs/architecture/gold-corpus-leaderboard.md`](../docs/architecture/gold-corpus-leaderboard.md)
+- [`docs/architecture/benchmark-governance-ci.md`](../docs/architecture/benchmark-governance-ci.md)
+- [`docs/architecture/benchmark-change-control.md`](../docs/architecture/benchmark-change-control.md)
+
+### Publication trust
+
+- [`docs/architecture/release-attestation.md`](../docs/architecture/release-attestation.md)
+- [`docs/architecture/standalone-verifier-sigstore.md`](../docs/architecture/standalone-verifier-sigstore.md)
+
+## Project principles currently in force
+
+- prefer evidence over architectural completeness;
+- prefer a simpler default runtime when extra layers do not earn their complexity;
+- do not lower evidence thresholds to obtain a conclusion;
+- do not treat missing optional dependencies as quality evidence;
+- keep reviewer independence and provenance intact;
+- do not use mocked AI output as evidence for Variant D;
+- require real human-review workload data for final architecture conclusions where the committed policy requires it;
+- keep governance/provenance/release trust controls separate from the runtime-accuracy ablation.
+
+## Deprecated information from the previous version of this file
+
+The previous `PROJECT_STATUS.md` described a 2024 MVP phase, planned v0.2.0/v1.0.0 release dates, approximate code-line counts, and near-term product tasks such as Electron packaging and generic UI expansion.
+
+Those items are no longer authoritative for the current engineering program and have been removed from the active status description.
+
+The source of truth for current continuation is now:
+
+1. `docs/HANDOFF.md`
+2. Milestone-specific architecture documents
+3. current GitHub branch/PR/Actions state
