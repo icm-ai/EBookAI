@@ -1,0 +1,245 @@
+{
+  "schema_version": "proposal-1",
+  "registry_id": "technical-books-regression-candidates-v1",
+  "status": "candidate_only",
+  "executable_by_existing_benchmark_cli": false,
+  "produces_reviewed_gold": false,
+  "eligible_for_ci_accuracy_gate": false,
+  "notes": "This is an ungoverned candidate inventory, not benchmark/corpus/manifest.json. PDF/EPUB bytes are not checked in. Rights and human review must be completed before any controlled corpus promotion.",
+  "documents": [
+    {
+      "id": "ai-infra-book-2026-09-14",
+      "title": "深入理解 AI Infra：量化分析与系统设计",
+      "author": "李博杰",
+      "source_kind": "user-supplied-pdf",
+      "source_pdf_sha256": "828ae3645c1c24803e505b5ccaacf9b416d1a0c8cb8a61b40cc082f4914ddd9c",
+      "page_count": 518,
+      "language": "zh-CN",
+      "source_revision": "v1.0 / 2026-09-14",
+      "upstream_reference": "https://github.com/bojieli/ai-infra-book",
+      "exact_bytes_proven_upstream": false,
+      "rights_status": "review_required",
+      "redistributable": false,
+      "document_class": "technical-ai-infra",
+      "challenge_tags": [
+        "cjk",
+        "mixed-zh-en",
+        "hierarchical-toc",
+        "formulas",
+        "vector-charts",
+        "captions",
+        "dense-technical-text"
+      ],
+      "suggested_review_pages": [
+        {
+          "page_index": 7,
+          "task_candidates": [
+            "headings",
+            "reading_order",
+            "text"
+          ],
+          "reason": "PDF table of contents and hierarchy"
+        },
+        {
+          "page_index": 11,
+          "task_candidates": [
+            "figures",
+            "captions",
+            "reading_order"
+          ],
+          "reason": "Six-layer architecture figure"
+        },
+        {
+          "page_index": 39,
+          "task_candidates": [
+            "text",
+            "formulas"
+          ],
+          "reason": "Autoregressive work-volume formula in prose"
+        },
+        {
+          "page_index": 65,
+          "task_candidates": [
+            "figures",
+            "captions"
+          ],
+          "reason": "Quantitative chart and labels"
+        },
+        {
+          "page_index": 384,
+          "task_candidates": [
+            "figures",
+            "captions",
+            "text"
+          ],
+          "reason": "Performance visualization and surrounding content"
+        },
+        {
+          "page_index": 517,
+          "task_candidates": [
+            "text",
+            "reading_order"
+          ],
+          "reason": "Final technical exercise and end-of-book coverage"
+        }
+      ]
+    },
+    {
+      "id": "udl-prince-2026-02-08",
+      "title": "Understanding Deep Learning",
+      "author": "Simon J. D. Prince",
+      "source_kind": "user-supplied-pdf",
+      "source_pdf_sha256": "f8237d393163900fa8e43210e680a3f987b45ccac7750b372e156fae3df0bf32",
+      "page_count": 541,
+      "language": "en",
+      "source_revision": "PDF cover 2026-02-08 (modification metadata 2026-02-09)",
+      "upstream_reference": "https://udlbook.com",
+      "exact_bytes_proven_upstream": false,
+      "rights_status": "CC-BY-NC-ND notice in source; intended benchmark use/derived output needs legal review",
+      "redistributable": false,
+      "document_class": "mathematical-deep-learning-textbook",
+      "challenge_tags": [
+        "english",
+        "math-inline",
+        "math-display",
+        "vector-drawings",
+        "figures",
+        "code",
+        "tables",
+        "index"
+      ],
+      "suggested_review_pages": [
+        {
+          "page_index": 4,
+          "task_candidates": [
+            "headings",
+            "reading_order",
+            "text"
+          ],
+          "reason": "Long-form table of contents"
+        },
+        {
+          "page_index": 34,
+          "task_candidates": [
+            "figures",
+            "captions",
+            "text"
+          ],
+          "reason": "Vector-heavy loss visualization"
+        },
+        {
+          "page_index": 110,
+          "task_candidates": [
+            "text",
+            "formulas",
+            "reading_order"
+          ],
+          "reason": "Gradient/mathematical expressions"
+        },
+        {
+          "page_index": 125,
+          "task_candidates": [
+            "text",
+            "reading_order"
+          ],
+          "reason": "Python code block and layout"
+        },
+        {
+          "page_index": 244,
+          "task_candidates": [
+            "figures",
+            "captions"
+          ],
+          "reason": "Vision Transformer illustrated page"
+        },
+        {
+          "page_index": 460,
+          "task_candidates": [
+            "text",
+            "formulas"
+          ],
+          "reason": "Matrix mathematics appendix"
+        }
+      ]
+    },
+    {
+      "id": "fde-fanbing-userpdf-2026-07",
+      "title": "前置部署工程师：人工智能时代的客户价值交付秘籍",
+      "author": "范冰",
+      "source_kind": "user-supplied-pdf",
+      "source_pdf_sha256": "cc80095e9f08c1c51b1a8a6c2fa859f445746f9817f1e631043849aca93f200e",
+      "page_count": 99,
+      "language": "zh-CN",
+      "source_revision": "PDF cover 2026-07 开源版",
+      "upstream_reference": "https://github.com/xdash/FDE-the-Guidance-Book-of-Forward-Deployed-Engineer",
+      "exact_bytes_proven_upstream": false,
+      "upstream_title_note": "Upstream later material uses 前线部署工程师; do not assume same revision or equate the content.",
+      "rights_status": "Author's repository permits free noncommercial reading/sharing, not unconditional redistribution or commercial reuse; review required",
+      "redistributable": false,
+      "document_class": "longform-cjk-business-narrative",
+      "challenge_tags": [
+        "cjk",
+        "mixed-zh-en",
+        "cross-page-paragraph",
+        "headings",
+        "lists",
+        "appendix",
+        "bibliography"
+      ],
+      "suggested_review_pages": [
+        {
+          "page_index": 1,
+          "task_candidates": [
+            "headings",
+            "reading_order",
+            "text"
+          ],
+          "reason": "Printed contents"
+        },
+        {
+          "page_index": 2,
+          "task_candidates": [
+            "headings",
+            "text",
+            "reading_order"
+          ],
+          "reason": "Chapter start, mixed CJK/Latin text"
+        },
+        {
+          "page_index": 15,
+          "task_candidates": [
+            "text",
+            "headings",
+            "reading_order"
+          ],
+          "reason": "Chapter transition before continuing dense prose"
+        },
+        {
+          "page_index": 16,
+          "task_candidates": [
+            "text",
+            "reading_order"
+          ],
+          "reason": "Continuation across physical PDF pages"
+        },
+        {
+          "page_index": 91,
+          "task_candidates": [
+            "lists",
+            "reading_order",
+            "text"
+          ],
+          "reason": "Enumerated case index"
+        },
+        {
+          "page_index": 94,
+          "task_candidates": [
+            "text",
+            "reading_order"
+          ],
+          "reason": "Appendix C references/bibliography"
+        }
+      ]
+    }
+  ]
+}
