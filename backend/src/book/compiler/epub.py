@@ -12,10 +12,19 @@ import html
 import json
 import uuid
 import zipfile
+from enum import Enum
 from pathlib import Path
 from typing import Iterable, List, Sequence
 
 from book.domain.models import Book, BookNode, NodeType
+
+
+class TypographyProfile(str, Enum):
+    """Reader-relative EPUB body font-size presets."""
+
+    READER_DEFAULT = "reader-default"
+    COMPACT = "compact"
+    EXTRA_COMPACT = "extra-compact"
 
 
 class EpubCompiler:
@@ -23,7 +32,20 @@ class EpubCompiler:
 
     MIMETYPE = "application/epub+zip"
 
-    def compile(self, book: Book, output_path: Path) -> Path:
+    def compile(
+        self,
+        book: Book,
+        output_path: Path,
+        *,
+        typography_profile: TypographyProfile | str = TypographyProfile.READER_DEFAULT,
+    ) -> Path:
+        try:
+            profile = TypographyProfile(typography_profile)
+        except (ValueError, TypeError) as exc:
+            raise ValueError(
+                f"Unsupported EPUB typography profile: {typography_profile!r}"
+            ) from exc
+
         output_path = Path(output_path)
         if output_path.suffix.lower() != ".epub":
             raise ValueError("EPUB output path must end with .epub")
@@ -49,7 +71,7 @@ class EpubCompiler:
             self._write_entry(
                 archive,
                 "EPUB/styles/book.css",
-                self._stylesheet(),
+                self._stylesheet(profile),
             )
 
             manifest_items: List[str] = [
@@ -283,8 +305,10 @@ class EpubCompiler:
 """
 
     @staticmethod
-    def _stylesheet() -> str:
-        return """body {
+    def _stylesheet(
+        profile: TypographyProfile = TypographyProfile.READER_DEFAULT,
+    ) -> str:
+        stylesheet = """body {
   line-height: 1.65;
   margin: 5%;
   orphans: 2;
@@ -305,3 +329,11 @@ img, svg {
   height: auto;
 }
 """
+        if profile == TypographyProfile.READER_DEFAULT:
+            return stylesheet
+
+        percent = {
+            TypographyProfile.COMPACT: 85,
+            TypographyProfile.EXTRA_COMPACT: 75,
+        }[profile]
+        return stylesheet + f"\nbody {{\n  font-size: {percent}%;\n}}\n"
