@@ -1,7 +1,9 @@
 import zipfile
 from pathlib import Path
 
-from book.compiler.epub import EpubCompiler
+import pytest
+
+from book.compiler import EpubCompiler, TypographyProfile
 from book.domain.models import Book, BookMetadata, BookNode, NodeType
 
 
@@ -76,4 +78,99 @@ def test_epub_compiler_is_byte_reproducible_without_explicit_identifier(tmp_path
     first = EpubCompiler().compile(book, tmp_path / "first.epub")
     second = EpubCompiler().compile(book, tmp_path / "second.epub")
 
+    assert first.read_bytes() == second.read_bytes()
+
+
+@pytest.mark.parametrize(
+    ("profile", "percent"),
+    [
+        (TypographyProfile.COMPACT, 85),
+        ("extra-compact", 75),
+    ],
+)
+def test_epub_typography_profile_only_changes_css(
+    tmp_path: Path,
+    profile: TypographyProfile | str,
+    percent: int,
+):
+    book = Book(
+        metadata=BookMetadata(title="Profile Test", language="en"),
+        nodes=[
+            BookNode(
+                id="paragraph",
+                type=NodeType.PARAGRAPH,
+                content="Reader-adjustable text.",
+            )
+        ],
+    )
+    default = EpubCompiler().compile(book, tmp_path / "default.epub")
+    compact = EpubCompiler().compile(
+        book, tmp_path / "compact.epub", typography_profile=profile
+    )
+
+    with zipfile.ZipFile(default) as normal, zipfile.ZipFile(compact) as adjusted:
+        assert normal.testzip() is None
+        assert adjusted.testzip() is None
+        assert normal.namelist() == adjusted.namelist()
+        assert normal.getinfo("mimetype").compress_type == zipfile.ZIP_STORED
+        assert adjusted.getinfo("mimetype").compress_type == zipfile.ZIP_STORED
+        for name in normal.namelist():
+            if name == "EPUB/styles/book.css":
+                continue
+            assert normal.read(name) == adjusted.read(name)
+
+        base_css = normal.read("EPUB/styles/book.css").decode("utf-8")
+        css = adjusted.read("EPUB/styles/book.css").decode("utf-8")
+        assert "font-size:" not in base_css
+        assert f"font-size: {percent}%;" in css
+        assert css.startswith(base_css)
+        assert "!important" not in css
+        assert "font-size: 12px" not in css
+
+
+def test_epub_default_typography_profile_preserves_original_bytes(tmp_path: Path):
+    book = Book(
+        metadata=BookMetadata(title="Backward-compatible"),
+        nodes=[],
+    )
+    implicit = EpubCompiler().compile(book, tmp_path / "implicit.epub")
+    explicit = EpubCompiler().compile(
+        book,
+        tmp_path / "explicit.epub",
+        typography_profile=TypographyProfile.READER_DEFAULT,
+    )
+    assert implicit.read_bytes() == explicit.read_bytes()
+
+
+@pytest.mark.parametrize("invalid_profile", ["large", "85%", "", None])
+def test_epub_rejects_unknown_typography_profile_before_writing(
+    tmp_path: Path, invalid_profile: str | None
+):
+    target = tmp_path / "invalid.epub"
+    with pytest.raises(ValueError, match="Unsupported EPUB typography profile"):
+        EpubCompiler().compile(
+            Book(metadata=BookMetadata(title="Invalid")),
+            target,
+            typography_profile=invalid_profile,
+        )
+    assert not target.exists()
+
+
+@pytest.mark.parametrize(
+    "profile",
+    [TypographyProfile.COMPACT, TypographyProfile.EXTRA_COMPACT],
+)
+def test_epub_typography_profile_builds_are_reproducible(
+    tmp_path: Path, profile: TypographyProfile
+):
+    book = Book(
+        metadata=BookMetadata(title="Reproducible", language="zh-Hans"),
+        nodes=[BookNode(id="text", type=NodeType.PARAGRAPH, content="可调整字号")],
+    )
+    first = EpubCompiler().compile(
+        book, tmp_path / "first.epub", typography_profile=profile
+    )
+    second = EpubCompiler().compile(
+        book, tmp_path / "second.epub", typography_profile=profile
+    )
     assert first.read_bytes() == second.read_bytes()
