@@ -29,16 +29,11 @@ def _report():
             {
                 "name": "CI",
                 "result": "pass",
-                "evidence": (
-                    "https://github.com/icm-ai/EBookAI/"
-                    "actions/runs/39082216317"
-                ),
+                "evidence": "CI run 39082216317",
             }
         ],
         "findings": [],
-        "limitations": [
-            "Review evidence is self-reported and does not prove independence."
-        ],
+        "limitations": ["Review provenance is self-reported."],
     }
 
 
