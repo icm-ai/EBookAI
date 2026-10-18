@@ -68,19 +68,10 @@ PYTHONPATH=backend/src python -m book.review_evidence validate \
   --head 93d666839a8b4465f425a95066c5f2345364c715
 ```
 
-When a **real second agent** has independently produced a signed or
-traceable report for the *same head SHA*, aggregate the two files:
-
-```bash
-PYTHONPATH=backend/src python -m book.review_evidence aggregate \
-  docs/review-evidence/pr-8/chatgpt-advisory-20261018.json \
-  second-independent-agent-review.json \
-  --repo icm-ai/EBookAI --pr 8 \
-  --head 93d666839a8b4465f425a95066c5f2345364c715
-```
-
-The second file is **not supplied in this PR**; this is an example of
-the future interface, not a claim of an already executed agent.
+The `aggregate` command accepts two or more actual JSON review files
+for the same PR/head SHA. Until a real second independent run exists, only
+the single report above is provided. `aggregate` reports the number of
+*declared* distinct agents and **never** turns AI evidence into approvals.
 
 Regression checks:
 
