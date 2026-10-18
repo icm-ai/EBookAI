@@ -44,15 +44,13 @@ def _report():
 
 def test_review_evidence_validates_pinned_head():
     report = _report()
-    assert (
-        validate_review(
-            report,
-            expected_repo="icm-ai/EBookAI",
-            expected_pr=8,
-            expected_head=report["head_sha"],
-        )
-        is report
+    validated = validate_review(
+        report,
+        expected_repo="icm-ai/EBookAI",
+        expected_pr=8,
+        expected_head=report["head_sha"],
     )
+    assert validated is report
 
 
 @pytest.mark.parametrize(
@@ -151,21 +149,19 @@ def test_cli_validation_and_invalid_input(tmp_path, capsys):
     file_path = tmp_path / "review.json"
     file_path.write_text(json.dumps(report), encoding="utf-8")
 
-    assert (
-        main(
-            [
-                "validate",
-                str(file_path),
-                "--repo",
-                "icm-ai/EBookAI",
-                "--pr",
-                "8",
-                "--head",
-                report["head_sha"],
-            ]
-        )
-        == 0
+    exit_code = main(
+        [
+            "validate",
+            str(file_path),
+            "--repo",
+            "icm-ai/EBookAI",
+            "--pr",
+            "8",
+            "--head",
+            report["head_sha"],
+        ]
     )
+    assert exit_code == 0
     assert '"satisfies_governance_approval": false' in capsys.readouterr().out
 
     assert main(["validate", str(file_path), "--head", "a" * 40]) == 2
