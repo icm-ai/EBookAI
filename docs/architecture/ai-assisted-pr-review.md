@@ -1,11 +1,12 @@
 # AI-assisted pull-request review: advisory evidence first (RFC)
 
-**Status:** proposed, non-governed tooling. **Owner:** [Issue #9](https://github.com/icm-ai/EBookAI/issues/9).
+**Status:** OpenSpec scope approved; pending merge, non-governed tooling. **Owner:** [Issue #9](https://github.com/icm-ai/EBookAI/issues/9).
 **Pilot:** [PR #8](https://github.com/icm-ai/EBookAI/pull/8) (benchmark CI dependency),
 followed by [PR #7](https://github.com/icm-ai/EBookAI/pull/7) (EPUB typography).
 
 **OpenSpec:** [add-ai-advisory-review-evidence](../../openspec/changes/add-ai-advisory-review-evidence/proposal.md)
-is pending maintainer approval. This RFC does not replace proposal approval.
+was approved by the task user on 2026-10-21; see the proposal for the approval
+record and its scope. This is not a GitHub APPROVED review.
 
 ## Decision and trust boundary
 

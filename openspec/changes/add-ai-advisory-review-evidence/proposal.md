@@ -31,11 +31,19 @@ single-report aggregation contrary to its intended contract.
 
 ## Approval and implementation status
 
-Pending maintainer review and approval of this proposal. No GitHub APPROVED
-review or prior OpenSpec approval is claimed. The original feature already
-exists in PR #10; this proposal does not retroactively satisfy its missing
-approval-before-implementation step. The accompanying corrections restore
-intended behavior under the bug-fix exception in openspec/AGENTS.md.
+Approved for the scope above on 2026-10-21 (Asia/Shanghai).
 
-Before landing the feature, record the actual approver, date and review evidence
-here. Do not archive this proposal or mark approval complete until that happens.
+- Approver: 陈明, the user directing this repository task. No GitHub review
+  identity is asserted by this record.
+- Evidence: after being shown the proposal at commit
+  `85b083808d174c188d8f4675d28f42e14843e4b0` and explicitly asked whether to
+  approve it, the user replied “确认” in the same task.
+- Scope: the Phase A advisory evidence contract and three validation
+  corrections described above. This does not authorize governance policy
+  changes, count as a GitHub APPROVED review or waive required CI checks.
+- Timing: approval was obtained after the original implementation and the
+  bug-fix corrections. This records the actual sequence and does not claim
+  retroactive compliance with approval-before-implementation.
+
+Implementation remains pending merge. Keep this proposal active until the
+normal deployment and archiving process applies.
