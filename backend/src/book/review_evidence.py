@@ -20,6 +20,8 @@ ASSESSMENTS = {"no_blocking_findings", "needs_changes", "inconclusive"}
 SEVERITIES = {"info", "low", "medium", "high", "critical"}
 CHECK_RESULTS = {"pass", "fail", "not_run"}
 SHA_PATTERN = re.compile(r"[0-9a-f]{40}")
+REPOSITORY_PATTERN = re.compile(r"[^/\s]+/[^/\s]+")
+DATE_PATTERN = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 
 
 def _text(value: Any, path: str) -> str:
@@ -59,7 +61,7 @@ def validate_review(
         raise ValueError("kind must be ai-advisory (not a GitHub approval)")
 
     repository = _text(report.get("repository"), "repository")
-    if repository.count("/") != 1:
+    if not REPOSITORY_PATTERN.fullmatch(report["repository"]):
         raise ValueError("repository must be owner/name")
     number = report.get("pull_request")
     if isinstance(number, bool) or not isinstance(number, int) or number < 1:
@@ -75,6 +77,8 @@ def validate_review(
         raise ValueError("stale or mismatched head_sha")
 
     day = _text(report.get("review_date"), "review_date")
+    if not DATE_PATTERN.fullmatch(report["review_date"]):
+        raise ValueError("review_date must be YYYY-MM-DD")
     try:
         date.fromisoformat(day)
     except ValueError as exc:
@@ -125,8 +129,8 @@ def validate_review(
 def summarize_reviews(reports: Iterable[Dict[str, Any]]) -> Dict[str, Any]:
     """Aggregate same-SHA advisory reports; never produce an approval count."""
     reports = [validate_review(value) for value in reports]
-    if not reports:
-        raise ValueError("At least one AI advisory review is required")
+    if len(reports) < 2:
+        raise ValueError("At least two AI advisory reviews are required")
     first = reports[0]
     identities = set()
     executions = set()
@@ -169,6 +173,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     args = parser.parse_args(argv)
     if args.command == "validate" and len(args.files) != 1:
         parser.error("validate requires exactly one file")
+    if args.command == "aggregate" and len(args.files) < 2:
+        parser.error("aggregate requires at least two files")
     try:
         reports = [
             validate_review(

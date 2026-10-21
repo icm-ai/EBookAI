@@ -74,6 +74,84 @@ def test_review_evidence_rejects_mismatched_sha():
         validate_review(_report(), expected_head="a" * 40)
 
 
+@pytest.mark.parametrize(
+    "repository",
+    [
+        "/name",
+        "owner/",
+        " / ",
+        "owner/ /name",
+        "owner/name/extra",
+        "ow ner/name",
+        "owner/ name",
+        " owner/name",
+        "owner/name\n",
+    ],
+)
+def test_review_evidence_rejects_invalid_repository(repository):
+    report = _report()
+    report["repository"] = repository
+    with pytest.raises(ValueError, match="repository"):
+        validate_review(report)
+
+
+@pytest.mark.parametrize(
+    "day",
+    [
+        "20261018",
+        "2026-W42-7",
+        "2026-1-8",
+        "2026-02-29",
+        "2026-13-01",
+        "２０２６-１０-１８",
+        " 2026-10-18",
+        "2026-10-18\n",
+    ],
+)
+def test_review_evidence_rejects_noncanonical_or_invalid_date(day):
+    report = _report()
+    report["review_date"] = day
+    with pytest.raises(ValueError, match="YYYY-MM-DD"):
+        validate_review(report)
+
+
+def test_review_evidence_accepts_valid_leap_day():
+    report = _report()
+    report["review_date"] = "2024-02-29"
+    assert validate_review(report) is report
+
+
+@pytest.mark.parametrize("count", [0, 1])
+def test_aggregate_rejects_fewer_than_two_reports(count):
+    with pytest.raises(ValueError, match="At least two"):
+        summarize_reviews(_report() for _ in range(count))
+
+
+def test_cli_aggregate_cardinality_and_duplicate_files(tmp_path, capsys):
+    import json
+
+    first = _report()
+    second = deepcopy(first)
+    second["reviewer"].update(agent_id="agent-b", execution_id="execution-b")
+    paths = [tmp_path / "first.json", tmp_path / "second.json"]
+    for path, report in zip(paths, [first, second]):
+        path.write_text(json.dumps(report), encoding="utf-8")
+    for files in [[], [str(paths[0])]]:
+        with pytest.raises(SystemExit) as exc:
+            main(["aggregate", *files])
+        assert exc.value.code == 2
+        assert capsys.readouterr().out == ""
+    assert main(["aggregate", *map(str, paths)]) == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result["advisory_report_count"] == 2
+    assert result["independence_authenticated"] is False
+    assert result["github_approvals_checked"] is False
+    assert result["satisfies_governance_approval"] is False
+    assert result["human_approval_required"] is True
+    assert main(["aggregate", str(paths[0]), str(paths[0])]) == 2
+    assert "Duplicate declared" in capsys.readouterr().err
+
+
 def test_review_evidence_rejects_missing_ai_identity():
     report = _report()
     report["reviewer"]["identity_type"] = "human"

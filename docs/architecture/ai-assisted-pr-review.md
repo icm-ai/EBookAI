@@ -4,6 +4,9 @@
 **Pilot:** [PR #8](https://github.com/icm-ai/EBookAI/pull/8) (benchmark CI dependency),
 followed by [PR #7](https://github.com/icm-ai/EBookAI/pull/7) (EPUB typography).
 
+**OpenSpec:** [add-ai-advisory-review-evidence](../../openspec/changes/add-ai-advisory-review-evidence/proposal.md)
+is pending maintainer approval. This RFC does not replace proposal approval.
+
 ## Decision and trust boundary
 
 AI reviewers may discover bugs and record evidence, but their assessments
@@ -29,6 +32,8 @@ itself. PR #8 remains unmerged until its approvals are satisfied.
 
 - `schema_version: "1"`, `kind: "ai-advisory"`
 - `repository`, `pull_request`, and **the full 40-character `head_sha`**
+- `repository` must contain nonempty owner/name components without whitespace;
+  `review_date` must be an exact ASCII `YYYY-MM-DD` valid calendar date
 - `review_date`, `reviewer: {identity_type: "ai_agent", agent_id,
   provider, model, execution_id}`
 - `assessment`: `no_blocking_findings`, `needs_changes`, or `inconclusive`
