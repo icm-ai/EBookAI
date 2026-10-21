@@ -1,0 +1,58 @@
+{
+  "schema_version": "1",
+  "kind": "ai-advisory",
+  "repository": "icm-ai/EBookAI",
+  "pull_request": 8,
+  "head_sha": "93d666839a8b4465f425a95066c5f2345364c715",
+  "review_date": "2026-10-18",
+  "reviewer": {
+    "identity_type": "ai_agent",
+    "agent_id": "chatgpt-advisory-pr8-20261018",
+    "provider": "OpenAI",
+    "model": "GPT-6",
+    "execution_id": "conversation-readonly-review-20261018-pr8-first-pass"
+  },
+  "assessment": "no_blocking_findings",
+  "summary": "Read-only review of the single pinned PyMuPDF install step found no blocking code defect in the narrow change. GitHub Actions confirms the old 'fitz' import failure is resolved and main CI passes. Merge remains blocked by two required independent non-author approvals; this advisory result does not authorize merging.",
+  "human_approval_required": true,
+  "checks": [
+    {
+      "name": "diff-scope",
+      "result": "pass",
+      "evidence": "https://github.com/icm-ai/EBookAI/pull/8/files — only .github/workflows/benchmark-change-control.yml adds python -m pip install PyMuPDF==1.23.8; no benchmark governance thresholds were modified."
+    },
+    {
+      "name": "primary-ci",
+      "result": "pass",
+      "evidence": "https://github.com/icm-ai/EBookAI/actions/runs/39082216317 — 13/13 jobs passed."
+    },
+    {
+      "name": "original-missing-fitz-root-cause",
+      "result": "pass",
+      "evidence": "https://github.com/icm-ai/EBookAI/actions/runs/39082216326 — package installs and governed report execution passes former ModuleNotFoundError: fitz point."
+    },
+    {
+      "name": "governance-approval-floor",
+      "result": "fail",
+      "evidence": "https://github.com/icm-ai/EBookAI/actions/runs/39082216326 — workflow correctly fails because governance_engine needs two distinct independent approvals; found 0."
+    },
+    {
+      "name": "separate-agent-security-review",
+      "result": "not_run",
+      "evidence": "A genuinely separate AI provider/model execution has not been invoked; this report must not be represented as dual independent review."
+    }
+  ],
+  "findings": [
+    {
+      "path": ".github/workflows/benchmark-change-control.yml",
+      "severity": "info",
+      "description": "Human approval is still required before merge; preserving the 2-approval governance-engine gate is expected and correct."
+    }
+  ],
+  "limitations": [
+    "This is one assistant's read-only review, not a separately authenticated autonomous agent execution or a GitHub APPROVED review.",
+    "No local checkout, isolated rerun, provider attestation, or independent second model was available in this review.",
+    "The workflow executes repository code at a PR head while its job declares PR/issue write permissions; that existing trust boundary deserves separate security analysis, but PR #8 adds only a pinned dependency installation.",
+    "Pinned PyMuPDF version matches existing CI jobs; this review did not independently audit the package supply chain or vulnerability lifecycle."
+  ]
+}
